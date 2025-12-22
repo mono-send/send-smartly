@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/table";
 import { Search, Calendar } from "lucide-react";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
 const mockLogs = [
@@ -116,6 +117,7 @@ function MethodBadge({ method }: { method: string }) {
 }
 
 export default function LogsPage() {
+  const navigate = useNavigate();
   const [search, setSearch] = useState("");
 
   return (
@@ -175,7 +177,11 @@ export default function LogsPage() {
             </TableHeader>
             <TableBody>
               {mockLogs.map((log) => (
-                <TableRow key={log.id} className="cursor-pointer hover:bg-muted/50">
+                <TableRow 
+                  key={log.id} 
+                  className="cursor-pointer hover:bg-muted/50"
+                  onClick={() => navigate(`/logs/${log.id}`)}
+                >
                   <TableCell>
                     <code className="font-mono text-sm">{log.endpoint}</code>
                   </TableCell>
