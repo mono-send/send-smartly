@@ -169,7 +169,7 @@ export default function LogsPage() {
                 <TableHead>Endpoint</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Method</TableHead>
-                <TableHead>User Agent</TableHead>
+                {/* <TableHead>User Agent</TableHead> */}
                 <TableHead>Created</TableHead>
               </TableRow>
             </TableHeader>
@@ -185,9 +185,9 @@ export default function LogsPage() {
                   <TableCell>
                     <MethodBadge method={log.method} />
                   </TableCell>
-                  <TableCell className="font-mono text-xs text-muted-foreground">
+                  {/* <TableCell className="font-mono text-xs text-muted-foreground">
                     {log.userAgent}
-                  </TableCell>
+                  </TableCell> */}
                   <TableCell className="text-muted-foreground">{log.created}</TableCell>
                 </TableRow>
               ))}
