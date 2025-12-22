@@ -1,7 +1,6 @@
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { TopBar } from "@/components/layout/TopBar";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -14,28 +13,13 @@ import { Copy, Check, MoreHorizontal, Key } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
+import { ApiKeyDialog, ApiKeyData } from "@/components/dialogs/ApiKeyDialog";
 
 const mockApiKeys = [
   {
@@ -66,9 +50,31 @@ const mockApiKeys = [
 
 export default function ApiKeysPage() {
   const navigate = useNavigate();
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [newKeyName, setNewKeyName] = useState("");
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [dialogMode, setDialogMode] = useState<"create" | "edit">("create");
+  const [editingKey, setEditingKey] = useState<ApiKeyData | undefined>(undefined);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const handleOpenCreate = () => {
+    setDialogMode("create");
+    setEditingKey(undefined);
+    setIsDialogOpen(true);
+  };
+
+  const handleOpenEdit = (key: typeof mockApiKeys[0]) => {
+    setDialogMode("edit");
+    setEditingKey({
+      name: key.name,
+      permission: key.permission,
+      domain: "All domains",
+    });
+    setIsDialogOpen(true);
+  };
+
+  const handleSubmit = (data: ApiKeyData) => {
+    console.log("Submitted:", data);
+    // In real app, would save to backend
+  };
 
   const handleCopy = (id: string, token: string) => {
     navigator.clipboard.writeText(token);
@@ -83,7 +89,7 @@ export default function ApiKeysPage() {
         subtitle="Manage your API keys for authentication"
         action={{
           label: "Create API key",
-          onClick: () => setIsAddDialogOpen(true),
+          onClick: handleOpenCreate,
         }}
       />
       
@@ -159,7 +165,7 @@ export default function ApiKeysPage() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem>Edit</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleOpenEdit(key)}>Edit</DropdownMenuItem>
                         <DropdownMenuItem>Roll key</DropdownMenuItem>
                         <DropdownMenuItem className="text-destructive">Revoke</DropdownMenuItem>
                       </DropdownMenuContent>
@@ -172,65 +178,13 @@ export default function ApiKeysPage() {
         </div>
       </div>
 
-      {/* Create API Key Dialog */}
-      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Create API key</DialogTitle>
-            <DialogDescription>
-              Create a new API key to authenticate your requests.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="keyName">Name</Label>
-              <Input
-                id="keyName"
-                placeholder="e.g., Production"
-                value={newKeyName}
-                onChange={(e) => setNewKeyName(e.target.value)}
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="permission">Permission</Label>
-              <Select defaultValue="full">
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="full">Full access</SelectItem>
-                  <SelectItem value="sending">Sending access</SelectItem>
-                  <SelectItem value="read">Read only</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Domain access</Label>
-              <Select defaultValue="all">
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All domains</SelectItem>
-                  <SelectItem value="specific">Specific domains</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={() => setIsAddDialogOpen(false)}>
-              Create key
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ApiKeyDialog
+        open={isDialogOpen}
+        onOpenChange={setIsDialogOpen}
+        mode={dialogMode}
+        initialData={editingKey}
+        onSubmit={handleSubmit}
+      />
     </DashboardLayout>
   );
 }

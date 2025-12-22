@@ -11,6 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { ApiKeyDialog, ApiKeyData } from "@/components/dialogs/ApiKeyDialog";
 
 // Mock data - in real app would fetch by ID
 const mockApiKeys: Record<string, {
@@ -63,6 +64,7 @@ export default function ApiKeyDetailsPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [copied, setCopied] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   
   const apiKey = id ? mockApiKeys[id] : null;
 
@@ -85,6 +87,10 @@ export default function ApiKeyDetailsPage() {
     navigator.clipboard.writeText(apiKey.token);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+  const handleEditSubmit = (data: ApiKeyData) => {
+    console.log("Updated:", data);
+    // In real app, would save to backend
   };
 
   return (
@@ -120,7 +126,7 @@ export default function ApiKeyDetailsPage() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem>Edit</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setIsEditDialogOpen(true)}>Edit</DropdownMenuItem>
                 <DropdownMenuItem>Roll key</DropdownMenuItem>
                 <DropdownMenuItem className="text-destructive">Revoke</DropdownMenuItem>
               </DropdownMenuContent>
@@ -191,6 +197,18 @@ export default function ApiKeyDetailsPage() {
           </div>
         </div>
       </div>
+
+      <ApiKeyDialog
+        open={isEditDialogOpen}
+        onOpenChange={setIsEditDialogOpen}
+        mode="edit"
+        initialData={{
+          name: apiKey.name,
+          permission: apiKey.permission,
+          domain: apiKey.domain,
+        }}
+        onSubmit={handleEditSubmit}
+      />
     </DashboardLayout>
   );
 }
