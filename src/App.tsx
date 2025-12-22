@@ -5,6 +5,7 @@ import { Analytics } from "@vercel/analytics/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import EmailsPage from "./pages/EmailsPage";
+import EmailDetailsPage from "./pages/EmailDetailsPage";
 import DomainsPage from "./pages/DomainsPage";
 import ApiKeysPage from "./pages/ApiKeysPage";
 import LogsPage from "./pages/LogsPage";
@@ -28,6 +29,7 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Navigate to="/emails" replace />} />
           <Route path="/emails" element={<EmailsPage />} />
+          <Route path="/emails/:id" element={<EmailDetailsPage />} />
           <Route path="/broadcasts" element={<BroadcastsPage />} />
           <Route path="/templates" element={<TemplatesPage />} />
           <Route path="/audience" element={<AudiencePage />} />

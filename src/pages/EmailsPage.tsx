@@ -20,6 +20,7 @@ import {
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Search, MoreHorizontal, Calendar } from "lucide-react";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -74,6 +75,7 @@ const mockEmails = [
 
 export default function EmailsPage() {
   const [search, setSearch] = useState("");
+  const navigate = useNavigate();
 
   return (
     <DashboardLayout>
@@ -135,14 +137,18 @@ export default function EmailsPage() {
             </TableHeader>
             <TableBody>
               {mockEmails.map((email) => (
-                <TableRow key={email.id} className="cursor-pointer hover:bg-muted/50">
+                <TableRow 
+                  key={email.id} 
+                  className="cursor-pointer hover:bg-muted/50"
+                  onClick={() => navigate(`/emails/${email.id}`)}
+                >
                   <TableCell className="font-medium">{email.to}</TableCell>
                   <TableCell>
                     <StatusBadge status={email.status} />
                   </TableCell>
                   <TableCell className="text-muted-foreground">{email.subject}</TableCell>
                   <TableCell className="text-muted-foreground">{email.sent}</TableCell>
-                  <TableCell>
+                  <TableCell onClick={(e) => e.stopPropagation()}>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -150,7 +156,9 @@ export default function EmailsPage() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem>View details</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => navigate(`/emails/${email.id}`)}>
+                          View details
+                        </DropdownMenuItem>
                         <DropdownMenuItem>Resend</DropdownMenuItem>
                         <DropdownMenuItem className="text-destructive">Delete</DropdownMenuItem>
                       </DropdownMenuContent>
