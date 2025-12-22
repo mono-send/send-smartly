@@ -299,15 +299,15 @@ export default function WebhooksPage() {
             <div className="flex gap-2 pt-2">
               <Button onClick={handleAddWebhook} className="gap-2">
                 Add
-                <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
+                {/* <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
                   <span className="text-xs">⌘</span>↵
-                </kbd>
+                </kbd> */}
               </Button>
               <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="gap-2">
                 Cancel
-                <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
+                {/* <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
                   Esc
-                </kbd>
+                </kbd> */}
               </Button>
             </div>
           </div>
