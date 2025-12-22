@@ -8,6 +8,7 @@ import EmailsPage from "./pages/EmailsPage";
 import EmailDetailsPage from "./pages/EmailDetailsPage";
 import DomainsPage from "./pages/DomainsPage";
 import ApiKeysPage from "./pages/ApiKeysPage";
+import ApiKeyDetailsPage from "./pages/ApiKeyDetailsPage";
 import LogsPage from "./pages/LogsPage";
 import MetricsPage from "./pages/MetricsPage";
 import OnboardingPage from "./pages/OnboardingPage";
@@ -37,6 +38,7 @@ const App = () => (
           <Route path="/domains" element={<DomainsPage />} />
           <Route path="/logs" element={<LogsPage />} />
           <Route path="/api-keys" element={<ApiKeysPage />} />
+          <Route path="/api-keys/:id" element={<ApiKeyDetailsPage />} />
           <Route path="/webhooks" element={<WebhooksPage />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/onboarding" element={<OnboardingPage />} />

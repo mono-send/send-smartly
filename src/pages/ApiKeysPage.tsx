@@ -10,8 +10,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Eye, EyeOff, Copy, Check, Plus, MoreHorizontal, Key } from "lucide-react";
+import { Copy, Check, MoreHorizontal, Key } from "lucide-react";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Dialog,
   DialogContent,
@@ -64,6 +65,7 @@ const mockApiKeys = [
 ];
 
 export default function ApiKeysPage() {
+  const navigate = useNavigate();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [newKeyName, setNewKeyName] = useState("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -116,18 +118,25 @@ export default function ApiKeysPage() {
             </TableHeader>
             <TableBody>
               {mockApiKeys.map((key) => (
-                <TableRow key={key.id}>
+                <TableRow 
+                  key={key.id} 
+                  className="cursor-pointer"
+                  onClick={() => navigate(`/api-keys/${key.id}`)}
+                >
                   <TableCell className="font-medium">{key.name}</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <code className="rounded bg-muted px-2 py-1 font-mono text-xs">
                         {key.token}
                       </code>
-                      <Button
+                        <Button
                         variant="ghost"
                         size="icon"
                         className="h-7 w-7"
-                        onClick={() => handleCopy(key.id, key.token)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleCopy(key.id, key.token);
+                        }}
                       >
                         {copiedId === key.id ? (
                           <Check className="h-3.5 w-3.5 text-success" />
@@ -142,7 +151,7 @@ export default function ApiKeysPage() {
                   </TableCell>
                   <TableCell className="text-muted-foreground">{key.lastUsed}</TableCell>
                   <TableCell className="text-muted-foreground">{key.created}</TableCell>
-                  <TableCell>
+                  <TableCell onClick={(e) => e.stopPropagation()}>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="icon" className="h-8 w-8">
