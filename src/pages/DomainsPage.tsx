@@ -18,8 +18,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { Search, Plus, MoreHorizontal, ExternalLink } from "lucide-react";
+import { Search, MoreHorizontal, ExternalLink } from "lucide-react";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Dialog,
   DialogContent,
@@ -61,6 +62,7 @@ const mockDomains = [
 ];
 
 export default function DomainsPage() {
+  const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [newDomain, setNewDomain] = useState("");
@@ -126,7 +128,11 @@ export default function DomainsPage() {
             </TableHeader>
             <TableBody>
               {mockDomains.map((domain) => (
-                <TableRow key={domain.id} className="cursor-pointer hover:bg-muted/50">
+                <TableRow 
+                  key={domain.id} 
+                  className="cursor-pointer hover:bg-muted/50"
+                  onClick={() => navigate(`/domains/${domain.id}`)}
+                >
                   <TableCell className="font-medium">
                     <div className="flex items-center gap-2">
                       {domain.domain}
@@ -140,7 +146,7 @@ export default function DomainsPage() {
                     {domain.region}
                   </TableCell>
                   <TableCell className="text-muted-foreground">{domain.created}</TableCell>
-                  <TableCell>
+                  <TableCell onClick={(e) => e.stopPropagation()}>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="icon" className="h-8 w-8">

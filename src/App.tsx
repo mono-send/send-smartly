@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import EmailsPage from "./pages/EmailsPage";
 import EmailDetailsPage from "./pages/EmailDetailsPage";
 import DomainsPage from "./pages/DomainsPage";
+import DomainDetailsPage from "./pages/DomainDetailsPage";
 import ApiKeysPage from "./pages/ApiKeysPage";
 import ApiKeyDetailsPage from "./pages/ApiKeyDetailsPage";
 import LogsPage from "./pages/LogsPage";
@@ -37,6 +38,7 @@ const App = () => (
           <Route path="/audience" element={<AudiencePage />} />
           <Route path="/metrics" element={<MetricsPage />} />
           <Route path="/domains" element={<DomainsPage />} />
+          <Route path="/domains/:id" element={<DomainDetailsPage />} />
           <Route path="/logs" element={<LogsPage />} />
           <Route path="/logs/:id" element={<LogDetailsPage />} />
           <Route path="/api-keys" element={<ApiKeysPage />} />
