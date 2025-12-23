@@ -13,6 +13,7 @@ import {
   Settings,
   Send,
 } from "lucide-react";
+import logo from '/logo.png';
 
 const navigation = [
   { name: "Emails", href: "/emails", icon: Mail },
@@ -38,7 +39,12 @@ export function Sidebar() {
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
             <Send className="h-4 w-4 text-primary-foreground" />
           </div>
-          <span className="text-lg font-semibold text-foreground">MonoSend</span>
+          <img
+            src={logo}
+            alt="MonoSend"
+            className="h-8 object-contain"
+          />
+          {/* <span className="text-lg font-semibold text-foreground">MonoSend</span> */}
         </div>
 
         {/* Navigation */}
