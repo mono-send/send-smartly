@@ -20,6 +20,16 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { ApiKeyDialog, ApiKeyData } from "@/components/dialogs/ApiKeyDialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const mockApiKeys = [
   {
@@ -54,6 +64,20 @@ export default function ApiKeysPage() {
   const [dialogMode, setDialogMode] = useState<"create" | "edit">("create");
   const [editingKey, setEditingKey] = useState<ApiKeyData | undefined>(undefined);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [revokeDialogOpen, setRevokeDialogOpen] = useState(false);
+  const [keyToRevoke, setKeyToRevoke] = useState<typeof mockApiKeys[0] | null>(null);
+
+  const handleOpenRevoke = (key: typeof mockApiKeys[0]) => {
+    setKeyToRevoke(key);
+    setRevokeDialogOpen(true);
+  };
+
+  const handleConfirmRevoke = () => {
+    console.log("Revoked key:", keyToRevoke?.id);
+    // In real app, would revoke key via backend
+    setRevokeDialogOpen(false);
+    setKeyToRevoke(null);
+  };
 
   const handleOpenCreate = () => {
     setDialogMode("create");
@@ -167,7 +191,12 @@ export default function ApiKeysPage() {
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem onClick={() => handleOpenEdit(key)}>Edit</DropdownMenuItem>
                         <DropdownMenuItem>Roll key</DropdownMenuItem>
-                        <DropdownMenuItem className="text-destructive">Revoke</DropdownMenuItem>
+                        <DropdownMenuItem 
+                          className="text-destructive"
+                          onClick={() => handleOpenRevoke(key)}
+                        >
+                          Revoke
+                        </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
@@ -185,6 +214,26 @@ export default function ApiKeysPage() {
         initialData={editingKey}
         onSubmit={handleSubmit}
       />
+
+      <AlertDialog open={revokeDialogOpen} onOpenChange={setRevokeDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Revoke API Key</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to revoke the API key "{keyToRevoke?.name}"? This action cannot be undone and any applications using this key will stop working.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleConfirmRevoke}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Revoke
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </DashboardLayout>
   );
 }
