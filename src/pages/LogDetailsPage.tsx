@@ -1,8 +1,9 @@
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { TopBar } from "@/components/layout/TopBar";
 import { Button } from "@/components/ui/button";
-import { Server, MoreHorizontal } from "lucide-react";
+import { Server, MoreHorizontal, Copy, Check } from "lucide-react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useState } from "react";
 import { cn } from "@/lib/utils";
 import {
   DropdownMenu,
@@ -10,6 +11,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 // Mock data - in real app would fetch by ID
 const mockLogs: Record<string, {
@@ -159,6 +166,40 @@ function StatusCode({ code }: { code: number }) {
   );
 }
 
+function CopyButton({ content }: { content: string }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(content);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <TooltipProvider>
+      <Tooltip open={copied ? true : undefined}>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleCopy}
+            className="h-7 w-7 text-code-foreground/60 hover:text-code-foreground hover:bg-code-foreground/10"
+          >
+            {copied ? (
+              <Check className="h-4 w-4" />
+            ) : (
+              <Copy className="h-4 w-4" />
+            )}
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>
+          <p>{copied ? "Copied" : "Copy"}</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
+
 export default function LogDetailsPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -179,6 +220,9 @@ export default function LogDetailsPage() {
       </DashboardLayout>
     );
   }
+
+  const responseBodyJson = JSON.stringify(log.responseBody, null, 2);
+  const requestBodyJson = JSON.stringify(log.requestBody, null, 2);
 
   return (
     <DashboardLayout>
@@ -247,9 +291,12 @@ export default function LogDetailsPage() {
         {/* Response Body */}
         <div className="mb-8">
           <h2 className="text-lg font-semibold text-foreground mb-4">Response Body</h2>
-          <div className="rounded-lg bg-code border border-code-border p-4 overflow-x-auto">
+          <div className="relative rounded-lg bg-code border border-code-border p-4 overflow-x-auto">
+            <div className="absolute top-2 right-2">
+              <CopyButton content={responseBodyJson} />
+            </div>
             <pre className="font-mono text-sm text-code-foreground">
-              <code>{JSON.stringify(log.responseBody, null, 2)}</code>
+              <code>{responseBodyJson}</code>
             </pre>
           </div>
         </div>
@@ -258,9 +305,12 @@ export default function LogDetailsPage() {
         {Object.keys(log.requestBody).length > 0 && (
           <div>
             <h2 className="text-lg font-semibold text-foreground mb-4">Request Body</h2>
-            <div className="rounded-lg bg-code border border-code-border p-4 overflow-x-auto">
+            <div className="relative rounded-lg bg-code border border-code-border p-4 overflow-x-auto">
+              <div className="absolute top-2 right-2">
+                <CopyButton content={requestBodyJson} />
+              </div>
               <pre className="font-mono text-sm text-code-foreground">
-                <code>{JSON.stringify(log.requestBody, null, 2)}</code>
+                <code>{requestBodyJson}</code>
               </pre>
             </div>
           </div>
