@@ -1,4 +1,3 @@
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { TopBar } from "@/components/layout/TopBar";
 import { Button } from "@/components/ui/button";
 import {
@@ -107,7 +106,7 @@ export default function ApiKeysPage() {
   };
 
   return (
-    <DashboardLayout>
+    <>
       <TopBar 
         title="API Keys" 
         subtitle="Manage your API keys for authentication"
@@ -234,6 +233,6 @@ export default function ApiKeysPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </DashboardLayout>
+    </>
   );
 }

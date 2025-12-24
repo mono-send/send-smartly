@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { Analytics } from "@vercel/analytics/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import EmailsPage from "./pages/EmailsPage";
 import EmailDetailsPage from "./pages/EmailDetailsPage";
 import DomainsPage from "./pages/DomainsPage";
@@ -31,20 +32,22 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Navigate to="/emails" replace />} />
-          <Route path="/emails" element={<EmailsPage />} />
-          <Route path="/emails/:id" element={<EmailDetailsPage />} />
-          <Route path="/broadcasts" element={<BroadcastsPage />} />
-          <Route path="/templates" element={<TemplatesPage />} />
-          <Route path="/audience" element={<AudiencePage />} />
-          <Route path="/metrics" element={<MetricsPage />} />
-          <Route path="/domains" element={<DomainsPage />} />
-          <Route path="/domains/:id" element={<DomainDetailsPage />} />
-          <Route path="/logs" element={<LogsPage />} />
-          <Route path="/logs/:id" element={<LogDetailsPage />} />
-          <Route path="/api-keys" element={<ApiKeysPage />} />
-          <Route path="/api-keys/:id" element={<ApiKeyDetailsPage />} />
-          <Route path="/webhooks" element={<WebhooksPage />} />
-          <Route path="/settings" element={<SettingsPage />} />
+          <Route element={<DashboardLayout />}>
+            <Route path="/emails" element={<EmailsPage />} />
+            <Route path="/emails/:id" element={<EmailDetailsPage />} />
+            <Route path="/broadcasts" element={<BroadcastsPage />} />
+            <Route path="/templates" element={<TemplatesPage />} />
+            <Route path="/audience" element={<AudiencePage />} />
+            <Route path="/metrics" element={<MetricsPage />} />
+            <Route path="/domains" element={<DomainsPage />} />
+            <Route path="/domains/:id" element={<DomainDetailsPage />} />
+            <Route path="/logs" element={<LogsPage />} />
+            <Route path="/logs/:id" element={<LogDetailsPage />} />
+            <Route path="/api-keys" element={<ApiKeysPage />} />
+            <Route path="/api-keys/:id" element={<ApiKeyDetailsPage />} />
+            <Route path="/webhooks" element={<WebhooksPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
+          </Route>
           <Route path="/onboarding" element={<OnboardingPage />} />
           <Route path="*" element={<NotFound />} />
         </Routes>

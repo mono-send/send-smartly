@@ -1,4 +1,3 @@
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { TopBar } from "@/components/layout/TopBar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -78,7 +77,7 @@ export default function EmailsPage() {
   const navigate = useNavigate();
 
   return (
-    <DashboardLayout>
+    <>
       <TopBar title="Emails" subtitle="View and manage your sent emails" />
       
       <div className="p-6">
@@ -175,6 +174,6 @@ export default function EmailsPage() {
           <span>Showing 6 of 6 emails</span>
         </div>
       </div>
-    </DashboardLayout>
+    </>
   );
 }

@@ -1,4 +1,3 @@
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { TopBar } from "@/components/layout/TopBar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -72,7 +71,7 @@ function MetricCard({ title, value, change, subtitle }: MetricCardProps) {
 
 export default function MetricsPage() {
   return (
-    <DashboardLayout>
+    <>
       <TopBar title="Metrics" subtitle="Email performance analytics">
         <Select defaultValue="7">
           <SelectTrigger className="w-[160px]">
@@ -259,6 +258,6 @@ export default function MetricsPage() {
           </Card>
         </div>
       </div>
-    </DashboardLayout>
+    </>
   );
 }

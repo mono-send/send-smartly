@@ -1,4 +1,3 @@
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { TopBar } from "@/components/layout/TopBar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -46,7 +45,7 @@ export default function AudiencePage() {
   const [newEmails, setNewEmails] = useState("");
 
   return (
-    <DashboardLayout>
+    <>
       <TopBar 
         title="Audience" 
         subtitle="Manage contacts, segments, and subscriptions"
@@ -281,6 +280,6 @@ export default function AudiencePage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </DashboardLayout>
+    </>
   );
 }

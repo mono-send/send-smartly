@@ -1,4 +1,3 @@
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { TopBar } from "@/components/layout/TopBar";
 import { Button } from "@/components/ui/button";
 import { Globe, Code, MoreHorizontal, ExternalLink, AlertTriangle, Mail } from "lucide-react";
@@ -264,7 +263,7 @@ export default function DomainDetailsPage() {
 
   if (!domain) {
     return (
-      <DashboardLayout>
+      <>
         <TopBar 
           title="Domain not found" 
           showBackButton
@@ -273,12 +272,12 @@ export default function DomainDetailsPage() {
         <div className="p-6">
           <p className="text-muted-foreground">The requested domain could not be found.</p>
         </div>
-      </DashboardLayout>
+      </>
     );
   }
 
   return (
-    <DashboardLayout>
+    <>
       <TopBar 
         title="Domains" 
         showBackButton
@@ -395,6 +394,6 @@ export default function DomainDetailsPage() {
           </div>
         </div>
       </div>
-    </DashboardLayout>
+    </>
   );
 }

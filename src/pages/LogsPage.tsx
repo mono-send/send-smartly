@@ -1,4 +1,3 @@
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { TopBar } from "@/components/layout/TopBar";
 import { Input } from "@/components/ui/input";
 import {
@@ -121,7 +120,7 @@ export default function LogsPage() {
   const [search, setSearch] = useState("");
 
   return (
-    <DashboardLayout>
+    <>
       <TopBar title="Logs" subtitle="API request logs and debugging" />
       
       <div className="p-6">
@@ -206,6 +205,6 @@ export default function LogsPage() {
           <span>Showing 7 of 7 logs</span>
         </div>
       </div>
-    </DashboardLayout>
+    </>
   );
 }

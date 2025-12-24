@@ -1,4 +1,3 @@
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -115,8 +114,7 @@ export default function EmailDetailsPage() {
   };
 
   return (
-    <DashboardLayout>
-      <div className="p-6">
+    <div className="p-6">
         {/* Back button */}
         <Button
           variant="ghost"
@@ -320,7 +318,6 @@ export default function EmailDetailsPage() {
             </TabsContent>
           </Tabs>
         </div>
-      </div>
-    </DashboardLayout>
+    </div>
   );
 }

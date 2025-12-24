@@ -1,4 +1,3 @@
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { TopBar } from "@/components/layout/TopBar";
 import { Button } from "@/components/ui/button";
 import { CodeBlock } from "@/components/ui/code-block";
@@ -79,7 +78,7 @@ export default function OnboardingPage() {
   };
 
   return (
-    <DashboardLayout>
+    <>
       <TopBar title="Get Started" subtitle="Send your first email in minutes" />
       
       <div className="mx-auto max-w-4xl p-6 space-y-8">
@@ -236,6 +235,6 @@ export default function OnboardingPage() {
           </Card>
         </div>
       </div>
-    </DashboardLayout>
+    </>
   );
 }

@@ -1,11 +1,10 @@
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { TopBar } from "@/components/layout/TopBar";
 import { EmptyState } from "@/components/ui/empty-state";
 import { FileText } from "lucide-react";
 
 export default function TemplatesPage() {
   return (
-    <DashboardLayout>
+    <>
       <TopBar 
         title="Templates" 
         subtitle="Create and manage email templates"
@@ -26,6 +25,6 @@ export default function TemplatesPage() {
           }}
         />
       </div>
-    </DashboardLayout>
+    </>
   );
 }

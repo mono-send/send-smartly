@@ -1,4 +1,3 @@
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { TopBar } from "@/components/layout/TopBar";
 import { Button } from "@/components/ui/button";
 import { Server, MoreHorizontal, Copy, Check } from "lucide-react";
@@ -208,7 +207,7 @@ export default function LogDetailsPage() {
 
   if (!log) {
     return (
-      <DashboardLayout>
+      <>
         <TopBar 
           title="Log not found" 
           showBackButton
@@ -217,7 +216,7 @@ export default function LogDetailsPage() {
         <div className="p-6">
           <p className="text-muted-foreground">The requested log could not be found.</p>
         </div>
-      </DashboardLayout>
+      </>
     );
   }
 
@@ -225,7 +224,7 @@ export default function LogDetailsPage() {
   const requestBodyJson = JSON.stringify(log.requestBody, null, 2);
 
   return (
-    <DashboardLayout>
+    <>
       <TopBar 
         title="Logs" 
         showBackButton
@@ -316,6 +315,6 @@ export default function LogDetailsPage() {
           </div>
         )}
       </div>
-    </DashboardLayout>
+    </>
   );
 }
