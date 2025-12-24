@@ -247,8 +247,8 @@ export default function LogDetailsPage() {
         {/* Response Body */}
         <div className="mb-8">
           <h2 className="text-lg font-semibold text-foreground mb-4">Response Body</h2>
-          <div className="rounded-lg bg-[#1a1a1a] border border-border p-4 overflow-x-auto">
-            <pre className="font-mono text-sm text-foreground/90">
+          <div className="rounded-lg bg-code border border-code-border p-4 overflow-x-auto">
+            <pre className="font-mono text-sm text-code-foreground">
               <code>{JSON.stringify(log.responseBody, null, 2)}</code>
             </pre>
           </div>
@@ -258,8 +258,8 @@ export default function LogDetailsPage() {
         {Object.keys(log.requestBody).length > 0 && (
           <div>
             <h2 className="text-lg font-semibold text-foreground mb-4">Request Body</h2>
-            <div className="rounded-lg bg-[#1a1a1a] border border-border p-4 overflow-x-auto">
-              <pre className="font-mono text-sm text-foreground/90">
+            <div className="rounded-lg bg-code border border-code-border p-4 overflow-x-auto">
+              <pre className="font-mono text-sm text-code-foreground">
                 <code>{JSON.stringify(log.requestBody, null, 2)}</code>
               </pre>
             </div>
