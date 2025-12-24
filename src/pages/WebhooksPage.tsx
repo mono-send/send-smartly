@@ -217,8 +217,8 @@ export default function WebhooksPage() {
                     </svg>
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
-                  <div className="max-h-[300px] overflow-y-auto">
+                <PopoverContent className="w-[--radix-popover-trigger-width] p-0 max-h-[250px] overflow-hidden" align="start">
+                  <div className="max-h-[250px] overflow-y-auto">
                     {/* All Events option */}
                     <div
                       className={cn(
