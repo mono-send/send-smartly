@@ -138,6 +138,17 @@ export default function LogsPage() {
           
           <Select defaultValue="all">
             <SelectTrigger className="w-[120px]">
+              <SelectValue placeholder="Source" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All</SelectItem>
+              <SelectItem value="api">API</SelectItem>
+              <SelectItem value="mcp">MCP</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select defaultValue="all">
+            <SelectTrigger className="w-[120px]">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
