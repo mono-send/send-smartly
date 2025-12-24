@@ -40,7 +40,7 @@ import {
 const mockDomains = [
   {
     id: "1",
-    domain: "mail.monosend.co",
+    domain: "mail.monosend.io",
     status: "verified" as const,
     region: "us-east-1",
     created: "2 days ago",
