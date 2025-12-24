@@ -42,7 +42,7 @@ const mockLogs: Record<string, {
     requestBody: {
       bcc: [],
       cc: [],
-      from: "welcome@monosend.co",
+      from: "welcome@monosend.io",
       replyTo: [],
       subject: "Welcome to MonoSend",
       to: ["user@example.com"],
@@ -61,7 +61,7 @@ const mockLogs: Record<string, {
       id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
     },
     requestBody: {
-      from: "noreply@monosend.co",
+      from: "noreply@monosend.io",
       to: ["customer@example.com"],
       subject: "Order Confirmation",
       html: "<p>Your order has been confirmed.</p>"
@@ -76,7 +76,7 @@ const mockLogs: Record<string, {
     userAgent: "curl/8.1.2",
     responseBody: {
       data: [
-        { id: "1", name: "monosend.co", status: "verified" }
+        { id: "1", name: "monosend.io", status: "verified" }
       ]
     },
     requestBody: {}
@@ -141,7 +141,7 @@ const mockLogs: Record<string, {
       name: "internal_error"
     },
     requestBody: {
-      from: "system@monosend.co",
+      from: "system@monosend.io",
       to: ["user@example.com"],
       subject: "Notification"
     }
