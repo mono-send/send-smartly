@@ -1,4 +1,3 @@
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { TopBar } from "@/components/layout/TopBar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,7 +8,7 @@ import { Mail, Users, Megaphone, CreditCard, Users2, Server, Link2, FileText, Ar
 
 export default function SettingsPage() {
   return (
-    <DashboardLayout>
+    <>
       <TopBar title="Settings" subtitle="Manage your account and preferences" />
       
       <div className="p-6">
@@ -219,6 +218,6 @@ export default function SettingsPage() {
           </TabsContent>
         </Tabs>
       </div>
-    </DashboardLayout>
+    </>
   );
 }

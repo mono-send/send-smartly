@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { TopBar } from "@/components/layout/TopBar";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Webhook, Check, Info } from "lucide-react";
@@ -151,7 +150,7 @@ export default function WebhooksPage() {
   }, [isDialogOpen, endpointUrl, selectedEvents]);
 
   return (
-    <DashboardLayout>
+    <>
       <TopBar 
         title="Webhooks" 
         subtitle="Receive real-time updates about email events"
@@ -313,6 +312,6 @@ export default function WebhooksPage() {
           </div>
         </DialogContent>
       </Dialog>
-    </DashboardLayout>
+    </>
   );
 }

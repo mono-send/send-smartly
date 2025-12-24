@@ -1,11 +1,10 @@
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { TopBar } from "@/components/layout/TopBar";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Megaphone } from "lucide-react";
 
 export default function BroadcastsPage() {
   return (
-    <DashboardLayout>
+    <>
       <TopBar 
         title="Broadcasts" 
         subtitle="Send campaigns to your audience"
@@ -26,6 +25,6 @@ export default function BroadcastsPage() {
           }}
         />
       </div>
-    </DashboardLayout>
+    </>
   );
 }

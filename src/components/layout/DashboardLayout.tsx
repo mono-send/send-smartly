@@ -1,15 +1,12 @@
+import { Outlet } from "react-router-dom";
 import { Sidebar } from "./Sidebar";
 
-interface DashboardLayoutProps {
-  children: React.ReactNode;
-}
-
-export function DashboardLayout({ children }: DashboardLayoutProps) {
+export function DashboardLayout() {
   return (
     <div className="min-h-screen bg-background">
       <Sidebar />
       <main className="pl-64">
-        {children}
+        <Outlet />
       </main>
     </div>
   );

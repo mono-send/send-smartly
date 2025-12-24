@@ -1,4 +1,3 @@
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { TopBar } from "@/components/layout/TopBar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -68,7 +67,7 @@ export default function DomainsPage() {
   const [newDomain, setNewDomain] = useState("");
 
   return (
-    <DashboardLayout>
+    <>
       <TopBar 
         title="Domains" 
         subtitle="Manage your sending domains"
@@ -213,6 +212,6 @@ export default function DomainsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </DashboardLayout>
+    </>
   );
 }

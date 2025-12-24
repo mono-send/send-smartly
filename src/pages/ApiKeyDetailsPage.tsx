@@ -1,4 +1,3 @@
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { TopBar } from "@/components/layout/TopBar";
 import { Button } from "@/components/ui/button";
 import { Lock, Code, MoreHorizontal, Copy, Check } from "lucide-react";
@@ -70,7 +69,7 @@ export default function ApiKeyDetailsPage() {
 
   if (!apiKey) {
     return (
-      <DashboardLayout>
+      <>
         <TopBar 
           title="API Key not found" 
           showBackButton
@@ -79,7 +78,7 @@ export default function ApiKeyDetailsPage() {
         <div className="p-6">
           <p className="text-muted-foreground">The requested API key could not be found.</p>
         </div>
-      </DashboardLayout>
+      </>
     );
   }
 
@@ -94,7 +93,7 @@ export default function ApiKeyDetailsPage() {
   };
 
   return (
-    <DashboardLayout>
+    <>
       <TopBar 
         title="API Keys" 
         showBackButton
@@ -209,6 +208,6 @@ export default function ApiKeyDetailsPage() {
         }}
         onSubmit={handleEditSubmit}
       />
-    </DashboardLayout>
+    </>
   );
 }
