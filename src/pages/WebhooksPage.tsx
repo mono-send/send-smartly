@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { TopBar } from "@/components/layout/TopBar";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Webhook, Check, Info, MoreHorizontal, Trash2, ExternalLink, Pencil, Play, Loader2, Clock, CheckCircle2, XCircle, History } from "lucide-react";
+import { Webhook, Check, Info, MoreHorizontal, Trash2, ExternalLink, Pencil, Play, Loader2, Clock, CheckCircle2, XCircle, History, RefreshCw } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -52,6 +52,8 @@ interface SavedWebhook {
   endpointUrl: string;
   events: string[];
   createdAt: Date;
+  maxRetries: number;
+  retryIntervalSeconds: number;
 }
 
 interface DeliveryLogEntry {
@@ -59,10 +61,12 @@ interface DeliveryLogEntry {
   webhookId: string;
   endpointUrl: string;
   eventType: string;
-  status: "success" | "failed" | "pending";
+  status: "success" | "failed" | "pending" | "retrying";
   statusMessage: string;
   timestamp: Date;
   payload: object;
+  attempt: number;
+  maxRetries: number;
 }
 
 const eventGroups: EventGroup[] = [
@@ -131,11 +135,15 @@ export default function WebhooksPage() {
   const [testResult, setTestResult] = useState<{ success: boolean; message: string; statusCode?: number } | null>(null);
   const [deliveryLog, setDeliveryLog] = useState<DeliveryLogEntry[]>([]);
   const [showDeliveryLog, setShowDeliveryLog] = useState(false);
+  const [maxRetries, setMaxRetries] = useState(3);
+  const [retryInterval, setRetryInterval] = useState(5);
 
   const openAddDialog = () => {
     setWebhookToEdit(null);
     setEndpointUrl("https://");
     setSelectedEvents([]);
+    setMaxRetries(3);
+    setRetryInterval(5);
     setIsDialogOpen(true);
   };
 
@@ -143,6 +151,8 @@ export default function WebhooksPage() {
     setWebhookToEdit(webhook);
     setEndpointUrl(webhook.endpointUrl);
     setSelectedEvents([...webhook.events]);
+    setMaxRetries(webhook.maxRetries);
+    setRetryInterval(webhook.retryIntervalSeconds);
     setIsDialogOpen(true);
   };
 
@@ -160,7 +170,7 @@ export default function WebhooksPage() {
       // Update existing webhook
       setWebhooks(prev => prev.map(w => 
         w.id === webhookToEdit.id 
-          ? { ...w, endpointUrl, events: selectedEvents }
+          ? { ...w, endpointUrl, events: selectedEvents, maxRetries, retryIntervalSeconds: retryInterval }
           : w
       ));
       toast.success("Webhook updated successfully");
@@ -171,6 +181,8 @@ export default function WebhooksPage() {
         endpointUrl,
         events: selectedEvents,
         createdAt: new Date(),
+        maxRetries,
+        retryIntervalSeconds: retryInterval,
       };
       setWebhooks(prev => [...prev, newWebhook]);
       toast.success("Webhook added successfully");
@@ -203,6 +215,27 @@ export default function WebhooksPage() {
     };
   };
 
+  const sendWebhookRequest = async (
+    webhook: SavedWebhook,
+    payload: object,
+    logEntryId: string,
+    attempt: number
+  ): Promise<boolean> => {
+    try {
+      await fetch(webhook.endpointUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+        mode: "no-cors",
+      });
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
   const handleTestWebhook = async () => {
     if (!webhookToTest) return;
 
@@ -210,8 +243,9 @@ export default function WebhooksPage() {
     setTestResult(null);
 
     const payload = getTestPayload(webhookToTest);
+    const logEntryId = crypto.randomUUID();
     const logEntry: DeliveryLogEntry = {
-      id: crypto.randomUUID(),
+      id: logEntryId,
       webhookId: webhookToTest.id,
       endpointUrl: webhookToTest.endpointUrl,
       eventType: payload.type,
@@ -219,40 +253,64 @@ export default function WebhooksPage() {
       statusMessage: "Sending...",
       timestamp: new Date(),
       payload,
+      attempt: 1,
+      maxRetries: webhookToTest.maxRetries,
     };
 
-    setDeliveryLog(prev => [logEntry, ...prev].slice(0, 50)); // Keep last 50 entries
+    setDeliveryLog(prev => [logEntry, ...prev].slice(0, 50));
 
-    try {
-      const response = await fetch(webhookToTest.endpointUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-        mode: "no-cors", // Most webhooks won't have CORS headers
-      });
+    let success = false;
+    let currentAttempt = 1;
+    const maxAttempts = webhookToTest.maxRetries + 1;
 
-      // With no-cors mode, we can't actually read the response status
-      // So we assume success if no error was thrown
+    while (currentAttempt <= maxAttempts && !success) {
+      if (currentAttempt > 1) {
+        // Update log to show retrying
+        setDeliveryLog(prev => prev.map(entry => 
+          entry.id === logEntryId 
+            ? { 
+                ...entry, 
+                status: "retrying" as const, 
+                statusMessage: `Retry ${currentAttempt - 1}/${webhookToTest.maxRetries}...`,
+                attempt: currentAttempt,
+              }
+            : entry
+        ));
+        
+        // Wait before retry
+        await new Promise(resolve => setTimeout(resolve, webhookToTest.retryIntervalSeconds * 1000));
+      }
+
+      success = await sendWebhookRequest(webhookToTest, payload, logEntryId, currentAttempt);
+      
+      if (!success && currentAttempt < maxAttempts) {
+        currentAttempt++;
+      } else {
+        break;
+      }
+    }
+
+    if (success) {
       const successMessage = "Test payload sent. Due to browser security restrictions, we cannot verify the response. Check your endpoint logs to confirm receipt.";
       
       setDeliveryLog(prev => prev.map(entry => 
-        entry.id === logEntry.id 
-          ? { ...entry, status: "success" as const, statusMessage: successMessage }
+        entry.id === logEntryId 
+          ? { ...entry, status: "success" as const, statusMessage: successMessage, attempt: currentAttempt }
           : entry
       ));
       
       setTestResult({
         success: true,
-        message: successMessage,
+        message: currentAttempt > 1 
+          ? `Succeeded on attempt ${currentAttempt}. ${successMessage}`
+          : successMessage,
       });
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Failed to send test payload";
+    } else {
+      const errorMessage = `Failed after ${currentAttempt} attempt${currentAttempt > 1 ? 's' : ''}. Check your endpoint URL.`;
       
       setDeliveryLog(prev => prev.map(entry => 
-        entry.id === logEntry.id 
-          ? { ...entry, status: "failed" as const, statusMessage: errorMessage }
+        entry.id === logEntryId 
+          ? { ...entry, status: "failed" as const, statusMessage: errorMessage, attempt: currentAttempt }
           : entry
       ));
       
@@ -260,9 +318,9 @@ export default function WebhooksPage() {
         success: false,
         message: errorMessage,
       });
-    } finally {
-      setIsTestingWebhook(false);
     }
+
+    setIsTestingWebhook(false);
   };
 
   const openTestDialog = (webhook: SavedWebhook) => {
@@ -460,6 +518,9 @@ export default function WebhooksPage() {
                         {entry.status === "pending" && (
                           <Loader2 className="h-4 w-4 text-muted-foreground animate-spin" />
                         )}
+                        {entry.status === "retrying" && (
+                          <RefreshCw className="h-4 w-4 text-warning animate-spin" />
+                        )}
                       </div>
                       <div className="flex-1 min-w-0 space-y-1">
                         <div className="flex items-center gap-2 flex-wrap">
@@ -467,6 +528,12 @@ export default function WebhooksPage() {
                             <span className={cn("w-1.5 h-1.5 rounded-full", getEventColor(entry.eventType))} />
                             {entry.eventType}
                           </Badge>
+                          {entry.attempt > 1 && (
+                            <Badge variant="secondary" className="text-xs gap-1">
+                              <RefreshCw className="h-2.5 w-2.5" />
+                              Attempt {entry.attempt}/{entry.maxRetries + 1}
+                            </Badge>
+                          )}
                           <span className="text-xs text-muted-foreground truncate max-w-[200px]">
                             {entry.endpointUrl}
                           </span>
@@ -609,6 +676,40 @@ export default function WebhooksPage() {
                   </div>
                 </PopoverContent>
               </Popover>
+            </div>
+
+            {/* Retry Configuration */}
+            <div className="space-y-3 pt-2 border-t border-border">
+              <Label className="text-sm text-muted-foreground flex items-center gap-2">
+                <RefreshCw className="h-3.5 w-3.5" />
+                Retry Configuration
+              </Label>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="maxRetries" className="text-xs">Max Retries</Label>
+                  <Input
+                    id="maxRetries"
+                    type="number"
+                    min={0}
+                    max={10}
+                    value={maxRetries}
+                    onChange={(e) => setMaxRetries(Math.max(0, Math.min(10, parseInt(e.target.value) || 0)))}
+                    className="h-9"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="retryInterval" className="text-xs">Interval (seconds)</Label>
+                  <Input
+                    id="retryInterval"
+                    type="number"
+                    min={1}
+                    max={60}
+                    value={retryInterval}
+                    onChange={(e) => setRetryInterval(Math.max(1, Math.min(60, parseInt(e.target.value) || 1)))}
+                    className="h-9"
+                  />
+                </div>
+              </div>
             </div>
 
             <div className="flex gap-2 pt-2">
