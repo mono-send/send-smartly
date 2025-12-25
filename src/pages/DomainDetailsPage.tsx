@@ -20,6 +20,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { ConfirmDeleteDialog } from "@/components/dialogs/ConfirmDeleteDialog";
+import { toast } from "sonner";
 
 // Mock data - in real app would fetch by ID
 const mockDomains: Record<string, {
@@ -250,6 +252,7 @@ export default function DomainDetailsPage() {
   const navigate = useNavigate();
   const [sendingEnabled, setSendingEnabled] = useState(false);
   const [receivingEnabled, setReceivingEnabled] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   
   const domain = id ? mockDomains[id] : null;
 
@@ -311,7 +314,12 @@ export default function DomainDetailsPage() {
               <DropdownMenuContent align="end">
                 <DropdownMenuItem>Verify now</DropdownMenuItem>
                 <DropdownMenuItem>Copy domain</DropdownMenuItem>
-                <DropdownMenuItem className="text-destructive">Remove domain</DropdownMenuItem>
+                <DropdownMenuItem 
+                  className="text-destructive"
+                  onClick={() => setIsDeleteDialogOpen(true)}
+                >
+                  Remove domain
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -394,6 +402,18 @@ export default function DomainDetailsPage() {
           </div>
         </div>
       </div>
+
+      <ConfirmDeleteDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+        title="Remove domain"
+        description={`Are you sure you want to remove "${domain.domain}"? This action cannot be undone and will stop all email sending and receiving for this domain.`}
+        confirmLabel="Remove domain"
+        onConfirm={() => {
+          toast.success("Domain removed successfully");
+          navigate("/domains");
+        }}
+      />
     </>
   );
 }
