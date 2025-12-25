@@ -19,7 +19,7 @@ import {
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
-import { Search, Plus, Users, UserCheck, UserMinus, Download, Upload, UserPlus, ChevronDown } from "lucide-react";
+import { Search, Plus, Users, UserCheck, UserMinus, Download, Upload, UserPlus, ChevronDown, Code, BookOpen } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -38,6 +38,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { ContactsAPISection } from "@/components/ContactsAPISection";
 
 const mockContacts = [
   { id: "1", email: "john@example.com", status: "subscribed" as const, segment: "General", added: "2 days ago" },
@@ -50,6 +51,7 @@ export default function AudiencePage() {
   const [search, setSearch] = useState("");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [newEmails, setNewEmails] = useState("");
+  const [isAPIOpen, setIsAPIOpen] = useState(false);
   const navigate = useNavigate();
 
   return (
@@ -58,25 +60,35 @@ export default function AudiencePage() {
         title="Audience" 
         subtitle="Manage contacts, segments, and subscriptions"
       >
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button size="sm" className="gap-2">
-              <Plus className="h-4 w-4" />
-              Add contacts
-              <ChevronDown className="h-3 w-3" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => setIsAddDialogOpen(true)}>
-              <UserPlus className="h-4 w-4 mr-2" />
-              Add manually
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => navigate("/audience/import")}>
-              <Upload className="h-4 w-4 mr-2" />
-              Import
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" className="gap-2" onClick={() => setIsAPIOpen(true)}>
+            <Code className="h-4 w-4" />
+            API
+          </Button>
+          <Button variant="outline" size="sm" className="gap-2">
+            <BookOpen className="h-4 w-4" />
+            Docs
+          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="sm" className="gap-2">
+                <Plus className="h-4 w-4" />
+                Add contacts
+                <ChevronDown className="h-3 w-3" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => setIsAddDialogOpen(true)}>
+                <UserPlus className="h-4 w-4 mr-2" />
+                Add manually
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate("/audience/import")}>
+                <Upload className="h-4 w-4 mr-2" />
+                Import
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </TopBar>
       
       <div className="p-6">
@@ -304,6 +316,8 @@ export default function AudiencePage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ContactsAPISection isOpen={isAPIOpen} onClose={() => setIsAPIOpen(false)} />
     </>
   );
 }
