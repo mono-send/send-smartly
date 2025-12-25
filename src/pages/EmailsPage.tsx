@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/table";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Search, MoreHorizontal, Calendar, Trash2, X } from "lucide-react";
+import { Search, MoreHorizontal, Calendar, Trash2, X, RefreshCw } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -28,6 +28,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ConfirmDeleteDialog } from "@/components/dialogs/ConfirmDeleteDialog";
+import { ConfirmActionDialog } from "@/components/dialogs/ConfirmActionDialog";
 import { toast } from "sonner";
 
 const mockEmails = [
@@ -87,8 +88,10 @@ export default function EmailsPage() {
   const [search, setSearch] = useState("");
   const [emails, setEmails] = useState<Email[]>(mockEmails);
   const [emailToDelete, setEmailToDelete] = useState<Email | null>(null);
+  const [emailToResend, setEmailToResend] = useState<Email | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false);
+  const [showBulkResendDialog, setShowBulkResendDialog] = useState(false);
   const navigate = useNavigate();
 
   const handleDeleteEmail = () => {
@@ -109,6 +112,21 @@ export default function EmailsPage() {
     toast.success(`${selectedIds.size} email${selectedIds.size > 1 ? 's' : ''} deleted`);
     setSelectedIds(new Set());
     setShowBulkDeleteDialog(false);
+  };
+
+  const handleResendEmail = () => {
+    if (emailToResend) {
+      // In a real app, this would trigger the resend API
+      toast.success(`Email to "${emailToResend.to}" queued for resend`);
+      setEmailToResend(null);
+    }
+  };
+
+  const handleBulkResend = () => {
+    // In a real app, this would trigger the bulk resend API
+    toast.success(`${selectedIds.size} email${selectedIds.size > 1 ? 's' : ''} queued for resend`);
+    setSelectedIds(new Set());
+    setShowBulkResendDialog(false);
   };
 
   const toggleSelectAll = () => {
@@ -206,6 +224,15 @@ export default function EmailsPage() {
               <Trash2 className="h-4 w-4" />
               Delete Selected
             </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => setShowBulkResendDialog(true)}
+              className="gap-2"
+            >
+              <RefreshCw className="h-4 w-4" />
+              Resend Selected
+            </Button>
           </div>
         )}
 
@@ -261,7 +288,9 @@ export default function EmailsPage() {
                         <DropdownMenuItem onClick={() => navigate(`/emails/${email.id}`)}>
                           View details
                         </DropdownMenuItem>
-                        <DropdownMenuItem>Resend</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setEmailToResend(email)}>
+                          Resend
+                        </DropdownMenuItem>
                         <DropdownMenuItem 
                           className="text-destructive focus:text-destructive"
                           onClick={() => setEmailToDelete(email)}
@@ -297,6 +326,24 @@ export default function EmailsPage() {
         onConfirm={handleBulkDelete}
         title="Delete Selected Emails"
         description={`Are you sure you want to delete ${selectedIds.size} email${selectedIds.size > 1 ? 's' : ''}? This action cannot be undone.`}
+      />
+
+      <ConfirmActionDialog
+        open={!!emailToResend}
+        onOpenChange={(open) => !open && setEmailToResend(null)}
+        onConfirm={handleResendEmail}
+        title="Resend Email"
+        description={`Are you sure you want to resend the email to "${emailToResend?.to}"? A new copy of this email will be sent.`}
+        confirmLabel="Resend"
+      />
+
+      <ConfirmActionDialog
+        open={showBulkResendDialog}
+        onOpenChange={setShowBulkResendDialog}
+        onConfirm={handleBulkResend}
+        title="Resend Selected Emails"
+        description={`Are you sure you want to resend ${selectedIds.size} email${selectedIds.size > 1 ? 's' : ''}? New copies will be sent to all recipients.`}
+        confirmLabel="Resend All"
       />
     </>
   );
