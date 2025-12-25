@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { TopBar } from "@/components/layout/TopBar";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Webhook, Check, Info, MoreHorizontal, Trash2, ExternalLink, Pencil, Play, Loader2, Clock, CheckCircle2, XCircle, History, RefreshCw, Key, Copy, Eye, EyeOff } from "lucide-react";
+import { Webhook, Check, Info, MoreHorizontal, Trash2, ExternalLink, Pencil, Play, Loader2, Clock, CheckCircle2, XCircle, History, RefreshCw, Key, Copy, Eye, EyeOff, RotateCcw } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -376,6 +376,71 @@ export default function WebhooksPage() {
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
   };
 
+  const handleRetryDelivery = async (entry: DeliveryLogEntry) => {
+    const webhook = webhooks.find(w => w.id === entry.webhookId);
+    if (!webhook) {
+      toast.error("Webhook not found");
+      return;
+    }
+
+    // Update entry to pending
+    setDeliveryLog(prev => prev.map(e => 
+      e.id === entry.id 
+        ? { ...e, status: "pending" as const, statusMessage: "Retrying...", attempt: 1 }
+        : e
+    ));
+
+    let success = false;
+    let currentAttempt = 1;
+    const maxAttempts = webhook.maxRetries + 1;
+
+    while (currentAttempt <= maxAttempts && !success) {
+      if (currentAttempt > 1) {
+        setDeliveryLog(prev => prev.map(e => 
+          e.id === entry.id 
+            ? { 
+                ...e, 
+                status: "retrying" as const, 
+                statusMessage: `Retry ${currentAttempt - 1}/${webhook.maxRetries}...`,
+                attempt: currentAttempt,
+              }
+            : e
+        ));
+        await new Promise(resolve => setTimeout(resolve, webhook.retryIntervalSeconds * 1000));
+      }
+
+      success = await sendWebhookRequest(webhook, entry.payload, entry.id, currentAttempt);
+      
+      if (!success && currentAttempt < maxAttempts) {
+        currentAttempt++;
+      } else {
+        break;
+      }
+    }
+
+    if (success) {
+      const successMessage = currentAttempt > 1 
+        ? `Succeeded on attempt ${currentAttempt}. Payload delivered.`
+        : "Payload delivered successfully.";
+      
+      setDeliveryLog(prev => prev.map(e => 
+        e.id === entry.id 
+          ? { ...e, status: "success" as const, statusMessage: successMessage, attempt: currentAttempt, timestamp: new Date() }
+          : e
+      ));
+      toast.success("Webhook retry successful");
+    } else {
+      const errorMessage = `Retry failed after ${currentAttempt} attempt${currentAttempt > 1 ? 's' : ''}.`;
+      
+      setDeliveryLog(prev => prev.map(e => 
+        e.id === entry.id 
+          ? { ...e, status: "failed" as const, statusMessage: errorMessage, attempt: currentAttempt, timestamp: new Date() }
+          : e
+      ));
+      toast.error("Webhook retry failed");
+    }
+  };
+
   const toggleEvent = (eventId: string) => {
     setSelectedEvents(prev =>
       prev.includes(eventId)
@@ -586,9 +651,30 @@ export default function WebhooksPage() {
                           {entry.statusMessage}
                         </p>
                       </div>
-                      <div className="flex items-center gap-1 text-xs text-muted-foreground shrink-0">
-                        <Clock className="h-3 w-3" />
-                        {formatLogTime(entry.timestamp)}
+                      <div className="flex items-center gap-2 shrink-0">
+                        {entry.status === "failed" && (
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7"
+                                  onClick={() => handleRetryDelivery(entry)}
+                                >
+                                  <RotateCcw className="h-3.5 w-3.5" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Retry delivery</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        )}
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <Clock className="h-3 w-3" />
+                          {formatLogTime(entry.timestamp)}
+                        </div>
                       </div>
                     </div>
                   ))}
