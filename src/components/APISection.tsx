@@ -282,12 +282,56 @@ export function APISection({ isOpen, onClose }: APISectionProps) {
           </div>
 
           {/* Response */}
-          <div className="mt-6">
+          <div className="mt-4">
             <CodeBlock 
               title="Response" 
               code={`{
   "id": "49a3999c-0ce1-4ea6-ab68-afcd6dc2e794"
 }`}
+              onAskAI={handleOpenAssistant}
+            />
+          </div>
+
+          {/* Send Batch Emails Section */}
+          <div className="flex items-center gap-2 mt-8 mb-3">
+            <h3 className="text-base font-medium">Send Batch Emails</h3>
+            <a href="#" className="text-muted-foreground hover:text-foreground">
+              <ExternalLink className="h-4 w-4" />
+            </a>
+          </div>
+
+          <CodeBlock 
+            code={`import { MonoSend } from 'monosend';
+
+const monosend = new MonoSend('mono_xxxxxxxxx');
+
+await monosend.batch.send([
+  {
+    from: 'Brand <welcome@monosend.io>',
+    to: ['customer1@gmail.com'],
+    subject: 'Welcome to MonoSend!',
+    html: '<p>it works!</p>',
+  },
+  {
+    from: 'Brand <welcome@monosend.io>',
+    to: ['customer2@gmail.com'],
+    subject: 'Welcome to MonoSend!',
+    html: '<p>it works!</p>',
+  },
+]);`}
+            onAskAI={handleOpenAssistant}
+          />
+
+          {/* Batch Response */}
+          <div className="mt-4">
+            <CodeBlock 
+              title="Response" 
+              code={`[{
+  "id": "49a3999c-0ce1-4ea6-ab68-afcd6dc2e794"
+},
+{
+  "id": "58a3999c-1cr0-3ef3-1bf8-afcd6dc2e323"
+}]`}
               onAskAI={handleOpenAssistant}
             />
           </div>
