@@ -20,6 +20,7 @@ import TemplatesPage from "./pages/TemplatesPage";
 import AudiencePage from "./pages/AudiencePage";
 import WebhooksPage from "./pages/WebhooksPage";
 import SettingsPage from "./pages/SettingsPage";
+import NotificationsPage from "./pages/NotificationsPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -47,6 +48,7 @@ const App = () => (
             <Route path="/api-keys/:id" element={<ApiKeyDetailsPage />} />
             <Route path="/webhooks" element={<WebhooksPage />} />
             <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/notifications" element={<NotificationsPage />} />
           </Route>
           <Route path="/onboarding" element={<OnboardingPage />} />
           <Route path="*" element={<NotFound />} />
