@@ -51,7 +51,34 @@ export default function AudiencePage() {
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
   const [newEmails, setNewEmails] = useState("");
   const [importFile, setImportFile] = useState<File | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+      const file = files[0];
+      if (file.type === "text/csv" || file.name.endsWith(".csv")) {
+        setImportFile(file);
+      }
+    }
+  };
 
   return (
     <>
@@ -327,12 +354,23 @@ export default function AudiencePage() {
                 className="hidden"
               />
               <div 
-                className="border-2 border-dashed border-border rounded-lg p-8 text-center cursor-pointer hover:border-primary/50 transition-colors"
+                className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
+                  isDragging 
+                    ? "border-primary bg-primary/5" 
+                    : "border-border hover:border-primary/50"
+                }`}
                 onClick={() => fileInputRef.current?.click()}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
               >
-                <Upload className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+                <Upload className={`h-8 w-8 mx-auto mb-2 ${isDragging ? "text-primary" : "text-muted-foreground"}`} />
                 {importFile ? (
                   <p className="text-sm font-medium">{importFile.name}</p>
+                ) : isDragging ? (
+                  <p className="text-sm font-medium text-primary">
+                    Drop your CSV file here
+                  </p>
                 ) : (
                   <>
                     <p className="text-sm text-muted-foreground">
