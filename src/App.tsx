@@ -21,6 +21,7 @@ import AudiencePage from "./pages/AudiencePage";
 import WebhooksPage from "./pages/WebhooksPage";
 import SettingsPage from "./pages/SettingsPage";
 import NotificationsPage from "./pages/NotificationsPage";
+import NotificationPreferencesPage from "./pages/NotificationPreferencesPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -49,6 +50,7 @@ const App = () => (
             <Route path="/webhooks" element={<WebhooksPage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/notifications" element={<NotificationsPage />} />
+            <Route path="/notifications/preferences" element={<NotificationPreferencesPage />} />
           </Route>
           <Route path="/onboarding" element={<OnboardingPage />} />
           <Route path="*" element={<NotFound />} />
