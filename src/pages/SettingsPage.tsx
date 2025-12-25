@@ -4,9 +4,43 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { Mail, Users, Megaphone, CreditCard, Users2, Server, Link2, FileText, ArrowUpRight } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Mail, Megaphone, CreditCard, Users2, Server, Link2, ArrowUpRight } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
 
 export default function SettingsPage() {
+  const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteRole, setInviteRole] = useState("editor");
+
+  const handleInvite = () => {
+    if (!inviteEmail.trim()) {
+      toast.error("Please enter an email address");
+      return;
+    }
+    toast.success(`Invitation sent to ${inviteEmail}`);
+    setInviteEmail("");
+    setInviteRole("editor");
+    setIsInviteDialogOpen(false);
+  };
+
   return (
     <>
       <TopBar title="Settings" subtitle="Manage your account and preferences" />
@@ -152,7 +186,7 @@ export default function SettingsPage() {
                   </div>
                   <Badge>Owner</Badge>
                 </div>
-                <Button variant="outline" className="mt-4">
+                <Button variant="outline" className="mt-4" onClick={() => setIsInviteDialogOpen(true)}>
                   Invite team member
                 </Button>
               </CardContent>
@@ -218,6 +252,59 @@ export default function SettingsPage() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Invite Team Member Dialog */}
+      <Dialog open={isInviteDialogOpen} onOpenChange={setIsInviteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Invite team member</DialogTitle>
+            <DialogDescription>
+              Send an invitation to collaborate on your MonoSend account. They'll receive an email with instructions to join.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="email">Email address</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="colleague@company.com"
+                value={inviteEmail}
+                onChange={(e) => setInviteEmail(e.target.value)}
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="role">Role</Label>
+              <Select value={inviteRole} onValueChange={setInviteRole}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="viewer">Viewer - Can view only</SelectItem>
+                  <SelectItem value="editor">Editor - Can edit projects</SelectItem>
+                  <SelectItem value="admin">Admin - Can manage settings</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                {inviteRole === "viewer" && "Viewers can see all data but cannot make changes."}
+                {inviteRole === "editor" && "Editors can create and edit emails, domains, and campaigns."}
+                {inviteRole === "admin" && "Admins have full access including billing and team management."}
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsInviteDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleInvite}>
+              Send invitation
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
