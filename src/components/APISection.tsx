@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 
 type Language = "Python" | "Node.js" | "Java" | ".NET" | "PHP" | "Ruby" | "Go" | "Rust";
 
-const codeExamples: Record<Language, string> = {
+const sendEmailExamples: Record<Language, string> = {
   "Node.js": `import { MonoSend } from 'monosend';
 
 const monosend = new MonoSend('mono_xxxxxxxxx');
@@ -25,7 +25,7 @@ $monosend->emails->send([
   'to' => ['customer@gmail.com'],
   'subject' => 'Welcome to MonoSend!',
   'html' => '<p>it works!</p>',
-  'reply_to': 'support@monosend.io'
+  'reply_to' => 'support@monosend.io'
 ]);`,
   "Python": `import monosend
 
@@ -109,6 +109,168 @@ await client.EmailSendAsync(new EmailMessage {
 });`
 };
 
+const batchEmailExamples: Record<Language, string> = {
+  "Node.js": `import { MonoSend } from 'monosend';
+
+const monosend = new MonoSend('mono_xxxxxxxxx');
+
+await monosend.batch.send([
+  {
+    from: 'Brand <welcome@monosend.io>',
+    to: ['customer1@gmail.com'],
+    subject: 'Welcome to MonoSend!',
+    html: '<p>it works!</p>',
+  },
+  {
+    from: 'Brand <welcome@monosend.io>',
+    to: ['customer2@gmail.com'],
+    subject: 'Welcome to MonoSend!',
+    html: '<p>it works!</p>',
+  },
+]);`,
+  "PHP": `$monosend = MonoSend::client('mono_xxxxxxxxx');
+
+$monosend->batch->send([
+  [
+    'from' => 'Brand <welcome@monosend.io>',
+    'to' => ['customer1@gmail.com'],
+    'subject' => 'Welcome to MonoSend!',
+    'html' => '<p>it works!</p>',
+  ],
+  [
+    'from' => 'Brand <welcome@monosend.io>',
+    'to' => ['customer2@gmail.com'],
+    'subject' => 'Welcome to MonoSend!',
+    'html' => '<p>it works!</p>',
+  ],
+]);`,
+  "Python": `import monosend
+
+monosend.api_key = "mono_xxxxxxxxx"
+
+monosend.Batch.send([
+  {
+    "from": "Brand <welcome@monosend.io>",
+    "to": ["customer1@gmail.com"],
+    "subject": "Welcome to MonoSend!",
+    "html": "<p>it works!</p>",
+  },
+  {
+    "from": "Brand <welcome@monosend.io>",
+    "to": ["customer2@gmail.com"],
+    "subject": "Welcome to MonoSend!",
+    "html": "<p>it works!</p>",
+  },
+])`,
+  "Ruby": `require 'monosend'
+
+MonoSend.api_key = 'mono_xxxxxxxxx'
+
+MonoSend::Batch.send([
+  {
+    from: 'Brand <welcome@monosend.io>',
+    to: ['customer1@gmail.com'],
+    subject: 'Welcome to MonoSend!',
+    html: '<p>it works!</p>',
+  },
+  {
+    from: 'Brand <welcome@monosend.io>',
+    to: ['customer2@gmail.com'],
+    subject: 'Welcome to MonoSend!',
+    html: '<p>it works!</p>',
+  },
+])`,
+  "Go": `package main
+
+import "github.com/monosend/monosend-go/v2"
+
+func main() {
+  client := monosend.NewClient("mono_xxxxxxxxx")
+  
+  emails := []*monosend.SendEmailRequest{
+    {
+      From:    "Brand <welcome@monosend.io>",
+      To:      []string{"customer1@gmail.com"},
+      Subject: "Welcome to MonoSend!",
+      Html:    "<p>it works!</p>",
+    },
+    {
+      From:    "Brand <welcome@monosend.io>",
+      To:      []string{"customer2@gmail.com"},
+      Subject: "Welcome to MonoSend!",
+      Html:    "<p>it works!</p>",
+    },
+  }
+  client.Batch.Send(emails)
+}`,
+  "Rust": `use monosend_rs::{MonoSend, CreateEmailOptions};
+
+#[tokio::main]
+async fn main() {
+  let monosend = MonoSend::new("mono_xxxxxxxxx");
+  
+  let emails = vec![
+    CreateEmailOptions::new(
+      "Brand <welcome@monosend.io>",
+      ["customer1@gmail.com"],
+      "Welcome to MonoSend!",
+    ).with_html("<p>it works!</p>"),
+    CreateEmailOptions::new(
+      "Brand <welcome@monosend.io>",
+      ["customer2@gmail.com"],
+      "Welcome to MonoSend!",
+    ).with_html("<p>it works!</p>"),
+  ];
+  
+  monosend.batch.send(emails).await;
+}`,
+  "Java": `import com.monosend.*;
+import java.util.List;
+
+public class Main {
+  public static void main(String[] args) {
+    MonoSend monosend = new MonoSend("mono_xxxxxxxxx");
+    
+    List<SendEmailRequest> emails = List.of(
+      SendEmailRequest.builder()
+        .from("Brand <welcome@monosend.io>")
+        .to("customer1@gmail.com")
+        .subject("Welcome to MonoSend!")
+        .html("<p>it works!</p>")
+        .build(),
+      SendEmailRequest.builder()
+        .from("Brand <welcome@monosend.io>")
+        .to("customer2@gmail.com")
+        .subject("Welcome to MonoSend!")
+        .html("<p>it works!</p>")
+        .build()
+    );
+      
+    monosend.batch().send(emails);
+  }
+}`,
+  ".NET": `using MonoSend;
+
+var client = new MonoSendClient("mono_xxxxxxxxx");
+
+var emails = new[] {
+  new EmailMessage {
+    From = "Brand <welcome@monosend.io>",
+    To = "customer1@gmail.com",
+    Subject = "Welcome to MonoSend!",
+    HtmlBody = "<p>it works!</p>",
+  },
+  new EmailMessage {
+    From = "Brand <welcome@monosend.io>",
+    To = "customer2@gmail.com",
+    Subject = "Welcome to MonoSend!",
+    HtmlBody = "<p>it works!</p>",
+  },
+};
+
+await client.BatchSendAsync(emails);`
+};
+
 const languages: Language[] = ["Python", "Node.js", "Java", ".NET", "PHP", "Ruby", "Go", "Rust"];
 
 interface CodeBlockProps {
@@ -165,8 +327,8 @@ export function APISection({ isOpen, onClose }: APISectionProps) {
   const [activeLanguage, setActiveLanguage] = useState<Language>("Node.js");
   const [codeCopied, setCodeCopied] = useState(false);
 
-  const handleCopyCode = async () => {
-    await navigator.clipboard.writeText(codeExamples[activeLanguage]);
+  const handleCopyCode = async (code: string) => {
+    await navigator.clipboard.writeText(code);
     setCodeCopied(true);
     setTimeout(() => setCodeCopied(false), 2000);
   };
@@ -198,16 +360,8 @@ export function APISection({ isOpen, onClose }: APISectionProps) {
             </Button>
           </div>
 
-          {/* Send Email Section */}
-          <div className="flex items-center gap-2 mb-3">
-            <h3 className="text-base font-medium">Send Email</h3>
-            <a href="#" className="text-muted-foreground hover:text-foreground">
-              <ExternalLink className="h-4 w-4" />
-            </a>
-          </div>
-
-          {/* Language Tabs */}
-          <div className="bg-[#1a1a2e] dark:bg-[#0d0d1a] rounded-lg overflow-hidden">
+          {/* Language Tabs - Sticky */}
+          <div className="bg-[#1a1a2e] dark:bg-[#0d0d1a] rounded-lg overflow-hidden mb-6">
             <div className="flex items-center border-b border-white/10 overflow-x-auto">
               {languages.map((lang) => (
                 <button
@@ -223,26 +377,38 @@ export function APISection({ isOpen, onClose }: APISectionProps) {
                   {lang}
                 </button>
               ))}
-              <div className="ml-auto flex items-center gap-1 px-2">
-                <TooltipProvider>
-                  <Tooltip open={codeCopied}>
-                    <TooltipTrigger asChild>
-                      <button 
-                        onClick={handleCopyCode}
-                        className="p-1.5 hover:bg-white/10 rounded transition-colors"
-                      >
-                        <Copy className="w-4 h-4 text-white/50" />
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Copied</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </div>
+            </div>
+          </div>
+
+          {/* Send Email Section */}
+          <div className="flex items-center gap-2 mb-3">
+            <h3 className="text-base font-medium">Send Email</h3>
+            <a href="#" className="text-muted-foreground hover:text-foreground">
+              <ExternalLink className="h-4 w-4" />
+            </a>
+          </div>
+
+          {/* Send Email Code Block */}
+          <div className="bg-[#1a1a2e] dark:bg-[#0d0d1a] rounded-lg overflow-hidden">
+            <div className="flex items-center justify-end px-2 py-1 border-b border-white/10">
+              <TooltipProvider>
+                <Tooltip open={codeCopied}>
+                  <TooltipTrigger asChild>
+                    <button 
+                      onClick={() => handleCopyCode(sendEmailExamples[activeLanguage])}
+                      className="p-1.5 hover:bg-white/10 rounded transition-colors"
+                    >
+                      <Copy className="w-4 h-4 text-white/50" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Copied</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
             <pre className="p-4 text-sm overflow-x-auto max-h-[400px]">
-              <code className="text-white/90 font-mono whitespace-pre">{codeExamples[activeLanguage]}</code>
+              <code className="text-white/90 font-mono whitespace-pre">{sendEmailExamples[activeLanguage]}</code>
             </pre>
           </div>
 
@@ -264,26 +430,29 @@ export function APISection({ isOpen, onClose }: APISectionProps) {
             </a>
           </div>
 
-          <CodeBlock 
-            code={`import { MonoSend } from 'monosend';
-
-const monosend = new MonoSend('mono_xxxxxxxxx');
-
-await monosend.batch.send([
-  {
-    from: 'Brand <welcome@monosend.io>',
-    to: ['customer1@gmail.com'],
-    subject: 'Welcome to MonoSend!',
-    html: '<p>it works!</p>',
-  },
-  {
-    from: 'Brand <welcome@monosend.io>',
-    to: ['customer2@gmail.com'],
-    subject: 'Welcome to MonoSend!',
-    html: '<p>it works!</p>',
-  },
-]);`}
-          />
+          {/* Batch Email Code Block */}
+          <div className="bg-[#1a1a2e] dark:bg-[#0d0d1a] rounded-lg overflow-hidden">
+            <div className="flex items-center justify-end px-2 py-1 border-b border-white/10">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button 
+                      onClick={() => handleCopyCode(batchEmailExamples[activeLanguage])}
+                      className="p-1.5 hover:bg-white/10 rounded transition-colors"
+                    >
+                      <Copy className="w-4 h-4 text-white/50" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Copy</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+            <pre className="p-4 text-sm overflow-x-auto max-h-[400px]">
+              <code className="text-white/90 font-mono whitespace-pre">{batchEmailExamples[activeLanguage]}</code>
+            </pre>
+          </div>
 
           {/* Batch Response */}
           <div className="mt-4">
