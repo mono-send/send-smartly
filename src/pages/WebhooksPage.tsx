@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { TopBar } from "@/components/layout/TopBar";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Webhook, Check, Info } from "lucide-react";
+import { Webhook, Check, Info, MoreHorizontal, Trash2, ExternalLink } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -22,7 +22,17 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
+import { ConfirmDeleteDialog } from "@/components/dialogs/ConfirmDeleteDialog";
 
 interface WebhookEvent {
   id: string;
@@ -34,6 +44,13 @@ interface WebhookEvent {
 interface EventGroup {
   name: string;
   events: WebhookEvent[];
+}
+
+interface SavedWebhook {
+  id: string;
+  endpointUrl: string;
+  events: string[];
+  createdAt: Date;
 }
 
 const eventGroups: EventGroup[] = [
@@ -81,18 +98,52 @@ const colorMap: Record<string, string> = {
   purple: "bg-purple-500",
 };
 
+const getEventColor = (eventId: string): string => {
+  for (const group of eventGroups) {
+    const event = group.events.find(e => e.id === eventId);
+    if (event) return colorMap[event.color];
+  }
+  return colorMap.gray;
+};
+
 export default function WebhooksPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [endpointUrl, setEndpointUrl] = useState("https://");
   const [selectedEvents, setSelectedEvents] = useState<string[]>([]);
   const [isEventsOpen, setIsEventsOpen] = useState(false);
+  const [webhooks, setWebhooks] = useState<SavedWebhook[]>([]);
+  const [webhookToDelete, setWebhookToDelete] = useState<SavedWebhook | null>(null);
 
   const handleAddWebhook = () => {
-    // TODO: Add webhook logic
-    console.log("Adding webhook:", { endpointUrl, selectedEvents });
+    if (!endpointUrl || endpointUrl === "https://") {
+      toast.error("Please enter a valid endpoint URL");
+      return;
+    }
+    if (selectedEvents.length === 0) {
+      toast.error("Please select at least one event");
+      return;
+    }
+
+    const newWebhook: SavedWebhook = {
+      id: crypto.randomUUID(),
+      endpointUrl,
+      events: selectedEvents,
+      createdAt: new Date(),
+    };
+
+    setWebhooks(prev => [...prev, newWebhook]);
+    toast.success("Webhook added successfully");
     setIsDialogOpen(false);
     setEndpointUrl("https://");
     setSelectedEvents([]);
+  };
+
+  const handleDeleteWebhook = () => {
+    if (webhookToDelete) {
+      setWebhooks(prev => prev.filter(w => w.id !== webhookToDelete.id));
+      toast.success("Webhook deleted");
+      setWebhookToDelete(null);
+    }
   };
 
   const toggleEvent = (eventId: string) => {
@@ -126,11 +177,6 @@ export default function WebhooksPage() {
     return group.events.every(e => selectedEvents.includes(e.id));
   };
 
-  const isGroupPartiallySelected = (group: EventGroup) => {
-    const selected = group.events.filter(e => selectedEvents.includes(e.id));
-    return selected.length > 0 && selected.length < group.events.length;
-  };
-
   const getDisplayText = () => {
     if (selectedEvents.length === 0) return "Select events...";
     if (selectedEvents.length === allEventIds.length) return "All Events";
@@ -161,15 +207,75 @@ export default function WebhooksPage() {
       />
       
       <div className="p-6">
-        <EmptyState
-          icon={Webhook}
-          title="No webhooks yet"
-          description="Configure webhooks to receive real-time updates when emails are delivered, opened, clicked, or bounced."
-          action={{
-            label: "Add webhook",
-            onClick: () => setIsDialogOpen(true),
-          }}
-        />
+        {webhooks.length === 0 ? (
+          <EmptyState
+            icon={Webhook}
+            title="No webhooks yet"
+            description="Configure webhooks to receive real-time updates when emails are delivered, opened, clicked, or bounced."
+            action={{
+              label: "Add webhook",
+              onClick: () => setIsDialogOpen(true),
+            }}
+          />
+        ) : (
+          <div className="space-y-4">
+            {webhooks.map((webhook) => (
+              <Card key={webhook.id}>
+                <CardContent className="p-4">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1 min-w-0 space-y-3">
+                      <div className="flex items-center gap-2">
+                        <Webhook className="h-4 w-4 text-muted-foreground shrink-0" />
+                        <a 
+                          href={webhook.endpointUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm font-medium text-foreground hover:underline truncate flex items-center gap-1"
+                        >
+                          {webhook.endpointUrl}
+                          <ExternalLink className="h-3 w-3" />
+                        </a>
+                      </div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {webhook.events.length === allEventIds.length ? (
+                          <Badge variant="secondary" className="text-xs">All Events</Badge>
+                        ) : (
+                          webhook.events.slice(0, 5).map((eventId) => (
+                            <Badge key={eventId} variant="outline" className="text-xs gap-1">
+                              <span className={cn("w-1.5 h-1.5 rounded-full", getEventColor(eventId))} />
+                              {eventId}
+                            </Badge>
+                          ))
+                        )}
+                        {webhook.events.length > 5 && webhook.events.length !== allEventIds.length && (
+                          <Badge variant="outline" className="text-xs">
+                            +{webhook.events.length - 5} more
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          className="text-destructive focus:text-destructive"
+                          onClick={() => setWebhookToDelete(webhook)}
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
       </div>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -298,20 +404,22 @@ export default function WebhooksPage() {
             <div className="flex gap-2 pt-2">
               <Button onClick={handleAddWebhook} className="gap-2">
                 Add
-                {/* <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
-                  <span className="text-xs">⌘</span>↵
-                </kbd> */}
               </Button>
               <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="gap-2">
                 Cancel
-                {/* <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
-                  Esc
-                </kbd> */}
               </Button>
             </div>
           </div>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDeleteDialog
+        open={!!webhookToDelete}
+        onOpenChange={(open) => !open && setWebhookToDelete(null)}
+        onConfirm={handleDeleteWebhook}
+        title="Delete Webhook"
+        description={`Are you sure you want to delete the webhook for "${webhookToDelete?.endpointUrl}"? This action cannot be undone.`}
+      />
     </>
   );
 }
