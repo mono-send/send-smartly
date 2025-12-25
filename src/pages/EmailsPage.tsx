@@ -26,6 +26,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { ConfirmDeleteDialog } from "@/components/dialogs/ConfirmDeleteDialog";
+import { toast } from "sonner";
 
 const mockEmails = [
   {
@@ -72,9 +74,27 @@ const mockEmails = [
   },
 ];
 
+interface Email {
+  id: string;
+  to: string;
+  subject: string;
+  status: "delivered" | "opened" | "sent" | "clicked" | "bounced" | "queued";
+  sent: string;
+}
+
 export default function EmailsPage() {
   const [search, setSearch] = useState("");
+  const [emails, setEmails] = useState<Email[]>(mockEmails);
+  const [emailToDelete, setEmailToDelete] = useState<Email | null>(null);
   const navigate = useNavigate();
+
+  const handleDeleteEmail = () => {
+    if (emailToDelete) {
+      setEmails(prev => prev.filter(e => e.id !== emailToDelete.id));
+      toast.success("Email deleted");
+      setEmailToDelete(null);
+    }
+  };
 
   return (
     <>
@@ -135,7 +155,7 @@ export default function EmailsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {mockEmails.map((email) => (
+              {emails.map((email) => (
                 <TableRow 
                   key={email.id} 
                   className="cursor-pointer hover:bg-muted/50"
@@ -159,7 +179,12 @@ export default function EmailsPage() {
                           View details
                         </DropdownMenuItem>
                         <DropdownMenuItem>Resend</DropdownMenuItem>
-                        <DropdownMenuItem className="text-destructive">Delete</DropdownMenuItem>
+                        <DropdownMenuItem 
+                          className="text-destructive focus:text-destructive"
+                          onClick={() => setEmailToDelete(email)}
+                        >
+                          Delete
+                        </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
@@ -171,9 +196,17 @@ export default function EmailsPage() {
 
         {/* Pagination hint */}
         <div className="mt-4 flex items-center justify-between text-sm text-muted-foreground">
-          <span>Showing 6 of 6 emails</span>
+          <span>Showing {emails.length} of {emails.length} emails</span>
         </div>
       </div>
+
+      <ConfirmDeleteDialog
+        open={!!emailToDelete}
+        onOpenChange={(open) => !open && setEmailToDelete(null)}
+        onConfirm={handleDeleteEmail}
+        title="Delete Email"
+        description={`Are you sure you want to delete the email to "${emailToDelete?.to}"? This action cannot be undone.`}
+      />
     </>
   );
 }
