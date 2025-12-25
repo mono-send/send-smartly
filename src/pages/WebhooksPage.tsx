@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { TopBar } from "@/components/layout/TopBar";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Webhook, Check, Info, MoreHorizontal, Trash2, ExternalLink, Pencil } from "lucide-react";
+import { Webhook, Check, Info, MoreHorizontal, Trash2, ExternalLink, Pencil, Play, Loader2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -33,6 +33,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { ConfirmDeleteDialog } from "@/components/dialogs/ConfirmDeleteDialog";
+import { CodeBlock } from "@/components/ui/code-block";
 
 interface WebhookEvent {
   id: string;
@@ -114,6 +115,9 @@ export default function WebhooksPage() {
   const [webhooks, setWebhooks] = useState<SavedWebhook[]>([]);
   const [webhookToDelete, setWebhookToDelete] = useState<SavedWebhook | null>(null);
   const [webhookToEdit, setWebhookToEdit] = useState<SavedWebhook | null>(null);
+  const [webhookToTest, setWebhookToTest] = useState<SavedWebhook | null>(null);
+  const [isTestingWebhook, setIsTestingWebhook] = useState(false);
+  const [testResult, setTestResult] = useState<{ success: boolean; message: string; statusCode?: number } | null>(null);
 
   const openAddDialog = () => {
     setWebhookToEdit(null);
@@ -171,6 +175,58 @@ export default function WebhooksPage() {
       toast.success("Webhook deleted");
       setWebhookToDelete(null);
     }
+  };
+
+  const getTestPayload = (webhook: SavedWebhook) => {
+    const eventType = webhook.events[0] || "email.delivered";
+    return {
+      type: eventType,
+      created_at: new Date().toISOString(),
+      data: {
+        id: "test_" + crypto.randomUUID().slice(0, 8),
+        object: eventType.split(".")[0],
+        test: true,
+      },
+    };
+  };
+
+  const handleTestWebhook = async () => {
+    if (!webhookToTest) return;
+
+    setIsTestingWebhook(true);
+    setTestResult(null);
+
+    const payload = getTestPayload(webhookToTest);
+
+    try {
+      const response = await fetch(webhookToTest.endpointUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+        mode: "no-cors", // Most webhooks won't have CORS headers
+      });
+
+      // With no-cors mode, we can't actually read the response status
+      // So we assume success if no error was thrown
+      setTestResult({
+        success: true,
+        message: "Test payload sent. Due to browser security restrictions, we cannot verify the response. Check your endpoint logs to confirm receipt.",
+      });
+    } catch (error) {
+      setTestResult({
+        success: false,
+        message: error instanceof Error ? error.message : "Failed to send test payload",
+      });
+    } finally {
+      setIsTestingWebhook(false);
+    }
+  };
+
+  const openTestDialog = (webhook: SavedWebhook) => {
+    setWebhookToTest(webhook);
+    setTestResult(null);
   };
 
   const toggleEvent = (eventId: string) => {
@@ -288,6 +344,10 @@ export default function WebhooksPage() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => openTestDialog(webhook)}>
+                          <Play className="h-4 w-4 mr-2" />
+                          Test
+                        </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => openEditDialog(webhook)}>
                           <Pencil className="h-4 w-4 mr-2" />
                           Edit
@@ -451,6 +511,59 @@ export default function WebhooksPage() {
         title="Delete Webhook"
         description={`Are you sure you want to delete the webhook for "${webhookToDelete?.endpointUrl}"? This action cannot be undone.`}
       />
+
+      <Dialog open={!!webhookToTest} onOpenChange={(open) => !open && setWebhookToTest(null)}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Test Webhook</DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4 pt-2">
+            <div className="space-y-2">
+              <Label className="text-muted-foreground text-sm">Endpoint</Label>
+              <p className="text-sm font-medium truncate">{webhookToTest?.endpointUrl}</p>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-muted-foreground text-sm">Sample Payload</Label>
+              <CodeBlock 
+                code={webhookToTest ? JSON.stringify(getTestPayload(webhookToTest), null, 2) : ""} 
+                language="json"
+              />
+            </div>
+
+            {testResult && (
+              <div className={cn(
+                "p-3 rounded-md text-sm",
+                testResult.success 
+                  ? "bg-success/10 text-success border border-success/20" 
+                  : "bg-destructive/10 text-destructive border border-destructive/20"
+              )}>
+                {testResult.message}
+              </div>
+            )}
+
+            <div className="flex gap-2 pt-2">
+              <Button onClick={handleTestWebhook} disabled={isTestingWebhook} className="gap-2">
+                {isTestingWebhook ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Sending...
+                  </>
+                ) : (
+                  <>
+                    <Play className="h-4 w-4" />
+                    Send Test
+                  </>
+                )}
+              </Button>
+              <Button variant="outline" onClick={() => setWebhookToTest(null)}>
+                Close
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
