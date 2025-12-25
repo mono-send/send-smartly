@@ -19,7 +19,7 @@ import {
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
-import { Search, Plus, Users, UserCheck, UserMinus, Download, Upload, UserPlus, ChevronDown, Code, BookOpen } from "lucide-react";
+import { Search, Plus, Users, UserCheck, UserMinus, Download, Upload, UserPlus, ChevronDown, Code, BookOpen, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -39,6 +39,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ContactsAPISection } from "@/components/ContactsAPISection";
+import { ConfirmDeleteDialog } from "@/components/dialogs/ConfirmDeleteDialog";
 
 const mockContacts = [
   { id: "1", email: "john@example.com", status: "subscribed" as const, segment: "General", added: "2 days ago" },
@@ -47,12 +48,67 @@ const mockContacts = [
   { id: "4", email: "marketing@brand.co", status: "subscribed" as const, segment: "Newsletter", added: "1 month ago" },
 ];
 
+const mockSegments = [
+  { id: "1", name: "General", contacts: 3, created: "System default" },
+  { id: "2", name: "VIP", contacts: 1, created: "1 week ago" },
+  { id: "3", name: "Newsletter", contacts: 1, created: "1 month ago" },
+];
+
 export default function AudiencePage() {
   const [search, setSearch] = useState("");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [newEmails, setNewEmails] = useState("");
   const [isAPIOpen, setIsAPIOpen] = useState(false);
   const navigate = useNavigate();
+
+  // Segment management state
+  const [segments, setSegments] = useState(mockSegments);
+  const [isAddSegmentOpen, setIsAddSegmentOpen] = useState(false);
+  const [isEditSegmentOpen, setIsEditSegmentOpen] = useState(false);
+  const [isDeleteSegmentOpen, setIsDeleteSegmentOpen] = useState(false);
+  const [segmentName, setSegmentName] = useState("");
+  const [selectedSegment, setSelectedSegment] = useState<typeof mockSegments[0] | null>(null);
+
+  const handleAddSegment = () => {
+    if (!segmentName.trim()) return;
+    const newSegment = {
+      id: Date.now().toString(),
+      name: segmentName.trim(),
+      contacts: 0,
+      created: "Just now",
+    };
+    setSegments([...segments, newSegment]);
+    setSegmentName("");
+    setIsAddSegmentOpen(false);
+  };
+
+  const handleEditSegment = () => {
+    if (!segmentName.trim() || !selectedSegment) return;
+    setSegments(segments.map(s => 
+      s.id === selectedSegment.id ? { ...s, name: segmentName.trim() } : s
+    ));
+    setSegmentName("");
+    setSelectedSegment(null);
+    setIsEditSegmentOpen(false);
+  };
+
+  const handleDeleteSegment = () => {
+    if (!selectedSegment) return;
+    setSegments(segments.filter(s => s.id !== selectedSegment.id));
+    setSelectedSegment(null);
+    setIsDeleteSegmentOpen(false);
+  };
+
+  const openEditDialog = (segment: typeof mockSegments[0]) => {
+    setSelectedSegment(segment);
+    setSegmentName(segment.name);
+    setIsEditSegmentOpen(true);
+  };
+
+  const openDeleteDialog = (segment: typeof mockSegments[0]) => {
+    setSelectedSegment(segment);
+    setIsDeleteSegmentOpen(true);
+  };
 
   return (
     <>
@@ -207,7 +263,13 @@ export default function AudiencePage() {
             </div>
           </TabsContent>
 
-          <TabsContent value="segments">
+          <TabsContent value="segments" className="space-y-4">
+            <div className="flex justify-end">
+              <Button size="sm" className="gap-2" onClick={() => setIsAddSegmentOpen(true)}>
+                <Plus className="h-4 w-4" />
+                Add segment
+              </Button>
+            </div>
             <div className="rounded-lg border border-border bg-card">
               <Table>
                 <TableHeader>
@@ -215,24 +277,39 @@ export default function AudiencePage() {
                     <TableHead>Name</TableHead>
                     <TableHead>Contacts</TableHead>
                     <TableHead>Created</TableHead>
+                    <TableHead className="w-[50px]"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  <TableRow>
-                    <TableCell className="font-medium">General</TableCell>
-                    <TableCell>3</TableCell>
-                    <TableCell className="text-muted-foreground">System default</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell className="font-medium">VIP</TableCell>
-                    <TableCell>1</TableCell>
-                    <TableCell className="text-muted-foreground">1 week ago</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell className="font-medium">Newsletter</TableCell>
-                    <TableCell>1</TableCell>
-                    <TableCell className="text-muted-foreground">1 month ago</TableCell>
-                  </TableRow>
+                  {segments.map((segment) => (
+                    <TableRow key={segment.id}>
+                      <TableCell className="font-medium">{segment.name}</TableCell>
+                      <TableCell>{segment.contacts}</TableCell>
+                      <TableCell className="text-muted-foreground">{segment.created}</TableCell>
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => openEditDialog(segment)}>
+                              <Pencil className="h-4 w-4 mr-2" />
+                              Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={() => openDeleteDialog(segment)}
+                              className="text-destructive focus:text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))}
                 </TableBody>
               </Table>
             </div>
@@ -316,6 +393,78 @@ export default function AudiencePage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Add Segment Dialog */}
+      <Dialog open={isAddSegmentOpen} onOpenChange={setIsAddSegmentOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add segment</DialogTitle>
+            <DialogDescription>
+              Create a new segment to organize your contacts.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="segment-name">Name <span className="text-destructive">*</span></Label>
+              <Input
+                id="segment-name"
+                placeholder="e.g. VIP Customers"
+                value={segmentName}
+                onChange={(e) => setSegmentName(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setIsAddSegmentOpen(false); setSegmentName(""); }}>
+              Cancel
+            </Button>
+            <Button onClick={handleAddSegment} disabled={!segmentName.trim()}>
+              Add segment
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Segment Dialog */}
+      <Dialog open={isEditSegmentOpen} onOpenChange={setIsEditSegmentOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit segment</DialogTitle>
+            <DialogDescription>
+              Update the segment name.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-segment-name">Name <span className="text-destructive">*</span></Label>
+              <Input
+                id="edit-segment-name"
+                placeholder="e.g. VIP Customers"
+                value={segmentName}
+                onChange={(e) => setSegmentName(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setIsEditSegmentOpen(false); setSegmentName(""); setSelectedSegment(null); }}>
+              Cancel
+            </Button>
+            <Button onClick={handleEditSegment} disabled={!segmentName.trim()}>
+              Save changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Segment Dialog */}
+      <ConfirmDeleteDialog
+        open={isDeleteSegmentOpen}
+        onOpenChange={setIsDeleteSegmentOpen}
+        title="Delete segment"
+        description={`Are you sure you want to delete "${selectedSegment?.name}"? This action cannot be undone.`}
+        confirmLabel="Delete"
+        onConfirm={handleDeleteSegment}
+      />
 
       <ContactsAPISection isOpen={isAPIOpen} onClose={() => setIsAPIOpen(false)} />
     </>
