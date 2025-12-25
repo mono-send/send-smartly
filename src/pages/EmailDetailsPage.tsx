@@ -10,6 +10,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { ConfirmActionDialog } from "@/components/dialogs/ConfirmActionDialog";
+import { ConfirmDeleteDialog } from "@/components/dialogs/ConfirmDeleteDialog";
+import { toast } from "sonner";
 
 // Mock email data - in production this would come from an API
 const mockEmailDetails = {
@@ -94,8 +97,21 @@ export default function EmailDetailsPage() {
   const navigate = useNavigate();
   const [copiedId, setCopiedId] = useState(false);
   const [copiedContent, setCopiedContent] = useState(false);
+  const [showResendDialog, setShowResendDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   const email = mockEmailDetails[id as keyof typeof mockEmailDetails] || mockEmailDetails["1"];
+
+  const handleResend = () => {
+    toast.success(`Email to "${email.to}" queued for resend`);
+    setShowResendDialog(false);
+  };
+
+  const handleDelete = () => {
+    toast.success("Email deleted");
+    setShowDeleteDialog(false);
+    navigate("/emails");
+  };
 
   const copyToClipboard = async (text: string, type: "id" | "content") => {
     await navigator.clipboard.writeText(text);
@@ -150,8 +166,15 @@ export default function EmailDetailsPage() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem>Resend</DropdownMenuItem>
-                <DropdownMenuItem className="text-destructive">Delete</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setShowResendDialog(true)}>
+                  Resend
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  className="text-destructive focus:text-destructive"
+                  onClick={() => setShowDeleteDialog(true)}
+                >
+                  Delete
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -318,6 +341,23 @@ export default function EmailDetailsPage() {
             </TabsContent>
           </Tabs>
         </div>
+
+      <ConfirmActionDialog
+        open={showResendDialog}
+        onOpenChange={setShowResendDialog}
+        onConfirm={handleResend}
+        title="Resend Email"
+        description={`Are you sure you want to resend this email to "${email.to}"? A new copy of this email will be sent.`}
+        confirmLabel="Resend"
+      />
+
+      <ConfirmDeleteDialog
+        open={showDeleteDialog}
+        onOpenChange={setShowDeleteDialog}
+        onConfirm={handleDelete}
+        title="Delete Email"
+        description={`Are you sure you want to delete the email to "${email.to}"? This action cannot be undone.`}
+      />
     </div>
   );
 }
