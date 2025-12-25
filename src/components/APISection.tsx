@@ -218,6 +218,14 @@ export function APISection({ isOpen, onClose }: APISectionProps) {
             </Button>
           </div>
 
+          {/* Send Email Section */}
+          <div className="flex items-center gap-2 mb-3">
+            <h3 className="text-base font-medium">Send Email</h3>
+            <a href="#" className="text-muted-foreground hover:text-foreground">
+              <ExternalLink className="h-4 w-4" />
+            </a>
+          </div>
+
           {/* Language Tabs */}
           <div className="bg-[#1a1a2e] dark:bg-[#0d0d1a] rounded-lg overflow-hidden">
             <div className="flex items-center border-b border-white/10 overflow-x-auto">
@@ -271,20 +279,6 @@ export function APISection({ isOpen, onClose }: APISectionProps) {
             <pre className="p-4 text-sm overflow-x-auto max-h-[400px]">
               <code className="text-white/90 font-mono whitespace-pre">{codeExamples[activeLanguage]}</code>
             </pre>
-          </div>
-
-          {/* Send Email Section */}
-          <div className="mt-6">
-            <div className="flex items-center gap-2 mb-3">
-              <h3 className="text-base font-medium">Send Email</h3>
-              <a href="#" className="text-muted-foreground hover:text-foreground">
-                <ExternalLink className="h-4 w-4" />
-              </a>
-            </div>
-            <CodeBlock 
-              code={codeExamples[activeLanguage]}
-              onAskAI={handleOpenAssistant}
-            />
           </div>
 
           {/* Response */}
