@@ -19,8 +19,14 @@ import {
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
-import { Search, Plus, Users, UserCheck, UserMinus, Download } from "lucide-react";
-import { useState } from "react";
+import { Search, Plus, Users, UserCheck, UserMinus, Download, Upload, UserPlus, ChevronDown } from "lucide-react";
+import { useState, useRef } from "react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Dialog,
   DialogContent,
@@ -42,18 +48,37 @@ const mockContacts = [
 export default function AudiencePage() {
   const [search, setSearch] = useState("");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
   const [newEmails, setNewEmails] = useState("");
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   return (
     <>
       <TopBar 
         title="Audience" 
         subtitle="Manage contacts, segments, and subscriptions"
-        action={{
-          label: "Add contacts",
-          onClick: () => setIsAddDialogOpen(true),
-        }}
-      />
+      >
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button size="sm" className="gap-2">
+              <Plus className="h-4 w-4" />
+              Add contacts
+              <ChevronDown className="h-3 w-3" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => setIsAddDialogOpen(true)}>
+              <UserPlus className="h-4 w-4 mr-2" />
+              Add manually
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setIsImportDialogOpen(true)}>
+              <Upload className="h-4 w-4 mr-2" />
+              Import
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </TopBar>
       
       <div className="p-6">
         <Tabs defaultValue="contacts" className="space-y-6">
@@ -276,6 +301,81 @@ export default function AudiencePage() {
             </Button>
             <Button onClick={() => setIsAddDialogOpen(false)}>
               Add contacts
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Import Contacts Dialog */}
+      <Dialog open={isImportDialogOpen} onOpenChange={setIsImportDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Import contacts</DialogTitle>
+            <DialogDescription>
+              Upload a CSV file with email addresses to import contacts in bulk.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>CSV file</Label>
+              <input
+                type="file"
+                accept=".csv"
+                ref={fileInputRef}
+                onChange={(e) => setImportFile(e.target.files?.[0] || null)}
+                className="hidden"
+              />
+              <div 
+                className="border-2 border-dashed border-border rounded-lg p-8 text-center cursor-pointer hover:border-primary/50 transition-colors"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <Upload className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+                {importFile ? (
+                  <p className="text-sm font-medium">{importFile.name}</p>
+                ) : (
+                  <>
+                    <p className="text-sm text-muted-foreground">
+                      Click to upload or drag and drop
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      CSV files only
+                    </p>
+                  </>
+                )}
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <Label>Segment (optional)</Label>
+              <Select>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select segment" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="general">General</SelectItem>
+                  <SelectItem value="vip">VIP</SelectItem>
+                  <SelectItem value="newsletter">Newsletter</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setIsImportDialogOpen(false);
+              setImportFile(null);
+            }}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={() => {
+                setIsImportDialogOpen(false);
+                setImportFile(null);
+              }}
+              disabled={!importFile}
+            >
+              Import contacts
             </Button>
           </DialogFooter>
         </DialogContent>
