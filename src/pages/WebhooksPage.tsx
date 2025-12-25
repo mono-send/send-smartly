@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { TopBar } from "@/components/layout/TopBar";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Webhook, Check, Info, MoreHorizontal, Trash2, ExternalLink, Pencil, Play, Loader2, Clock, CheckCircle2, XCircle, History, RefreshCw, Key, Copy, Eye, EyeOff, RotateCcw } from "lucide-react";
+import { Webhook, Check, Info, MoreHorizontal, Trash2, ExternalLink, Pencil, Play, Loader2, Clock, CheckCircle2, XCircle, History, RefreshCw, Key, Copy, Eye, EyeOff, RotateCcw, Shield, Plus, X } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -55,6 +55,7 @@ interface SavedWebhook {
   maxRetries: number;
   retryIntervalSeconds: number;
   secret: string;
+  allowedIps: string[];
 }
 
 interface DeliveryLogEntry {
@@ -141,11 +142,43 @@ export default function WebhooksPage() {
   const [webhookSecret, setWebhookSecret] = useState("");
   const [showSecret, setShowSecret] = useState(false);
   const [generatedSignature, setGeneratedSignature] = useState("");
+  const [allowedIps, setAllowedIps] = useState<string[]>([]);
+  const [newIpInput, setNewIpInput] = useState("");
 
   const generateSecret = () => {
     const array = new Uint8Array(32);
     crypto.getRandomValues(array);
     return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
+  };
+
+  const isValidIp = (ip: string): boolean => {
+    // IPv4 validation
+    const ipv4Regex = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+    // IPv4 CIDR validation
+    const ipv4CidrRegex = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\/(?:[0-9]|[1-2][0-9]|3[0-2])$/;
+    return ipv4Regex.test(ip) || ipv4CidrRegex.test(ip);
+  };
+
+  const addIpAddress = () => {
+    const trimmedIp = newIpInput.trim();
+    if (!trimmedIp) return;
+    
+    if (!isValidIp(trimmedIp)) {
+      toast.error("Please enter a valid IP address or CIDR range");
+      return;
+    }
+    
+    if (allowedIps.includes(trimmedIp)) {
+      toast.error("This IP address is already in the list");
+      return;
+    }
+    
+    setAllowedIps(prev => [...prev, trimmedIp]);
+    setNewIpInput("");
+  };
+
+  const removeIpAddress = (ip: string) => {
+    setAllowedIps(prev => prev.filter(i => i !== ip));
   };
 
   const openAddDialog = () => {
@@ -156,6 +189,8 @@ export default function WebhooksPage() {
     setRetryInterval(5);
     setWebhookSecret(generateSecret());
     setShowSecret(false);
+    setAllowedIps([]);
+    setNewIpInput("");
     setIsDialogOpen(true);
   };
 
@@ -167,6 +202,8 @@ export default function WebhooksPage() {
     setRetryInterval(webhook.retryIntervalSeconds);
     setWebhookSecret(webhook.secret);
     setShowSecret(false);
+    setAllowedIps([...webhook.allowedIps]);
+    setNewIpInput("");
     setIsDialogOpen(true);
   };
 
@@ -184,7 +221,7 @@ export default function WebhooksPage() {
       // Update existing webhook
       setWebhooks(prev => prev.map(w => 
         w.id === webhookToEdit.id 
-          ? { ...w, endpointUrl, events: selectedEvents, maxRetries, retryIntervalSeconds: retryInterval, secret: webhookSecret }
+          ? { ...w, endpointUrl, events: selectedEvents, maxRetries, retryIntervalSeconds: retryInterval, secret: webhookSecret, allowedIps }
           : w
       ));
       toast.success("Webhook updated successfully");
@@ -198,6 +235,7 @@ export default function WebhooksPage() {
         maxRetries,
         retryIntervalSeconds: retryInterval,
         secret: webhookSecret,
+        allowedIps,
       };
       setWebhooks(prev => [...prev, newWebhook]);
       toast.success("Webhook added successfully");
@@ -890,6 +928,59 @@ export default function WebhooksPage() {
                   />
                 </div>
               </div>
+            </div>
+
+            {/* IP Allowlist */}
+            <div className="space-y-3 pt-2 border-t border-border">
+              <Label className="text-sm text-muted-foreground flex items-center gap-2">
+                <Shield className="h-3.5 w-3.5" />
+                IP Allowlist
+              </Label>
+              <div className="flex gap-2">
+                <Input
+                  value={newIpInput}
+                  onChange={(e) => setNewIpInput(e.target.value)}
+                  placeholder="192.168.1.1 or 10.0.0.0/24"
+                  className="flex-1"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      addIpAddress();
+                    }
+                  }}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={addIpAddress}
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+              {allowedIps.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {allowedIps.map((ip) => (
+                    <Badge key={ip} variant="secondary" className="gap-1 pr-1">
+                      {ip}
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-4 w-4 hover:bg-destructive/20"
+                        onClick={() => removeIpAddress(ip)}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </Badge>
+                  ))}
+                </div>
+              )}
+              <p className="text-xs text-muted-foreground">
+                {allowedIps.length === 0 
+                  ? "No restrictions. Add IPs to restrict webhook delivery to specific addresses."
+                  : "Webhooks will only be delivered to these IP addresses."}
+              </p>
             </div>
 
             <div className="flex gap-2 pt-2">
