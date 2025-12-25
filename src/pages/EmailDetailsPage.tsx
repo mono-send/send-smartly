@@ -20,7 +20,7 @@ const mockEmailDetails = {
   "1": {
     id: "3fcd4164-be76-4555-9bb4-8a2f1c3d5e6a",
     to: "john@example.com",
-    from: "welcome@monosend.co",
+    from: "welcome@monosend.io",
     subject: "Welcome to MonoSend",
     status: "delivered" as const,
     events: [
@@ -59,7 +59,7 @@ The MonoSend Team`,
   "2": {
     id: "4eab5275-cf87-5666-0cc5-9b3g2d4e6f7b",
     to: "sarah@startup.io",
-    from: "billing@monosend.co",
+    from: "billing@monosend.io",
     subject: "Your invoice is ready",
     status: "opened" as const,
     events: [
@@ -71,14 +71,14 @@ The MonoSend Team`,
 
 Your invoice #INV-2024-001 for $99.00 is ready.
 
-View your invoice: https://billing.monosend.co/invoices/INV-2024-001
+View your invoice: https://billing.monosend.io/invoices/INV-2024-001
 
 Thanks for your business!`,
     plainText: `Hi Sarah,
 
 Your invoice #INV-2024-001 for $99.00 is ready.
 
-View your invoice: https://billing.monosend.co/invoices/INV-2024-001
+View your invoice: https://billing.monosend.io/invoices/INV-2024-001
 
 Thanks for your business!`,
     html: `<!DOCTYPE html>
@@ -86,7 +86,7 @@ Thanks for your business!`,
 <body>
   <h1>Hi Sarah,</h1>
   <p>Your invoice #INV-2024-001 for $99.00 is ready.</p>
-  <a href="https://billing.monosend.co/invoices/INV-2024-001">View your invoice</a>
+  <a href="https://billing.monosend.io/invoices/INV-2024-001">View your invoice</a>
   <p>Thanks for your business!</p>
 </body>
 </html>`,
