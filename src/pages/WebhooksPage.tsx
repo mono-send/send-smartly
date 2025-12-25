@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { TopBar } from "@/components/layout/TopBar";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Webhook, Check, Info, MoreHorizontal, Trash2, ExternalLink } from "lucide-react";
+import { Webhook, Check, Info, MoreHorizontal, Trash2, ExternalLink, Pencil } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -113,8 +113,23 @@ export default function WebhooksPage() {
   const [isEventsOpen, setIsEventsOpen] = useState(false);
   const [webhooks, setWebhooks] = useState<SavedWebhook[]>([]);
   const [webhookToDelete, setWebhookToDelete] = useState<SavedWebhook | null>(null);
+  const [webhookToEdit, setWebhookToEdit] = useState<SavedWebhook | null>(null);
 
-  const handleAddWebhook = () => {
+  const openAddDialog = () => {
+    setWebhookToEdit(null);
+    setEndpointUrl("https://");
+    setSelectedEvents([]);
+    setIsDialogOpen(true);
+  };
+
+  const openEditDialog = (webhook: SavedWebhook) => {
+    setWebhookToEdit(webhook);
+    setEndpointUrl(webhook.endpointUrl);
+    setSelectedEvents([...webhook.events]);
+    setIsDialogOpen(true);
+  };
+
+  const handleSaveWebhook = () => {
     if (!endpointUrl || endpointUrl === "https://") {
       toast.error("Please enter a valid endpoint URL");
       return;
@@ -124,16 +139,28 @@ export default function WebhooksPage() {
       return;
     }
 
-    const newWebhook: SavedWebhook = {
-      id: crypto.randomUUID(),
-      endpointUrl,
-      events: selectedEvents,
-      createdAt: new Date(),
-    };
+    if (webhookToEdit) {
+      // Update existing webhook
+      setWebhooks(prev => prev.map(w => 
+        w.id === webhookToEdit.id 
+          ? { ...w, endpointUrl, events: selectedEvents }
+          : w
+      ));
+      toast.success("Webhook updated successfully");
+    } else {
+      // Add new webhook
+      const newWebhook: SavedWebhook = {
+        id: crypto.randomUUID(),
+        endpointUrl,
+        events: selectedEvents,
+        createdAt: new Date(),
+      };
+      setWebhooks(prev => [...prev, newWebhook]);
+      toast.success("Webhook added successfully");
+    }
 
-    setWebhooks(prev => [...prev, newWebhook]);
-    toast.success("Webhook added successfully");
     setIsDialogOpen(false);
+    setWebhookToEdit(null);
     setEndpointUrl("https://");
     setSelectedEvents([]);
   };
@@ -188,12 +215,12 @@ export default function WebhooksPage() {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (isDialogOpen && e.metaKey && e.key === "Enter") {
         e.preventDefault();
-        handleAddWebhook();
+        handleSaveWebhook();
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isDialogOpen, endpointUrl, selectedEvents]);
+  }, [isDialogOpen, endpointUrl, selectedEvents, webhookToEdit]);
 
   return (
     <>
@@ -202,7 +229,7 @@ export default function WebhooksPage() {
         subtitle="Receive real-time updates about email events"
         action={{
           label: "Add webhook",
-          onClick: () => setIsDialogOpen(true),
+          onClick: openAddDialog,
         }}
       />
       
@@ -214,7 +241,7 @@ export default function WebhooksPage() {
             description="Configure webhooks to receive real-time updates when emails are delivered, opened, clicked, or bounced."
             action={{
               label: "Add webhook",
-              onClick: () => setIsDialogOpen(true),
+              onClick: openAddDialog,
             }}
           />
         ) : (
@@ -261,6 +288,10 @@ export default function WebhooksPage() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => openEditDialog(webhook)}>
+                          <Pencil className="h-4 w-4 mr-2" />
+                          Edit
+                        </DropdownMenuItem>
                         <DropdownMenuItem
                           className="text-destructive focus:text-destructive"
                           onClick={() => setWebhookToDelete(webhook)}
@@ -281,7 +312,7 @@ export default function WebhooksPage() {
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Add Webhook</DialogTitle>
+            <DialogTitle>{webhookToEdit ? "Edit Webhook" : "Add Webhook"}</DialogTitle>
           </DialogHeader>
           
           <div className="space-y-4 pt-4">
@@ -402,8 +433,8 @@ export default function WebhooksPage() {
             </div>
 
             <div className="flex gap-2 pt-2">
-              <Button onClick={handleAddWebhook} className="gap-2">
-                Add
+              <Button onClick={handleSaveWebhook} className="gap-2">
+                {webhookToEdit ? "Save" : "Add"}
               </Button>
               <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="gap-2">
                 Cancel
