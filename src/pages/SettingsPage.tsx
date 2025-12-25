@@ -115,7 +115,18 @@ const mockActivityLog: ActivityLogEntry[] = [
   { id: "act6", type: "member_removed", actor: "You", target: "Alex Brown", timestamp: hoursAgo(72) },
   { id: "act7", type: "invitation_sent", actor: "Jane Smith", target: "tom@example.com", details: "Viewer", timestamp: hoursAgo(96) },
   { id: "act8", type: "login", actor: "Mike Johnson", timestamp: hoursAgo(120) },
+  // Additional older entries for pagination demo
+  { id: "act9", type: "login", actor: "You", timestamp: hoursAgo(144) },
+  { id: "act10", type: "role_change", actor: "Jane Smith", target: "David Lee", details: "Viewer → Editor", timestamp: hoursAgo(168) },
+  { id: "act11", type: "invitation_sent", actor: "You", target: "chris@example.com", details: "Admin", timestamp: hoursAgo(192) },
+  { id: "act12", type: "login", actor: "Jane Smith", timestamp: hoursAgo(216) },
+  { id: "act13", type: "member_removed", actor: "Jane Smith", target: "David Lee", timestamp: hoursAgo(240) },
+  { id: "act14", type: "invitation_accepted", actor: "Emma Wilson", timestamp: hoursAgo(264) },
+  { id: "act15", type: "login", actor: "You", timestamp: hoursAgo(288) },
+  { id: "act16", type: "invitation_sent", actor: "You", target: "frank@example.com", details: "Viewer", timestamp: hoursAgo(312) },
 ];
+
+const ACTIVITY_PAGE_SIZE = 5;
 
 const getActivityIcon = (type: ActivityLogEntry["type"]) => {
   switch (type) {
@@ -168,6 +179,14 @@ export default function SettingsPage() {
   const [memberToEdit, setMemberToEdit] = useState<TeamMember | null>(null);
   const [invitationToCancel, setInvitationToCancel] = useState<PendingInvitation | null>(null);
   const [editRole, setEditRole] = useState("");
+  const [activityVisibleCount, setActivityVisibleCount] = useState(ACTIVITY_PAGE_SIZE);
+
+  const visibleActivityLog = mockActivityLog.slice(0, activityVisibleCount);
+  const hasMoreActivity = activityVisibleCount < mockActivityLog.length;
+
+  const loadMoreActivity = () => {
+    setActivityVisibleCount(prev => Math.min(prev + ACTIVITY_PAGE_SIZE, mockActivityLog.length));
+  };
 
   // Auto-remove expired invitations on mount and periodically
   useEffect(() => {
@@ -522,7 +541,7 @@ export default function SettingsPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {mockActivityLog.map((entry) => (
+                  {visibleActivityLog.map((entry) => (
                     <div key={entry.id} className="flex items-start gap-3">
                       <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
                         {getActivityIcon(entry.type)}
@@ -538,6 +557,23 @@ export default function SettingsPage() {
                     </div>
                   ))}
                 </div>
+                {hasMoreActivity && (
+                  <div className="mt-4 pt-4 border-t border-border">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="w-full"
+                      onClick={loadMoreActivity}
+                    >
+                      Load more ({mockActivityLog.length - activityVisibleCount} remaining)
+                    </Button>
+                  </div>
+                )}
+                {!hasMoreActivity && mockActivityLog.length > ACTIVITY_PAGE_SIZE && (
+                  <p className="text-xs text-muted-foreground text-center mt-4 pt-4 border-t border-border">
+                    Showing all {mockActivityLog.length} activities
+                  </p>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
