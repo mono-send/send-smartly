@@ -21,14 +21,46 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Mail, Megaphone, CreditCard, Users2, Server, Link2, ArrowUpRight } from "lucide-react";
+import { Mail, Megaphone, CreditCard, Users2, Server, Link2, ArrowUpRight, MoreHorizontal } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { ConfirmDeleteDialog } from "@/components/dialogs/ConfirmDeleteDialog";
+
+interface TeamMember {
+  id: string;
+  name: string;
+  email: string;
+  role: "owner" | "admin" | "editor" | "viewer";
+  avatar: string;
+}
+
+const initialTeamMembers: TeamMember[] = [
+  { id: "1", name: "You", email: "user@example.com", role: "owner", avatar: "U" },
+  { id: "2", name: "Jane Smith", email: "jane@example.com", role: "admin", avatar: "J" },
+  { id: "3", name: "Mike Johnson", email: "mike@example.com", role: "editor", avatar: "M" },
+];
+
+const roleLabels: Record<string, string> = {
+  owner: "Owner",
+  admin: "Admin",
+  editor: "Editor",
+  viewer: "Viewer",
+};
 
 export default function SettingsPage() {
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState("editor");
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>(initialTeamMembers);
+  const [memberToRemove, setMemberToRemove] = useState<TeamMember | null>(null);
+  const [memberToEdit, setMemberToEdit] = useState<TeamMember | null>(null);
+  const [editRole, setEditRole] = useState("");
 
   const handleInvite = () => {
     if (!inviteEmail.trim()) {
@@ -39,6 +71,32 @@ export default function SettingsPage() {
     setInviteEmail("");
     setInviteRole("editor");
     setIsInviteDialogOpen(false);
+  };
+
+  const handleRemoveMember = () => {
+    if (memberToRemove) {
+      setTeamMembers(members => members.filter(m => m.id !== memberToRemove.id));
+      toast.success(`${memberToRemove.name} has been removed from the team`);
+      setMemberToRemove(null);
+    }
+  };
+
+  const handleUpdateRole = () => {
+    if (memberToEdit && editRole) {
+      setTeamMembers(members => 
+        members.map(m => 
+          m.id === memberToEdit.id ? { ...m, role: editRole as TeamMember["role"] } : m
+        )
+      );
+      toast.success(`${memberToEdit.name}'s role updated to ${roleLabels[editRole]}`);
+      setMemberToEdit(null);
+      setEditRole("");
+    }
+  };
+
+  const openEditDialog = (member: TeamMember) => {
+    setMemberToEdit(member);
+    setEditRole(member.role);
   };
 
   return (
@@ -174,17 +232,45 @@ export default function SettingsPage() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="flex items-center justify-between py-3 border-b border-border">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-xs font-medium text-primary-foreground">
-                      U
+                <div className="divide-y divide-border">
+                  {teamMembers.map((member) => (
+                    <div key={member.id} className="flex items-center justify-between py-3">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-xs font-medium text-primary-foreground">
+                          {member.avatar}
+                        </div>
+                        <div>
+                          <p className="font-medium">{member.name}</p>
+                          <p className="text-sm text-muted-foreground">{member.email}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge variant={member.role === "owner" ? "default" : "secondary"}>
+                          {roleLabels[member.role]}
+                        </Badge>
+                        {member.role !== "owner" && (
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => openEditDialog(member)}>
+                                Change role
+                              </DropdownMenuItem>
+                              <DropdownMenuItem 
+                                className="text-destructive"
+                                onClick={() => setMemberToRemove(member)}
+                              >
+                                Remove
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        )}
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-medium">You</p>
-                      <p className="text-sm text-muted-foreground">user@example.com</p>
-                    </div>
-                  </div>
-                  <Badge>Owner</Badge>
+                  ))}
                 </div>
                 <Button variant="outline" className="mt-4" onClick={() => setIsInviteDialogOpen(true)}>
                   Invite team member
@@ -305,6 +391,71 @@ export default function SettingsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Edit Role Dialog */}
+      <Dialog open={!!memberToEdit} onOpenChange={(open) => !open && setMemberToEdit(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Change role</DialogTitle>
+            <DialogDescription>
+              Update the role for {memberToEdit?.name}. This will change their permissions immediately.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Current member</Label>
+              <div className="flex items-center gap-3 p-3 rounded-lg bg-muted">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-xs font-medium text-primary-foreground">
+                  {memberToEdit?.avatar}
+                </div>
+                <div>
+                  <p className="font-medium">{memberToEdit?.name}</p>
+                  <p className="text-sm text-muted-foreground">{memberToEdit?.email}</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="editRole">New role</Label>
+              <Select value={editRole} onValueChange={setEditRole}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="viewer">Viewer - Can view only</SelectItem>
+                  <SelectItem value="editor">Editor - Can edit projects</SelectItem>
+                  <SelectItem value="admin">Admin - Can manage settings</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                {editRole === "viewer" && "Viewers can see all data but cannot make changes."}
+                {editRole === "editor" && "Editors can create and edit emails, domains, and campaigns."}
+                {editRole === "admin" && "Admins have full access including billing and team management."}
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setMemberToEdit(null)}>
+              Cancel
+            </Button>
+            <Button onClick={handleUpdateRole}>
+              Update role
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Remove Member Confirmation Dialog */}
+      <ConfirmDeleteDialog
+        open={!!memberToRemove}
+        onOpenChange={(open) => !open && setMemberToRemove(null)}
+        title="Remove team member"
+        description={`Are you sure you want to remove ${memberToRemove?.name} (${memberToRemove?.email}) from your team? They will immediately lose access to your account.`}
+        confirmLabel="Remove member"
+        onConfirm={handleRemoveMember}
+      />
     </>
   );
 }
