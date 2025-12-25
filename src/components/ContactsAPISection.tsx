@@ -64,7 +64,7 @@ const updateContactExamples: Record<Language, string> = {
 monosend.api_key = "mono_xxxxxxxxx"
 
 # Update by contact id
-monosend: resend.Contacts.UpdateParams = {
+monosend: monosend.Contacts.UpdateParams = {
   "id": "38a1a5f2-1820-4fcb-9bb4-383b79ef60b4",
   "unsubscribed": True
 }
@@ -72,7 +72,7 @@ monosend: resend.Contacts.UpdateParams = {
 monosend.Contacts.update(params)
 
 # Update by contact email
-monosend: resend.Contacts.UpdateParams = {
+monosend: monosend.Contacts.UpdateParams = {
   "email": "customer1@gmail.com",
   "unsubscribed": True
 }
