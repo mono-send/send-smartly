@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { TopBar } from "@/components/layout/TopBar";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Webhook, Check, Info, MoreHorizontal, Trash2, ExternalLink, Pencil, Play, Loader2, Clock, CheckCircle2, XCircle, History, RefreshCw } from "lucide-react";
+import { Webhook, Check, Info, MoreHorizontal, Trash2, ExternalLink, Pencil, Play, Loader2, Clock, CheckCircle2, XCircle, History, RefreshCw, Key, Copy, Eye, EyeOff } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -54,6 +54,7 @@ interface SavedWebhook {
   createdAt: Date;
   maxRetries: number;
   retryIntervalSeconds: number;
+  secret: string;
 }
 
 interface DeliveryLogEntry {
@@ -137,6 +138,15 @@ export default function WebhooksPage() {
   const [showDeliveryLog, setShowDeliveryLog] = useState(false);
   const [maxRetries, setMaxRetries] = useState(3);
   const [retryInterval, setRetryInterval] = useState(5);
+  const [webhookSecret, setWebhookSecret] = useState("");
+  const [showSecret, setShowSecret] = useState(false);
+  const [generatedSignature, setGeneratedSignature] = useState("");
+
+  const generateSecret = () => {
+    const array = new Uint8Array(32);
+    crypto.getRandomValues(array);
+    return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
+  };
 
   const openAddDialog = () => {
     setWebhookToEdit(null);
@@ -144,6 +154,8 @@ export default function WebhooksPage() {
     setSelectedEvents([]);
     setMaxRetries(3);
     setRetryInterval(5);
+    setWebhookSecret(generateSecret());
+    setShowSecret(false);
     setIsDialogOpen(true);
   };
 
@@ -153,6 +165,8 @@ export default function WebhooksPage() {
     setSelectedEvents([...webhook.events]);
     setMaxRetries(webhook.maxRetries);
     setRetryInterval(webhook.retryIntervalSeconds);
+    setWebhookSecret(webhook.secret);
+    setShowSecret(false);
     setIsDialogOpen(true);
   };
 
@@ -170,7 +184,7 @@ export default function WebhooksPage() {
       // Update existing webhook
       setWebhooks(prev => prev.map(w => 
         w.id === webhookToEdit.id 
-          ? { ...w, endpointUrl, events: selectedEvents, maxRetries, retryIntervalSeconds: retryInterval }
+          ? { ...w, endpointUrl, events: selectedEvents, maxRetries, retryIntervalSeconds: retryInterval, secret: webhookSecret }
           : w
       ));
       toast.success("Webhook updated successfully");
@@ -183,6 +197,7 @@ export default function WebhooksPage() {
         createdAt: new Date(),
         maxRetries,
         retryIntervalSeconds: retryInterval,
+        secret: webhookSecret,
       };
       setWebhooks(prev => [...prev, newWebhook]);
       toast.success("Webhook added successfully");
@@ -213,6 +228,30 @@ export default function WebhooksPage() {
         test: true,
       },
     };
+  };
+
+  // Generate HMAC-SHA256 signature
+  const generateHmacSignature = async (payload: string, secret: string): Promise<string> => {
+    const encoder = new TextEncoder();
+    const keyData = encoder.encode(secret);
+    const messageData = encoder.encode(payload);
+    
+    const cryptoKey = await crypto.subtle.importKey(
+      'raw',
+      keyData,
+      { name: 'HMAC', hash: 'SHA-256' },
+      false,
+      ['sign']
+    );
+    
+    const signature = await crypto.subtle.sign('HMAC', cryptoKey, messageData);
+    const hashArray = Array.from(new Uint8Array(signature));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  };
+
+  const copyToClipboard = (text: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    toast.success(`${label} copied to clipboard`);
   };
 
   const sendWebhookRequest = async (
@@ -323,9 +362,14 @@ export default function WebhooksPage() {
     setIsTestingWebhook(false);
   };
 
-  const openTestDialog = (webhook: SavedWebhook) => {
+  const openTestDialog = async (webhook: SavedWebhook) => {
     setWebhookToTest(webhook);
     setTestResult(null);
+    
+    // Pre-generate signature for display
+    const payload = getTestPayload(webhook);
+    const signature = await generateHmacSignature(JSON.stringify(payload), webhook.secret);
+    setGeneratedSignature(signature);
   };
 
   const formatLogTime = (date: Date) => {
@@ -678,6 +722,56 @@ export default function WebhooksPage() {
               </Popover>
             </div>
 
+            {/* Signing Secret */}
+            <div className="space-y-3 pt-2 border-t border-border">
+              <Label className="text-sm text-muted-foreground flex items-center gap-2">
+                <Key className="h-3.5 w-3.5" />
+                Signing Secret
+              </Label>
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Input
+                    type={showSecret ? "text" : "password"}
+                    value={webhookSecret}
+                    onChange={(e) => setWebhookSecret(e.target.value)}
+                    className="pr-20 font-mono text-xs"
+                    placeholder="whsec_..."
+                  />
+                  <div className="absolute right-1 top-1/2 -translate-y-1/2 flex gap-1">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7"
+                      onClick={() => setShowSecret(!showSecret)}
+                    >
+                      {showSecret ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7"
+                      onClick={() => copyToClipboard(webhookSecret, "Secret")}
+                    >
+                      <Copy className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setWebhookSecret(generateSecret())}
+                >
+                  Generate
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Use this secret to verify webhook signatures with HMAC-SHA256.
+              </p>
+            </div>
+
             {/* Retry Configuration */}
             <div className="space-y-3 pt-2 border-t border-border">
               <Label className="text-sm text-muted-foreground flex items-center gap-2">
@@ -751,6 +845,32 @@ export default function WebhooksPage() {
                 language="json"
               />
             </div>
+
+            {webhookToTest?.secret && (
+              <div className="space-y-2">
+                <Label className="text-muted-foreground text-sm flex items-center gap-2">
+                  <Key className="h-3.5 w-3.5" />
+                  Signature Header
+                </Label>
+                <div className="bg-muted rounded-md p-3 font-mono text-xs break-all">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-muted-foreground">X-Webhook-Signature:</span>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6 shrink-0"
+                      onClick={() => copyToClipboard(`sha256=${generatedSignature}`, "Signature")}
+                    >
+                      <Copy className="h-3 w-3" />
+                    </Button>
+                  </div>
+                  <span className="text-foreground">sha256={generatedSignature}</span>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Verify this signature on your server using HMAC-SHA256 with your secret key.
+                </p>
+              </div>
+            )}
 
             {testResult && (
               <div className={cn(
