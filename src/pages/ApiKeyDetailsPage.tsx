@@ -15,58 +15,78 @@ import { ConfirmDeleteDialog } from "@/components/dialogs/ConfirmDeleteDialog";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer } from "recharts";
+import { AreaChart, Area, XAxis, YAxis } from "recharts";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
-// Mock usage data for charts
-const mockUsageData: Record<string, Array<{ date: string; requests: number }>> = {
-  "1": [
-    { date: "Dec 11", requests: 145 },
-    { date: "Dec 12", requests: 189 },
-    { date: "Dec 13", requests: 156 },
-    { date: "Dec 14", requests: 203 },
-    { date: "Dec 15", requests: 178 },
-    { date: "Dec 16", requests: 234 },
-    { date: "Dec 17", requests: 198 },
-    { date: "Dec 18", requests: 267 },
-    { date: "Dec 19", requests: 245 },
-    { date: "Dec 20", requests: 312 },
-    { date: "Dec 21", requests: 289 },
-    { date: "Dec 22", requests: 267 },
-    { date: "Dec 23", requests: 298 },
-    { date: "Dec 24", requests: 256 },
-  ],
-  "2": [
-    { date: "Dec 11", requests: 12 },
-    { date: "Dec 12", requests: 8 },
-    { date: "Dec 13", requests: 15 },
-    { date: "Dec 14", requests: 6 },
-    { date: "Dec 15", requests: 9 },
-    { date: "Dec 16", requests: 11 },
-    { date: "Dec 17", requests: 7 },
-    { date: "Dec 18", requests: 14 },
-    { date: "Dec 19", requests: 10 },
-    { date: "Dec 20", requests: 8 },
-    { date: "Dec 21", requests: 5 },
-    { date: "Dec 22", requests: 12 },
-    { date: "Dec 23", requests: 9 },
-    { date: "Dec 24", requests: 6 },
-  ],
-  "3": [
-    { date: "Dec 11", requests: 0 },
-    { date: "Dec 12", requests: 0 },
-    { date: "Dec 13", requests: 0 },
-    { date: "Dec 14", requests: 0 },
-    { date: "Dec 15", requests: 0 },
-    { date: "Dec 16", requests: 0 },
-    { date: "Dec 17", requests: 0 },
-    { date: "Dec 18", requests: 0 },
-    { date: "Dec 19", requests: 0 },
-    { date: "Dec 20", requests: 0 },
-    { date: "Dec 21", requests: 0 },
-    { date: "Dec 22", requests: 0 },
-    { date: "Dec 23", requests: 0 },
-    { date: "Dec 24", requests: 0 },
-  ],
+type TimeRange = "1d" | "7d" | "14d" | "30d";
+
+// Mock usage data for charts by time range
+const generateMockData = (keyId: string, range: TimeRange): Array<{ date: string; requests: number }> => {
+  const baseMultiplier = keyId === "1" ? 1 : keyId === "2" ? 0.1 : 0;
+  
+  const dataByRange: Record<TimeRange, Array<{ date: string; requests: number }>> = {
+    "1d": [
+      { date: "00:00", requests: Math.round(12 * baseMultiplier) },
+      { date: "04:00", requests: Math.round(8 * baseMultiplier) },
+      { date: "08:00", requests: Math.round(45 * baseMultiplier) },
+      { date: "12:00", requests: Math.round(67 * baseMultiplier) },
+      { date: "16:00", requests: Math.round(89 * baseMultiplier) },
+      { date: "20:00", requests: Math.round(34 * baseMultiplier) },
+      { date: "Now", requests: Math.round(23 * baseMultiplier) },
+    ],
+    "7d": [
+      { date: "Dec 18", requests: Math.round(267 * baseMultiplier) },
+      { date: "Dec 19", requests: Math.round(245 * baseMultiplier) },
+      { date: "Dec 20", requests: Math.round(312 * baseMultiplier) },
+      { date: "Dec 21", requests: Math.round(289 * baseMultiplier) },
+      { date: "Dec 22", requests: Math.round(267 * baseMultiplier) },
+      { date: "Dec 23", requests: Math.round(298 * baseMultiplier) },
+      { date: "Dec 24", requests: Math.round(256 * baseMultiplier) },
+    ],
+    "14d": [
+      { date: "Dec 11", requests: Math.round(145 * baseMultiplier) },
+      { date: "Dec 12", requests: Math.round(189 * baseMultiplier) },
+      { date: "Dec 13", requests: Math.round(156 * baseMultiplier) },
+      { date: "Dec 14", requests: Math.round(203 * baseMultiplier) },
+      { date: "Dec 15", requests: Math.round(178 * baseMultiplier) },
+      { date: "Dec 16", requests: Math.round(234 * baseMultiplier) },
+      { date: "Dec 17", requests: Math.round(198 * baseMultiplier) },
+      { date: "Dec 18", requests: Math.round(267 * baseMultiplier) },
+      { date: "Dec 19", requests: Math.round(245 * baseMultiplier) },
+      { date: "Dec 20", requests: Math.round(312 * baseMultiplier) },
+      { date: "Dec 21", requests: Math.round(289 * baseMultiplier) },
+      { date: "Dec 22", requests: Math.round(267 * baseMultiplier) },
+      { date: "Dec 23", requests: Math.round(298 * baseMultiplier) },
+      { date: "Dec 24", requests: Math.round(256 * baseMultiplier) },
+    ],
+    "30d": [
+      { date: "Nov 25", requests: Math.round(134 * baseMultiplier) },
+      { date: "Nov 27", requests: Math.round(156 * baseMultiplier) },
+      { date: "Nov 29", requests: Math.round(178 * baseMultiplier) },
+      { date: "Dec 1", requests: Math.round(167 * baseMultiplier) },
+      { date: "Dec 3", requests: Math.round(189 * baseMultiplier) },
+      { date: "Dec 5", requests: Math.round(201 * baseMultiplier) },
+      { date: "Dec 7", requests: Math.round(223 * baseMultiplier) },
+      { date: "Dec 9", requests: Math.round(198 * baseMultiplier) },
+      { date: "Dec 11", requests: Math.round(245 * baseMultiplier) },
+      { date: "Dec 13", requests: Math.round(267 * baseMultiplier) },
+      { date: "Dec 15", requests: Math.round(234 * baseMultiplier) },
+      { date: "Dec 17", requests: Math.round(289 * baseMultiplier) },
+      { date: "Dec 19", requests: Math.round(312 * baseMultiplier) },
+      { date: "Dec 21", requests: Math.round(278 * baseMultiplier) },
+      { date: "Dec 23", requests: Math.round(298 * baseMultiplier) },
+      { date: "Dec 24", requests: Math.round(256 * baseMultiplier) },
+    ],
+  };
+  
+  return dataByRange[range];
+};
+
+const timeRangeLabels: Record<TimeRange, string> = {
+  "1d": "Last 24 hours",
+  "7d": "Last 7 days",
+  "14d": "Last 14 days",
+  "30d": "Last 30 days",
 };
 
 const chartConfig = {
@@ -129,8 +149,10 @@ export default function ApiKeyDetailsPage() {
   const [copied, setCopied] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isRevokeDialogOpen, setIsRevokeDialogOpen] = useState(false);
+  const [timeRange, setTimeRange] = useState<TimeRange>("14d");
   
   const apiKey = id ? mockApiKeys[id] : null;
+  const chartData = id ? generateMockData(id, timeRange) : [];
 
   if (!apiKey) {
     return (
@@ -268,13 +290,34 @@ export default function ApiKeyDetailsPage() {
 
         {/* Usage Analytics Chart */}
         <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Usage Analytics</CardTitle>
-            <p className="text-sm text-muted-foreground">Requests over the last 14 days</p>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <div>
+              <CardTitle className="text-lg">Usage Analytics</CardTitle>
+              <p className="text-sm text-muted-foreground">{timeRangeLabels[timeRange]}</p>
+            </div>
+            <ToggleGroup 
+              type="single" 
+              value={timeRange} 
+              onValueChange={(value) => value && setTimeRange(value as TimeRange)}
+              className="bg-muted rounded-lg p-1"
+            >
+              <ToggleGroupItem value="1d" size="sm" className="text-xs px-3">
+                1D
+              </ToggleGroupItem>
+              <ToggleGroupItem value="7d" size="sm" className="text-xs px-3">
+                7D
+              </ToggleGroupItem>
+              <ToggleGroupItem value="14d" size="sm" className="text-xs px-3">
+                14D
+              </ToggleGroupItem>
+              <ToggleGroupItem value="30d" size="sm" className="text-xs px-3">
+                30D
+              </ToggleGroupItem>
+            </ToggleGroup>
           </CardHeader>
           <CardContent>
             <ChartContainer config={chartConfig} className="h-[250px] w-full">
-              <AreaChart data={mockUsageData[id || "1"]} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+              <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                 <defs>
                   <linearGradient id="fillRequests" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
