@@ -21,9 +21,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Mail, Megaphone, CreditCard, Users2, Server, Link2, ArrowUpRight, MoreHorizontal, Clock, Send, X } from "lucide-react";
-import { useState } from "react";
+import { Mail, Megaphone, CreditCard, Users2, Server, Link2, ArrowUpRight, MoreHorizontal, Clock, Send, X, AlertTriangle } from "lucide-react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -50,13 +51,51 @@ interface PendingInvitation {
   id: string;
   email: string;
   role: "admin" | "editor" | "viewer";
-  sentAt: string;
+  sentAt: Date;
+  expiresAt: Date;
 }
 
+// Helper to create dates relative to now
+const hoursAgo = (hours: number) => new Date(Date.now() - hours * 60 * 60 * 1000);
+const daysFromNow = (days: number) => new Date(Date.now() + days * 24 * 60 * 60 * 1000);
+const hoursFromNow = (hours: number) => new Date(Date.now() + hours * 60 * 60 * 1000);
+
 const initialPendingInvitations: PendingInvitation[] = [
-  { id: "inv1", email: "sarah@example.com", role: "editor", sentAt: "2 hours ago" },
-  { id: "inv2", email: "tom@example.com", role: "viewer", sentAt: "1 day ago" },
+  { id: "inv1", email: "sarah@example.com", role: "editor", sentAt: hoursAgo(2), expiresAt: daysFromNow(7) },
+  { id: "inv2", email: "tom@example.com", role: "viewer", sentAt: hoursAgo(24), expiresAt: daysFromNow(6) },
+  { id: "inv3", email: "expiring@example.com", role: "admin", sentAt: hoursAgo(168), expiresAt: hoursFromNow(12) },
 ];
+
+// Invitation expiry duration in days
+const INVITATION_EXPIRY_DAYS = 7;
+
+const formatTimeAgo = (date: Date): string => {
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / (1000 * 60));
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+  if (diffMins < 1) return "Just now";
+  if (diffMins < 60) return `${diffMins} minute${diffMins !== 1 ? 's' : ''} ago`;
+  if (diffHours < 24) return `${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`;
+  return `${diffDays} day${diffDays !== 1 ? 's' : ''} ago`;
+};
+
+const getExpiryStatus = (expiresAt: Date): { label: string; isExpired: boolean; isExpiringSoon: boolean } => {
+  const now = new Date();
+  const diffMs = expiresAt.getTime() - now.getTime();
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+  if (diffMs <= 0) {
+    return { label: "Expired", isExpired: true, isExpiringSoon: false };
+  }
+  if (diffHours < 24) {
+    return { label: `Expires in ${diffHours} hour${diffHours !== 1 ? 's' : ''}`, isExpired: false, isExpiringSoon: true };
+  }
+  return { label: `Expires in ${diffDays} day${diffDays !== 1 ? 's' : ''}`, isExpired: false, isExpiringSoon: false };
+};
 
 const roleLabels: Record<string, string> = {
   owner: "Owner",
@@ -76,17 +115,40 @@ export default function SettingsPage() {
   const [invitationToCancel, setInvitationToCancel] = useState<PendingInvitation | null>(null);
   const [editRole, setEditRole] = useState("");
 
+  // Auto-remove expired invitations on mount and periodically
+  useEffect(() => {
+    const removeExpired = () => {
+      setPendingInvitations(prev => {
+        const now = new Date();
+        const active = prev.filter(inv => inv.expiresAt.getTime() > now.getTime());
+        if (active.length < prev.length) {
+          const expiredCount = prev.length - active.length;
+          toast.info(`${expiredCount} expired invitation${expiredCount !== 1 ? 's' : ''} removed`);
+        }
+        return active;
+      });
+    };
+
+    removeExpired();
+    // Check every minute for expired invitations
+    const interval = setInterval(removeExpired, 60000);
+    return () => clearInterval(interval);
+  }, []);
+
   const handleInvite = () => {
     if (!inviteEmail.trim()) {
       toast.error("Please enter an email address");
       return;
     }
-    // Add to pending invitations
+    // Add to pending invitations with expiry date
+    const now = new Date();
+    const expiresAt = new Date(now.getTime() + INVITATION_EXPIRY_DAYS * 24 * 60 * 60 * 1000);
     const newInvitation: PendingInvitation = {
       id: `inv${Date.now()}`,
       email: inviteEmail,
       role: inviteRole as PendingInvitation["role"],
-      sentAt: "Just now",
+      sentAt: now,
+      expiresAt,
     };
     setPendingInvitations(prev => [newInvitation, ...prev]);
     toast.success(`Invitation sent to ${inviteEmail}`);
@@ -122,6 +184,16 @@ export default function SettingsPage() {
   };
 
   const handleResendInvitation = (invitation: PendingInvitation) => {
+    // Reset expiry when resending
+    const now = new Date();
+    const newExpiresAt = new Date(now.getTime() + INVITATION_EXPIRY_DAYS * 24 * 60 * 60 * 1000);
+    setPendingInvitations(prev => 
+      prev.map(inv => 
+        inv.id === invitation.id 
+          ? { ...inv, sentAt: now, expiresAt: newExpiresAt }
+          : inv
+      )
+    );
     toast.success(`Invitation resent to ${invitation.email}`);
   };
 
@@ -328,38 +400,54 @@ export default function SettingsPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="divide-y divide-border">
-                    {pendingInvitations.map((invitation) => (
-                      <div key={invitation.id} className="flex items-center justify-between py-3">
-                        <div className="flex items-center gap-3">
-                          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted text-xs font-medium text-muted-foreground">
-                            {invitation.email.charAt(0).toUpperCase()}
+                    {pendingInvitations.map((invitation) => {
+                      const expiryStatus = getExpiryStatus(invitation.expiresAt);
+                      return (
+                        <div key={invitation.id} className={cn(
+                          "flex items-center justify-between py-3",
+                          expiryStatus.isExpiringSoon && "bg-warning/5 -mx-4 px-4 rounded-lg"
+                        )}>
+                          <div className="flex items-center gap-3">
+                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted text-xs font-medium text-muted-foreground">
+                              {invitation.email.charAt(0).toUpperCase()}
+                            </div>
+                            <div>
+                              <p className="font-medium">{invitation.email}</p>
+                              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                <span>Sent {formatTimeAgo(invitation.sentAt)}</span>
+                                <span>•</span>
+                                <span className={cn(
+                                  expiryStatus.isExpiringSoon && "text-warning font-medium",
+                                  expiryStatus.isExpired && "text-destructive font-medium"
+                                )}>
+                                  {expiryStatus.isExpiringSoon && <AlertTriangle className="inline h-3 w-3 mr-1" />}
+                                  {expiryStatus.label}
+                                </span>
+                              </div>
+                            </div>
                           </div>
-                          <div>
-                            <p className="font-medium">{invitation.email}</p>
-                            <p className="text-sm text-muted-foreground">Sent {invitation.sentAt}</p>
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline">{roleLabels[invitation.role]}</Badge>
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={() => handleResendInvitation(invitation)}
+                            >
+                              <Send className="mr-1 h-3.5 w-3.5" />
+                              Resend
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-8 w-8 text-destructive hover:text-destructive"
+                              onClick={() => setInvitationToCancel(invitation)}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <Badge variant="outline">{roleLabels[invitation.role]}</Badge>
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            onClick={() => handleResendInvitation(invitation)}
-                          >
-                            <Send className="mr-1 h-3.5 w-3.5" />
-                            Resend
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="h-8 w-8 text-destructive hover:text-destructive"
-                            onClick={() => setInvitationToCancel(invitation)}
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </CardContent>
               </Card>
