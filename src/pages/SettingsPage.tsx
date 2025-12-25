@@ -21,7 +21,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Mail, Megaphone, CreditCard, Users2, Server, Link2, ArrowUpRight, MoreHorizontal, Clock, Send, X, AlertTriangle } from "lucide-react";
+import { Mail, Megaphone, CreditCard, Users2, Server, Link2, ArrowUpRight, MoreHorizontal, Clock, Send, X, AlertTriangle, LogIn, UserPlus, UserMinus, Shield, Activity } from "lucide-react";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -92,9 +92,63 @@ const getExpiryStatus = (expiresAt: Date): { label: string; isExpired: boolean; 
     return { label: "Expired", isExpired: true, isExpiringSoon: false };
   }
   if (diffHours < 24) {
-    return { label: `Expires in ${diffHours} hour${diffHours !== 1 ? 's' : ''}`, isExpired: false, isExpiringSoon: true };
+    return { label: `Expires in ${diffHours} hour${diffHours !== 1 ? "s" : ""}`, isExpired: false, isExpiringSoon: true };
   }
-  return { label: `Expires in ${diffDays} day${diffDays !== 1 ? 's' : ''}`, isExpired: false, isExpiringSoon: false };
+  return { label: `Expires in ${diffDays} day${diffDays !== 1 ? "s" : ""}`, isExpired: false, isExpiringSoon: false };
+};
+
+interface ActivityLogEntry {
+  id: string;
+  type: "login" | "role_change" | "invitation_sent" | "invitation_accepted" | "member_removed";
+  actor: string;
+  target?: string;
+  details?: string;
+  timestamp: Date;
+}
+
+const mockActivityLog: ActivityLogEntry[] = [
+  { id: "act1", type: "login", actor: "You", timestamp: hoursAgo(0.5) },
+  { id: "act2", type: "invitation_sent", actor: "You", target: "sarah@example.com", details: "Editor", timestamp: hoursAgo(2) },
+  { id: "act3", type: "role_change", actor: "You", target: "Jane Smith", details: "Editor → Admin", timestamp: hoursAgo(5) },
+  { id: "act4", type: "invitation_accepted", actor: "Mike Johnson", timestamp: hoursAgo(24) },
+  { id: "act5", type: "login", actor: "Jane Smith", timestamp: hoursAgo(26) },
+  { id: "act6", type: "member_removed", actor: "You", target: "Alex Brown", timestamp: hoursAgo(72) },
+  { id: "act7", type: "invitation_sent", actor: "Jane Smith", target: "tom@example.com", details: "Viewer", timestamp: hoursAgo(96) },
+  { id: "act8", type: "login", actor: "Mike Johnson", timestamp: hoursAgo(120) },
+];
+
+const getActivityIcon = (type: ActivityLogEntry["type"]) => {
+  switch (type) {
+    case "login":
+      return <LogIn className="h-4 w-4 text-info" />;
+    case "role_change":
+      return <Shield className="h-4 w-4 text-warning" />;
+    case "invitation_sent":
+      return <Send className="h-4 w-4 text-primary" />;
+    case "invitation_accepted":
+      return <UserPlus className="h-4 w-4 text-success" />;
+    case "member_removed":
+      return <UserMinus className="h-4 w-4 text-destructive" />;
+    default:
+      return <Activity className="h-4 w-4 text-muted-foreground" />;
+  }
+};
+
+const getActivityMessage = (entry: ActivityLogEntry): string => {
+  switch (entry.type) {
+    case "login":
+      return `${entry.actor} logged in`;
+    case "role_change":
+      return `${entry.actor} changed ${entry.target}'s role to ${entry.details?.split(" → ")[1]}`;
+    case "invitation_sent":
+      return `${entry.actor} invited ${entry.target} as ${entry.details}`;
+    case "invitation_accepted":
+      return `${entry.actor} accepted the invitation and joined the team`;
+    case "member_removed":
+      return `${entry.actor} removed ${entry.target} from the team`;
+    default:
+      return "Unknown activity";
+  }
 };
 
 const roleLabels: Record<string, string> = {
@@ -452,6 +506,40 @@ export default function SettingsPage() {
                 </CardContent>
               </Card>
             )}
+
+            {/* Activity Log */}
+            <Card>
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-info/10">
+                    <Activity className="h-5 w-5 text-info" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-lg">Activity Log</CardTitle>
+                    <CardDescription>Recent team activity and events</CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {mockActivityLog.map((entry) => (
+                    <div key={entry.id} className="flex items-start gap-3">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
+                        {getActivityIcon(entry.type)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-foreground">
+                          {getActivityMessage(entry)}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {formatTimeAgo(entry.timestamp)}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="smtp" className="space-y-6">
