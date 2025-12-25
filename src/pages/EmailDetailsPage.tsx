@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ConfirmActionDialog } from "@/components/dialogs/ConfirmActionDialog";
 import { ConfirmDeleteDialog } from "@/components/dialogs/ConfirmDeleteDialog";
+import { APISection } from "@/components/APISection";
 import { toast } from "sonner";
 
 // Mock email data - in production this would come from an API
@@ -99,6 +100,7 @@ export default function EmailDetailsPage() {
   const [copiedContent, setCopiedContent] = useState(false);
   const [showResendDialog, setShowResendDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showApiSection, setShowApiSection] = useState(false);
 
   const email = mockEmailDetails[id as keyof typeof mockEmailDetails] || mockEmailDetails["1"];
 
@@ -155,7 +157,7 @@ export default function EmailDetailsPage() {
           </div>
           
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" className="gap-2">
+            <Button variant="outline" size="sm" className="gap-2" onClick={() => setShowApiSection(true)}>
               <Code className="h-4 w-4" />
               API
             </Button>
@@ -362,6 +364,8 @@ export default function EmailDetailsPage() {
         title="Delete Email"
         description={`Are you sure you want to delete the email to "${email.to}"? This action cannot be undone.`}
       />
+
+      <APISection isOpen={showApiSection} onClose={() => setShowApiSection(false)} />
     </div>
   );
 }
