@@ -13,6 +13,68 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ApiKeyDialog, ApiKeyData } from "@/components/dialogs/ApiKeyDialog";
 import { ConfirmDeleteDialog } from "@/components/dialogs/ConfirmDeleteDialog";
 import { toast } from "sonner";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer } from "recharts";
+
+// Mock usage data for charts
+const mockUsageData: Record<string, Array<{ date: string; requests: number }>> = {
+  "1": [
+    { date: "Dec 11", requests: 145 },
+    { date: "Dec 12", requests: 189 },
+    { date: "Dec 13", requests: 156 },
+    { date: "Dec 14", requests: 203 },
+    { date: "Dec 15", requests: 178 },
+    { date: "Dec 16", requests: 234 },
+    { date: "Dec 17", requests: 198 },
+    { date: "Dec 18", requests: 267 },
+    { date: "Dec 19", requests: 245 },
+    { date: "Dec 20", requests: 312 },
+    { date: "Dec 21", requests: 289 },
+    { date: "Dec 22", requests: 267 },
+    { date: "Dec 23", requests: 298 },
+    { date: "Dec 24", requests: 256 },
+  ],
+  "2": [
+    { date: "Dec 11", requests: 12 },
+    { date: "Dec 12", requests: 8 },
+    { date: "Dec 13", requests: 15 },
+    { date: "Dec 14", requests: 6 },
+    { date: "Dec 15", requests: 9 },
+    { date: "Dec 16", requests: 11 },
+    { date: "Dec 17", requests: 7 },
+    { date: "Dec 18", requests: 14 },
+    { date: "Dec 19", requests: 10 },
+    { date: "Dec 20", requests: 8 },
+    { date: "Dec 21", requests: 5 },
+    { date: "Dec 22", requests: 12 },
+    { date: "Dec 23", requests: 9 },
+    { date: "Dec 24", requests: 6 },
+  ],
+  "3": [
+    { date: "Dec 11", requests: 0 },
+    { date: "Dec 12", requests: 0 },
+    { date: "Dec 13", requests: 0 },
+    { date: "Dec 14", requests: 0 },
+    { date: "Dec 15", requests: 0 },
+    { date: "Dec 16", requests: 0 },
+    { date: "Dec 17", requests: 0 },
+    { date: "Dec 18", requests: 0 },
+    { date: "Dec 19", requests: 0 },
+    { date: "Dec 20", requests: 0 },
+    { date: "Dec 21", requests: 0 },
+    { date: "Dec 22", requests: 0 },
+    { date: "Dec 23", requests: 0 },
+    { date: "Dec 24", requests: 0 },
+  ],
+};
+
+const chartConfig = {
+  requests: {
+    label: "Requests",
+    color: "hsl(var(--primary))",
+  },
+};
 
 // Mock data - in real app would fetch by ID
 const mockApiKeys: Record<string, {
@@ -180,7 +242,7 @@ export default function ApiKeyDetailsPage() {
         </div>
 
         {/* Second Row */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-8">
           <div>
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Last Used</p>
             <p className="text-foreground border-b border-dashed border-muted-foreground/50 inline">
@@ -203,6 +265,47 @@ export default function ApiKeyDetailsPage() {
             </div>
           </div>
         </div>
+
+        {/* Usage Analytics Chart */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Usage Analytics</CardTitle>
+            <p className="text-sm text-muted-foreground">Requests over the last 14 days</p>
+          </CardHeader>
+          <CardContent>
+            <ChartContainer config={chartConfig} className="h-[250px] w-full">
+              <AreaChart data={mockUsageData[id || "1"]} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="fillRequests" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <XAxis 
+                  dataKey="date" 
+                  tickLine={false} 
+                  axisLine={false} 
+                  tickMargin={8}
+                  tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
+                />
+                <YAxis 
+                  tickLine={false} 
+                  axisLine={false} 
+                  tickMargin={8}
+                  tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
+                />
+                <ChartTooltip content={<ChartTooltipContent />} />
+                <Area
+                  type="monotone"
+                  dataKey="requests"
+                  stroke="hsl(var(--primary))"
+                  strokeWidth={2}
+                  fill="url(#fillRequests)"
+                />
+              </AreaChart>
+            </ChartContainer>
+          </CardContent>
+        </Card>
       </div>
 
       <ApiKeyDialog
