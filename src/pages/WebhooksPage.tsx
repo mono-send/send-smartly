@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { TopBar } from "@/components/layout/TopBar";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Webhook, Check, Info, MoreHorizontal, Trash2, ExternalLink, Pencil, Play, Loader2 } from "lucide-react";
+import { Webhook, Check, Info, MoreHorizontal, Trash2, ExternalLink, Pencil, Play, Loader2, Clock, CheckCircle2, XCircle, History } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -52,6 +52,17 @@ interface SavedWebhook {
   endpointUrl: string;
   events: string[];
   createdAt: Date;
+}
+
+interface DeliveryLogEntry {
+  id: string;
+  webhookId: string;
+  endpointUrl: string;
+  eventType: string;
+  status: "success" | "failed" | "pending";
+  statusMessage: string;
+  timestamp: Date;
+  payload: object;
 }
 
 const eventGroups: EventGroup[] = [
@@ -118,6 +129,8 @@ export default function WebhooksPage() {
   const [webhookToTest, setWebhookToTest] = useState<SavedWebhook | null>(null);
   const [isTestingWebhook, setIsTestingWebhook] = useState(false);
   const [testResult, setTestResult] = useState<{ success: boolean; message: string; statusCode?: number } | null>(null);
+  const [deliveryLog, setDeliveryLog] = useState<DeliveryLogEntry[]>([]);
+  const [showDeliveryLog, setShowDeliveryLog] = useState(false);
 
   const openAddDialog = () => {
     setWebhookToEdit(null);
@@ -197,6 +210,18 @@ export default function WebhooksPage() {
     setTestResult(null);
 
     const payload = getTestPayload(webhookToTest);
+    const logEntry: DeliveryLogEntry = {
+      id: crypto.randomUUID(),
+      webhookId: webhookToTest.id,
+      endpointUrl: webhookToTest.endpointUrl,
+      eventType: payload.type,
+      status: "pending",
+      statusMessage: "Sending...",
+      timestamp: new Date(),
+      payload,
+    };
+
+    setDeliveryLog(prev => [logEntry, ...prev].slice(0, 50)); // Keep last 50 entries
 
     try {
       const response = await fetch(webhookToTest.endpointUrl, {
@@ -210,14 +235,30 @@ export default function WebhooksPage() {
 
       // With no-cors mode, we can't actually read the response status
       // So we assume success if no error was thrown
+      const successMessage = "Test payload sent. Due to browser security restrictions, we cannot verify the response. Check your endpoint logs to confirm receipt.";
+      
+      setDeliveryLog(prev => prev.map(entry => 
+        entry.id === logEntry.id 
+          ? { ...entry, status: "success" as const, statusMessage: successMessage }
+          : entry
+      ));
+      
       setTestResult({
         success: true,
-        message: "Test payload sent. Due to browser security restrictions, we cannot verify the response. Check your endpoint logs to confirm receipt.",
+        message: successMessage,
       });
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Failed to send test payload";
+      
+      setDeliveryLog(prev => prev.map(entry => 
+        entry.id === logEntry.id 
+          ? { ...entry, status: "failed" as const, statusMessage: errorMessage }
+          : entry
+      ));
+      
       setTestResult({
         success: false,
-        message: error instanceof Error ? error.message : "Failed to send test payload",
+        message: errorMessage,
       });
     } finally {
       setIsTestingWebhook(false);
@@ -227,6 +268,10 @@ export default function WebhooksPage() {
   const openTestDialog = (webhook: SavedWebhook) => {
     setWebhookToTest(webhook);
     setTestResult(null);
+  };
+
+  const formatLogTime = (date: Date) => {
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
   };
 
   const toggleEvent = (eventId: string) => {
@@ -366,6 +411,80 @@ export default function WebhooksPage() {
               </Card>
             ))}
           </div>
+        )}
+
+        {/* Delivery Log Section */}
+        {deliveryLog.length > 0 && (
+          <Card className="mt-6">
+            <CardContent className="p-4">
+              <button
+                onClick={() => setShowDeliveryLog(!showDeliveryLog)}
+                className="w-full flex items-center justify-between text-left"
+              >
+                <div className="flex items-center gap-2">
+                  <History className="h-4 w-4 text-muted-foreground" />
+                  <span className="font-medium">Delivery Log</span>
+                  <Badge variant="secondary" className="text-xs">{deliveryLog.length}</Badge>
+                </div>
+                <svg
+                  className={cn(
+                    "h-4 w-4 text-muted-foreground transition-transform",
+                    showDeliveryLog && "rotate-180"
+                  )}
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="m6 9 6 6 6-6" />
+                </svg>
+              </button>
+
+              {showDeliveryLog && (
+                <div className="mt-4 space-y-2">
+                  {deliveryLog.map((entry) => (
+                    <div 
+                      key={entry.id} 
+                      className="flex items-start gap-3 p-3 rounded-md bg-muted/50 text-sm"
+                    >
+                      <div className="mt-0.5">
+                        {entry.status === "success" && (
+                          <CheckCircle2 className="h-4 w-4 text-success" />
+                        )}
+                        {entry.status === "failed" && (
+                          <XCircle className="h-4 w-4 text-destructive" />
+                        )}
+                        {entry.status === "pending" && (
+                          <Loader2 className="h-4 w-4 text-muted-foreground animate-spin" />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0 space-y-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <Badge variant="outline" className="text-xs gap-1">
+                            <span className={cn("w-1.5 h-1.5 rounded-full", getEventColor(entry.eventType))} />
+                            {entry.eventType}
+                          </Badge>
+                          <span className="text-xs text-muted-foreground truncate max-w-[200px]">
+                            {entry.endpointUrl}
+                          </span>
+                        </div>
+                        <p className="text-xs text-muted-foreground line-clamp-2">
+                          {entry.statusMessage}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground shrink-0">
+                        <Clock className="h-3 w-3" />
+                        {formatLogTime(entry.timestamp)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
         )}
       </div>
 
