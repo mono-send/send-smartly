@@ -11,6 +11,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ApiKeyDialog, ApiKeyData } from "@/components/dialogs/ApiKeyDialog";
+import { ConfirmDeleteDialog } from "@/components/dialogs/ConfirmDeleteDialog";
+import { toast } from "sonner";
 
 // Mock data - in real app would fetch by ID
 const mockApiKeys: Record<string, {
@@ -64,6 +66,7 @@ export default function ApiKeyDetailsPage() {
   const navigate = useNavigate();
   const [copied, setCopied] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isRevokeDialogOpen, setIsRevokeDialogOpen] = useState(false);
   
   const apiKey = id ? mockApiKeys[id] : null;
 
@@ -127,7 +130,12 @@ export default function ApiKeyDetailsPage() {
               <DropdownMenuContent align="end">
                 <DropdownMenuItem onClick={() => setIsEditDialogOpen(true)}>Edit</DropdownMenuItem>
                 <DropdownMenuItem>Roll key</DropdownMenuItem>
-                <DropdownMenuItem className="text-destructive">Revoke</DropdownMenuItem>
+                <DropdownMenuItem 
+                  className="text-destructive"
+                  onClick={() => setIsRevokeDialogOpen(true)}
+                >
+                  Revoke
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -207,6 +215,18 @@ export default function ApiKeyDetailsPage() {
           domain: apiKey.domain,
         }}
         onSubmit={handleEditSubmit}
+      />
+
+      <ConfirmDeleteDialog
+        open={isRevokeDialogOpen}
+        onOpenChange={setIsRevokeDialogOpen}
+        title="Revoke API key"
+        description={`Are you sure you want to revoke "${apiKey.name}"? This action cannot be undone and any applications using this key will immediately lose access.`}
+        confirmLabel="Revoke key"
+        onConfirm={() => {
+          toast.success("API key revoked successfully");
+          navigate("/api-keys");
+        }}
       />
     </>
   );
