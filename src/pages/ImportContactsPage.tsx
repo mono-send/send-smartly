@@ -18,9 +18,16 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ChevronLeft, Upload, Check } from "lucide-react";
+import { ChevronLeft, Upload, Check, Users } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { Label } from "@/components/ui/label";
+
+const segments = [
+  { value: "general", label: "General" },
+  { value: "vip", label: "VIP" },
+  { value: "newsletter", label: "Newsletter" },
+];
 
 type Step = "upload" | "map" | "review";
 
@@ -51,6 +58,7 @@ export default function ImportContactsPage() {
   const [isDragging, setIsDragging] = useState(false);
   const [columnMappings, setColumnMappings] = useState<ColumnMapping[]>([]);
   const [parsedData, setParsedData] = useState<ParsedContact[]>([]);
+  const [selectedSegment, setSelectedSegment] = useState<string>("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const steps: { key: Step; label: string; number: number }[] = [
@@ -170,10 +178,16 @@ export default function ImportContactsPage() {
   };
 
   const handleImport = () => {
-    const includedMappings = columnMappings.filter(m => m.include && m.destinationColumn !== "skip");
     const contactCount = parsedData.length;
+    const segmentLabel = selectedSegment && selectedSegment !== "none" 
+      ? segments.find(s => s.value === selectedSegment)?.label 
+      : null;
     
-    toast.success(`Successfully imported ${contactCount} contacts`);
+    const message = segmentLabel
+      ? `Successfully imported ${contactCount} contacts to ${segmentLabel}`
+      : `Successfully imported ${contactCount} contacts`;
+    
+    toast.success(message);
     navigate("/audience");
   };
 
@@ -363,23 +377,60 @@ export default function ImportContactsPage() {
         )}
 
         {currentStep === "review" && (
-          <Card>
-            <CardContent className="p-0">
-              <div className="p-4 border-b border-border">
-                <p className="text-sm text-muted-foreground">
-                  <span className="font-medium text-foreground">{parsedData.length}</span> contacts will be imported
-                </p>
-              </div>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    {columnMappings
-                      .filter((m) => m.include && m.destinationColumn !== "skip")
-                      .map((mapping) => (
-                        <TableHead key={mapping.destinationColumn}>
-                          {mapping.destinationColumn}
-                        </TableHead>
+          <div className="space-y-4">
+            {/* Segment Selection */}
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
+                      <Users className="h-5 w-5 text-muted-foreground" />
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium">Assign to Segment</Label>
+                      <p className="text-xs text-muted-foreground">
+                        Optionally add all imported contacts to a segment
+                      </p>
+                    </div>
+                  </div>
+                  <Select value={selectedSegment} onValueChange={setSelectedSegment}>
+                    <SelectTrigger className="w-[180px]">
+                      <SelectValue placeholder="Select segment" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">No segment</SelectItem>
+                      {segments.map((segment) => (
+                        <SelectItem key={segment.value} value={segment.value}>
+                          {segment.label}
+                        </SelectItem>
                       ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Contacts Preview */}
+            <Card>
+              <CardContent className="p-0">
+                <div className="p-4 border-b border-border flex items-center justify-between">
+                  <p className="text-sm text-muted-foreground">
+                    <span className="font-medium text-foreground">{parsedData.length}</span> contacts will be imported
+                    {selectedSegment && selectedSegment !== "none" && (
+                      <span> to <span className="font-medium text-foreground">{segments.find(s => s.value === selectedSegment)?.label}</span></span>
+                    )}
+                  </p>
+                </div>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      {columnMappings
+                        .filter((m) => m.include && m.destinationColumn !== "skip")
+                        .map((mapping) => (
+                          <TableHead key={mapping.destinationColumn}>
+                            {mapping.destinationColumn}
+                          </TableHead>
+                        ))}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -405,8 +456,9 @@ export default function ImportContactsPage() {
                   </p>
                 </div>
               )}
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </div>
         )}
       </div>
 
