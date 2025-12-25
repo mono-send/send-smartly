@@ -1,8 +1,9 @@
 import { TopBar } from "@/components/layout/TopBar";
-import { Bell, Mail, AlertCircle, CheckCircle, Info, ExternalLink, Trash2 } from "lucide-react";
+import { Bell, Mail, AlertCircle, CheckCircle, Info, ExternalLink, Trash2, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 import {
   Dialog,
   DialogContent,
@@ -124,6 +125,7 @@ function getTypeLabel(type: Notification["type"]) {
 }
 
 export default function NotificationsPage() {
+  const navigate = useNavigate();
   const [notifications, setNotifications] = useState(mockNotifications);
   const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null);
   
@@ -165,11 +167,21 @@ export default function NotificationsPage() {
               {notifications.length} notifications
             </span>
           </div>
-          {unreadCount > 0 && (
-            <Button variant="outline" size="sm" onClick={markAllAsRead}>
-              Mark all as read
+          <div className="flex items-center gap-2">
+            {unreadCount > 0 && (
+              <Button variant="outline" size="sm" onClick={markAllAsRead}>
+                Mark all as read
+              </Button>
+            )}
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => navigate("/notifications/preferences")}
+            >
+              <Settings className="mr-2 h-4 w-4" />
+              Preferences
             </Button>
-          )}
+          </div>
         </div>
 
         {/* Notifications list */}
