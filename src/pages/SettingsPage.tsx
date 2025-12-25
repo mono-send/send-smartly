@@ -21,11 +21,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Mail, Megaphone, CreditCard, Users2, Server, Link2, ArrowUpRight, MoreHorizontal, Clock, Send, X, AlertTriangle, LogIn, UserPlus, UserMinus, Shield, Activity, Filter } from "lucide-react";
+import { Mail, Megaphone, CreditCard, Users2, Server, Link2, ArrowUpRight, MoreHorizontal, Clock, Send, X, AlertTriangle, LogIn, UserPlus, UserMinus, Shield, Activity, Filter, CalendarIcon } from "lucide-react";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { format } from "date-fns";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { DateRange } from "react-day-picker";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -182,10 +186,26 @@ export default function SettingsPage() {
   const [editRole, setEditRole] = useState("");
   const [activityVisibleCount, setActivityVisibleCount] = useState(ACTIVITY_PAGE_SIZE);
   const [activityFilter, setActivityFilter] = useState<string[]>([]);
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
 
-  const filteredActivityLog = activityFilter.length === 0 
-    ? mockActivityLog 
-    : mockActivityLog.filter(entry => activityFilter.includes(entry.type));
+  const filteredActivityLog = mockActivityLog.filter(entry => {
+    // Type filter
+    if (activityFilter.length > 0 && !activityFilter.includes(entry.type)) {
+      return false;
+    }
+    // Date range filter
+    if (dateRange?.from && entry.timestamp < dateRange.from) {
+      return false;
+    }
+    if (dateRange?.to) {
+      const endOfDay = new Date(dateRange.to);
+      endOfDay.setHours(23, 59, 59, 999);
+      if (entry.timestamp > endOfDay) {
+        return false;
+      }
+    }
+    return true;
+  });
   const visibleActivityLog = filteredActivityLog.slice(0, activityVisibleCount);
   const hasMoreActivity = activityVisibleCount < filteredActivityLog.length;
 
@@ -193,10 +213,14 @@ export default function SettingsPage() {
     setActivityVisibleCount(prev => Math.min(prev + ACTIVITY_PAGE_SIZE, filteredActivityLog.length));
   };
 
+  const clearDateRange = () => {
+    setDateRange(undefined);
+  };
+
   // Reset visible count when filter changes
   useEffect(() => {
     setActivityVisibleCount(ACTIVITY_PAGE_SIZE);
-  }, [activityFilter]);
+  }, [activityFilter, dateRange]);
 
   // Auto-remove expired invitations on mount and periodically
   useEffect(() => {
@@ -550,30 +574,75 @@ export default function SettingsPage() {
                     </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-2 pt-2">
-                  <Filter className="h-4 w-4 text-muted-foreground" />
-                  <ToggleGroup 
-                    type="multiple" 
-                    value={activityFilter}
-                    onValueChange={setActivityFilter}
-                    className="flex-wrap justify-start"
-                  >
-                    <ToggleGroupItem value="login" size="sm" className="text-xs gap-1">
-                      <LogIn className="h-3 w-3" /> Logins
-                    </ToggleGroupItem>
-                    <ToggleGroupItem value="invitation_sent" size="sm" className="text-xs gap-1">
-                      <Send className="h-3 w-3" /> Invitations
-                    </ToggleGroupItem>
-                    <ToggleGroupItem value="invitation_accepted" size="sm" className="text-xs gap-1">
-                      <UserPlus className="h-3 w-3" /> Joined
-                    </ToggleGroupItem>
-                    <ToggleGroupItem value="role_change" size="sm" className="text-xs gap-1">
-                      <Shield className="h-3 w-3" /> Role Changes
-                    </ToggleGroupItem>
-                    <ToggleGroupItem value="member_removed" size="sm" className="text-xs gap-1">
-                      <UserMinus className="h-3 w-3" /> Removed
-                    </ToggleGroupItem>
-                  </ToggleGroup>
+                <div className="flex flex-col gap-3 pt-2">
+                  <div className="flex items-center gap-2">
+                    <Filter className="h-4 w-4 text-muted-foreground" />
+                    <ToggleGroup 
+                      type="multiple" 
+                      value={activityFilter}
+                      onValueChange={setActivityFilter}
+                      className="flex-wrap justify-start"
+                    >
+                      <ToggleGroupItem value="login" size="sm" className="text-xs gap-1">
+                        <LogIn className="h-3 w-3" /> Logins
+                      </ToggleGroupItem>
+                      <ToggleGroupItem value="invitation_sent" size="sm" className="text-xs gap-1">
+                        <Send className="h-3 w-3" /> Invitations
+                      </ToggleGroupItem>
+                      <ToggleGroupItem value="invitation_accepted" size="sm" className="text-xs gap-1">
+                        <UserPlus className="h-3 w-3" /> Joined
+                      </ToggleGroupItem>
+                      <ToggleGroupItem value="role_change" size="sm" className="text-xs gap-1">
+                        <Shield className="h-3 w-3" /> Role Changes
+                      </ToggleGroupItem>
+                      <ToggleGroupItem value="member_removed" size="sm" className="text-xs gap-1">
+                        <UserMinus className="h-3 w-3" /> Removed
+                      </ToggleGroupItem>
+                    </ToggleGroup>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <CalendarIcon className="h-4 w-4 text-muted-foreground" />
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className={cn(
+                            "justify-start text-left font-normal text-xs",
+                            !dateRange && "text-muted-foreground"
+                          )}
+                        >
+                          {dateRange?.from ? (
+                            dateRange.to ? (
+                              <>
+                                {format(dateRange.from, "MMM d, yyyy")} - {format(dateRange.to, "MMM d, yyyy")}
+                              </>
+                            ) : (
+                              format(dateRange.from, "MMM d, yyyy")
+                            )
+                          ) : (
+                            <span>Select date range</span>
+                          )}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          initialFocus
+                          mode="range"
+                          defaultMonth={dateRange?.from}
+                          selected={dateRange}
+                          onSelect={setDateRange}
+                          numberOfMonths={2}
+                          className={cn("p-3 pointer-events-auto")}
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    {dateRange && (
+                      <Button variant="ghost" size="sm" onClick={clearDateRange} className="h-8 px-2">
+                        <X className="h-3 w-3" />
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </CardHeader>
               <CardContent>
