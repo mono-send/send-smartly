@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { TopBar } from "@/components/layout/TopBar";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Webhook, Check, Info, MoreHorizontal, Trash2, ExternalLink, Pencil, Play, Loader2, Clock, CheckCircle2, XCircle, History, RefreshCw, Key, Copy, Eye, EyeOff, RotateCcw, Shield, Plus, X } from "lucide-react";
+import { Webhook, Check, Info, MoreHorizontal, Trash2, ExternalLink, Pencil, Play, Loader2, Clock, CheckCircle2, XCircle, History, RefreshCw, Key, Copy, Eye, EyeOff, RotateCcw, Shield, Plus, X, BarChart3 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { ConfirmDeleteDialog } from "@/components/dialogs/ConfirmDeleteDialog";
@@ -179,6 +180,17 @@ export default function WebhooksPage() {
 
   const removeIpAddress = (ip: string) => {
     setAllowedIps(prev => prev.filter(i => i !== ip));
+  };
+
+  const getWebhookStats = (webhookId: string) => {
+    const webhookEntries = deliveryLog.filter(entry => entry.webhookId === webhookId);
+    const total = webhookEntries.length;
+    const success = webhookEntries.filter(e => e.status === "success").length;
+    const failed = webhookEntries.filter(e => e.status === "failed").length;
+    const pending = webhookEntries.filter(e => e.status === "pending" || e.status === "retrying").length;
+    const successRate = total > 0 ? Math.round((success / total) * 100) : 0;
+    
+    return { total, success, failed, pending, successRate };
   };
 
   const openAddDialog = () => {
@@ -586,6 +598,50 @@ export default function WebhooksPage() {
                           </Badge>
                         )}
                       </div>
+                      
+                      {/* Delivery Statistics */}
+                      {(() => {
+                        const stats = getWebhookStats(webhook.id);
+                        if (stats.total === 0) return null;
+                        
+                        return (
+                          <div className="flex items-center gap-4 pt-2 border-t border-border">
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                              <BarChart3 className="h-3.5 w-3.5" />
+                              <span>{stats.total} deliveries</span>
+                            </div>
+                            <div className="flex-1 flex items-center gap-2">
+                              <Progress 
+                                value={stats.successRate} 
+                                className="h-1.5 flex-1 max-w-[120px]"
+                              />
+                              <span className={cn(
+                                "text-xs font-medium",
+                                stats.successRate >= 90 ? "text-success" : 
+                                stats.successRate >= 50 ? "text-warning" : "text-destructive"
+                              )}>
+                                {stats.successRate}%
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-3 text-xs">
+                              <span className="flex items-center gap-1 text-success">
+                                <CheckCircle2 className="h-3 w-3" />
+                                {stats.success}
+                              </span>
+                              <span className="flex items-center gap-1 text-destructive">
+                                <XCircle className="h-3 w-3" />
+                                {stats.failed}
+                              </span>
+                              {stats.pending > 0 && (
+                                <span className="flex items-center gap-1 text-muted-foreground">
+                                  <Loader2 className="h-3 w-3 animate-spin" />
+                                  {stats.pending}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })()}
                     </div>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
