@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { Mail, Copy, Check, ChevronLeft, MoreHorizontal, Send, CheckCircle } from "lucide-react";
+import { Mail, Copy, Check, ChevronLeft, MoreHorizontal, Send, CheckCircle, Code, BookOpen } from "lucide-react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import {
@@ -156,8 +156,12 @@ export default function EmailDetailsPage() {
           
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" className="gap-2">
-              <span className="font-mono text-xs">&lt;/&gt;</span>
+              <Code className="h-4 w-4" />
               API
+            </Button>
+            <Button variant="outline" size="sm" className="gap-2">
+              <BookOpen className="h-4 w-4" />
+              Docs
             </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
