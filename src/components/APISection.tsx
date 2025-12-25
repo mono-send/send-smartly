@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Copy, X, Sparkles, ExternalLink } from "lucide-react";
+import { Copy, X, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type Language = "Python" | "Node.js" | "Java" | ".NET" | "PHP" | "Ruby" | "Go" | "Rust";
@@ -114,10 +114,9 @@ const languages: Language[] = ["Python", "Node.js", "Java", ".NET", "PHP", "Ruby
 interface CodeBlockProps {
   code: string;
   title?: string;
-  onAskAI?: (label: string, code: string) => void;
 }
 
-const CodeBlock = ({ code, title, onAskAI }: CodeBlockProps) => {
+const CodeBlock = ({ code, title }: CodeBlockProps) => {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
@@ -147,21 +146,6 @@ const CodeBlock = ({ code, title, onAskAI }: CodeBlockProps) => {
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button 
-                    onClick={() => onAskAI?.(title, code)}
-                    className="p-1.5 hover:bg-white/10 rounded transition-colors"
-                  >
-                    <Sparkles className="w-4 h-4 text-white/50" />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Ask AI</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
           </div>
         </div>
       )}
@@ -185,10 +169,6 @@ export function APISection({ isOpen, onClose }: APISectionProps) {
     await navigator.clipboard.writeText(codeExamples[activeLanguage]);
     setCodeCopied(true);
     setTimeout(() => setCodeCopied(false), 2000);
-  };
-
-  const handleOpenAssistant = (label: string, code: string) => {
-    console.log("Ask AI:", label, code);
   };
 
   return (
@@ -259,21 +239,6 @@ export function APISection({ isOpen, onClose }: APISectionProps) {
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button 
-                        onClick={() => handleOpenAssistant(`use ${activeLanguage}::...`, codeExamples[activeLanguage])}
-                        className="p-1.5 hover:bg-white/10 rounded transition-colors"
-                      >
-                        <Sparkles className="w-4 h-4 text-white/50" />
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Ask AI</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
               </div>
             </div>
             <pre className="p-4 text-sm overflow-x-auto max-h-[400px]">
@@ -288,7 +253,6 @@ export function APISection({ isOpen, onClose }: APISectionProps) {
               code={`{
   "id": "49a3999c-0ce1-4ea6-ab68-afcd6dc2e794"
 }`}
-              onAskAI={handleOpenAssistant}
             />
           </div>
 
@@ -319,7 +283,6 @@ await monosend.batch.send([
     html: '<p>it works!</p>',
   },
 ]);`}
-            onAskAI={handleOpenAssistant}
           />
 
           {/* Batch Response */}
@@ -332,7 +295,6 @@ await monosend.batch.send([
 {
   "id": "58a3999c-1cr0-3ef3-1bf8-afcd6dc2e323"
 }]`}
-              onAskAI={handleOpenAssistant}
             />
           </div>
         </div>
