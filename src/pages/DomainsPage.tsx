@@ -35,6 +35,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { ConfirmDeleteDialog } from "@/components/dialogs/ConfirmDeleteDialog";
+import { toast } from "sonner";
 
 const mockDomains = [
   {
@@ -65,6 +67,7 @@ export default function DomainsPage() {
   const [search, setSearch] = useState("");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [newDomain, setNewDomain] = useState("");
+  const [domainToRemove, setDomainToRemove] = useState<{ id: string; domain: string } | null>(null);
 
   return (
     <>
@@ -155,7 +158,12 @@ export default function DomainsPage() {
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem>View DNS records</DropdownMenuItem>
                         <DropdownMenuItem>Configure</DropdownMenuItem>
-                        <DropdownMenuItem className="text-destructive">Remove</DropdownMenuItem>
+                        <DropdownMenuItem 
+                          className="text-destructive"
+                          onClick={() => setDomainToRemove({ id: domain.id, domain: domain.domain })}
+                        >
+                          Remove
+                        </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
@@ -212,6 +220,19 @@ export default function DomainsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Remove Domain Confirmation Dialog */}
+      <ConfirmDeleteDialog
+        open={!!domainToRemove}
+        onOpenChange={(open) => !open && setDomainToRemove(null)}
+        title="Remove domain"
+        description={`Are you sure you want to remove "${domainToRemove?.domain}"? This action cannot be undone and will stop all email sending and receiving for this domain.`}
+        confirmLabel="Remove domain"
+        onConfirm={() => {
+          toast.success("Domain removed successfully");
+          setDomainToRemove(null);
+        }}
+      />
     </>
   );
 }
