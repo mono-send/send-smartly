@@ -21,7 +21,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Mail, Megaphone, CreditCard, Users2, Server, Link2, ArrowUpRight, MoreHorizontal, Clock, Send, X, AlertTriangle, LogIn, UserPlus, UserMinus, Shield, Activity } from "lucide-react";
+import { Mail, Megaphone, CreditCard, Users2, Server, Link2, ArrowUpRight, MoreHorizontal, Clock, Send, X, AlertTriangle, LogIn, UserPlus, UserMinus, Shield, Activity, Filter } from "lucide-react";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -180,13 +181,22 @@ export default function SettingsPage() {
   const [invitationToCancel, setInvitationToCancel] = useState<PendingInvitation | null>(null);
   const [editRole, setEditRole] = useState("");
   const [activityVisibleCount, setActivityVisibleCount] = useState(ACTIVITY_PAGE_SIZE);
+  const [activityFilter, setActivityFilter] = useState<string[]>([]);
 
-  const visibleActivityLog = mockActivityLog.slice(0, activityVisibleCount);
-  const hasMoreActivity = activityVisibleCount < mockActivityLog.length;
+  const filteredActivityLog = activityFilter.length === 0 
+    ? mockActivityLog 
+    : mockActivityLog.filter(entry => activityFilter.includes(entry.type));
+  const visibleActivityLog = filteredActivityLog.slice(0, activityVisibleCount);
+  const hasMoreActivity = activityVisibleCount < filteredActivityLog.length;
 
   const loadMoreActivity = () => {
-    setActivityVisibleCount(prev => Math.min(prev + ACTIVITY_PAGE_SIZE, mockActivityLog.length));
+    setActivityVisibleCount(prev => Math.min(prev + ACTIVITY_PAGE_SIZE, filteredActivityLog.length));
   };
+
+  // Reset visible count when filter changes
+  useEffect(() => {
+    setActivityVisibleCount(ACTIVITY_PAGE_SIZE);
+  }, [activityFilter]);
 
   // Auto-remove expired invitations on mount and periodically
   useEffect(() => {
@@ -529,34 +539,67 @@ export default function SettingsPage() {
             {/* Activity Log */}
             <Card>
               <CardHeader>
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-info/10">
-                    <Activity className="h-5 w-5 text-info" />
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-info/10">
+                      <Activity className="h-5 w-5 text-info" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-lg">Activity Log</CardTitle>
+                      <CardDescription>Recent team activity and events</CardDescription>
+                    </div>
                   </div>
-                  <div>
-                    <CardTitle className="text-lg">Activity Log</CardTitle>
-                    <CardDescription>Recent team activity and events</CardDescription>
-                  </div>
+                </div>
+                <div className="flex items-center gap-2 pt-2">
+                  <Filter className="h-4 w-4 text-muted-foreground" />
+                  <ToggleGroup 
+                    type="multiple" 
+                    value={activityFilter}
+                    onValueChange={setActivityFilter}
+                    className="flex-wrap justify-start"
+                  >
+                    <ToggleGroupItem value="login" size="sm" className="text-xs gap-1">
+                      <LogIn className="h-3 w-3" /> Logins
+                    </ToggleGroupItem>
+                    <ToggleGroupItem value="invitation_sent" size="sm" className="text-xs gap-1">
+                      <Send className="h-3 w-3" /> Invitations
+                    </ToggleGroupItem>
+                    <ToggleGroupItem value="invitation_accepted" size="sm" className="text-xs gap-1">
+                      <UserPlus className="h-3 w-3" /> Joined
+                    </ToggleGroupItem>
+                    <ToggleGroupItem value="role_change" size="sm" className="text-xs gap-1">
+                      <Shield className="h-3 w-3" /> Role Changes
+                    </ToggleGroupItem>
+                    <ToggleGroupItem value="member_removed" size="sm" className="text-xs gap-1">
+                      <UserMinus className="h-3 w-3" /> Removed
+                    </ToggleGroupItem>
+                  </ToggleGroup>
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {visibleActivityLog.map((entry) => (
-                    <div key={entry.id} className="flex items-start gap-3">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
-                        {getActivityIcon(entry.type)}
+                {filteredActivityLog.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-4">
+                    No activities match the selected filters
+                  </p>
+                ) : (
+                  <div className="space-y-4">
+                    {visibleActivityLog.map((entry) => (
+                      <div key={entry.id} className="flex items-start gap-3">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
+                          {getActivityIcon(entry.type)}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm text-foreground">
+                            {getActivityMessage(entry)}
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            {formatTimeAgo(entry.timestamp)}
+                          </p>
+                        </div>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm text-foreground">
-                          {getActivityMessage(entry)}
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-0.5">
-                          {formatTimeAgo(entry.timestamp)}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
                 {hasMoreActivity && (
                   <div className="mt-4 pt-4 border-t border-border">
                     <Button 
@@ -565,13 +608,13 @@ export default function SettingsPage() {
                       className="w-full"
                       onClick={loadMoreActivity}
                     >
-                      Load more ({mockActivityLog.length - activityVisibleCount} remaining)
+                      Load more ({filteredActivityLog.length - activityVisibleCount} remaining)
                     </Button>
                   </div>
                 )}
-                {!hasMoreActivity && mockActivityLog.length > ACTIVITY_PAGE_SIZE && (
+                {!hasMoreActivity && filteredActivityLog.length > ACTIVITY_PAGE_SIZE && (
                   <p className="text-xs text-muted-foreground text-center mt-4 pt-4 border-t border-border">
-                    Showing all {mockActivityLog.length} activities
+                    Showing all {filteredActivityLog.length} activities
                   </p>
                 )}
               </CardContent>
