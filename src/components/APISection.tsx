@@ -289,12 +289,14 @@ await monosend.batch.send([
           <div className="mt-4">
             <CodeBlock 
               title="Response" 
-              code={`[{
+              code={`[
+{
   "id": "49a3999c-0ce1-4ea6-ab68-afcd6dc2e794"
 },
 {
   "id": "58a3999c-1cr0-3ef3-1bf8-afcd6dc2e323"
-}]`}
+}
+]`}
             />
           </div>
         </div>
