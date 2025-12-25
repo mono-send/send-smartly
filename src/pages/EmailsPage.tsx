@@ -17,7 +17,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { Search, MoreHorizontal, Calendar } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Search, MoreHorizontal, Calendar, Trash2, X } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -86,15 +87,52 @@ export default function EmailsPage() {
   const [search, setSearch] = useState("");
   const [emails, setEmails] = useState<Email[]>(mockEmails);
   const [emailToDelete, setEmailToDelete] = useState<Email | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false);
   const navigate = useNavigate();
 
   const handleDeleteEmail = () => {
     if (emailToDelete) {
       setEmails(prev => prev.filter(e => e.id !== emailToDelete.id));
+      setSelectedIds(prev => {
+        const next = new Set(prev);
+        next.delete(emailToDelete.id);
+        return next;
+      });
       toast.success("Email deleted");
       setEmailToDelete(null);
     }
   };
+
+  const handleBulkDelete = () => {
+    setEmails(prev => prev.filter(e => !selectedIds.has(e.id)));
+    toast.success(`${selectedIds.size} email${selectedIds.size > 1 ? 's' : ''} deleted`);
+    setSelectedIds(new Set());
+    setShowBulkDeleteDialog(false);
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === emails.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(emails.map(e => e.id)));
+    }
+  };
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+  const isAllSelected = emails.length > 0 && selectedIds.size === emails.length;
+  const isSomeSelected = selectedIds.size > 0 && selectedIds.size < emails.length;
 
   return (
     <>
@@ -142,11 +180,48 @@ export default function EmailsPage() {
           </Select>
         </div>
 
+        {/* Bulk Actions Bar */}
+        {selectedIds.size > 0 && (
+          <div className="mb-4 flex items-center justify-between rounded-lg border border-border bg-muted/50 px-4 py-3">
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-medium">
+                {selectedIds.size} email{selectedIds.size > 1 ? 's' : ''} selected
+              </span>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSelectedIds(new Set())}
+                className="h-7 gap-1 text-xs"
+              >
+                <X className="h-3 w-3" />
+                Clear
+              </Button>
+            </div>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => setShowBulkDeleteDialog(true)}
+              className="gap-2"
+            >
+              <Trash2 className="h-4 w-4" />
+              Delete Selected
+            </Button>
+          </div>
+        )}
+
         {/* Table */}
         <div className="rounded-lg border border-border bg-card">
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-[50px]">
+                  <Checkbox
+                    checked={isAllSelected}
+                    onCheckedChange={toggleSelectAll}
+                    aria-label="Select all"
+                    className={isSomeSelected ? "data-[state=checked]:bg-primary data-[state=unchecked]:bg-primary/50" : ""}
+                  />
+                </TableHead>
                 <TableHead>To</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Subject</TableHead>
@@ -160,7 +235,15 @@ export default function EmailsPage() {
                   key={email.id} 
                   className="cursor-pointer hover:bg-muted/50"
                   onClick={() => navigate(`/emails/${email.id}`)}
+                  data-selected={selectedIds.has(email.id)}
                 >
+                  <TableCell onClick={(e) => e.stopPropagation()}>
+                    <Checkbox
+                      checked={selectedIds.has(email.id)}
+                      onCheckedChange={() => toggleSelect(email.id)}
+                      aria-label={`Select email to ${email.to}`}
+                    />
+                  </TableCell>
                   <TableCell className="font-medium">{email.to}</TableCell>
                   <TableCell>
                     <StatusBadge status={email.status} />
@@ -206,6 +289,14 @@ export default function EmailsPage() {
         onConfirm={handleDeleteEmail}
         title="Delete Email"
         description={`Are you sure you want to delete the email to "${emailToDelete?.to}"? This action cannot be undone.`}
+      />
+
+      <ConfirmDeleteDialog
+        open={showBulkDeleteDialog}
+        onOpenChange={setShowBulkDeleteDialog}
+        onConfirm={handleBulkDelete}
+        title="Delete Selected Emails"
+        description={`Are you sure you want to delete ${selectedIds.size} email${selectedIds.size > 1 ? 's' : ''}? This action cannot be undone.`}
       />
     </>
   );
