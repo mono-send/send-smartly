@@ -20,7 +20,8 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Search, Plus, Users, UserCheck, UserMinus, Download, Upload, UserPlus, ChevronDown } from "lucide-react";
-import { useState, useRef } from "react";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -48,37 +49,8 @@ const mockContacts = [
 export default function AudiencePage() {
   const [search, setSearch] = useState("");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
   const [newEmails, setNewEmails] = useState("");
-  const [importFile, setImportFile] = useState<File | null>(null);
-  const [isDragging, setIsDragging] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(true);
-  };
-
-  const handleDragLeave = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(false);
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(false);
-    
-    const files = e.dataTransfer.files;
-    if (files.length > 0) {
-      const file = files[0];
-      if (file.type === "text/csv" || file.name.endsWith(".csv")) {
-        setImportFile(file);
-      }
-    }
-  };
+  const navigate = useNavigate();
 
   return (
     <>
@@ -99,7 +71,7 @@ export default function AudiencePage() {
               <UserPlus className="h-4 w-4 mr-2" />
               Add manually
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setIsImportDialogOpen(true)}>
+            <DropdownMenuItem onClick={() => navigate("/audience/import")}>
               <Upload className="h-4 w-4 mr-2" />
               Import
             </DropdownMenuItem>
@@ -328,92 +300,6 @@ export default function AudiencePage() {
             </Button>
             <Button onClick={() => setIsAddDialogOpen(false)}>
               Add contacts
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Import Contacts Dialog */}
-      <Dialog open={isImportDialogOpen} onOpenChange={setIsImportDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Import contacts</DialogTitle>
-            <DialogDescription>
-              Upload a CSV file with email addresses to import contacts in bulk.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label>CSV file</Label>
-              <input
-                type="file"
-                accept=".csv"
-                ref={fileInputRef}
-                onChange={(e) => setImportFile(e.target.files?.[0] || null)}
-                className="hidden"
-              />
-              <div 
-                className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
-                  isDragging 
-                    ? "border-primary bg-primary/5" 
-                    : "border-border hover:border-primary/50"
-                }`}
-                onClick={() => fileInputRef.current?.click()}
-                onDragOver={handleDragOver}
-                onDragLeave={handleDragLeave}
-                onDrop={handleDrop}
-              >
-                <Upload className={`h-8 w-8 mx-auto mb-2 ${isDragging ? "text-primary" : "text-muted-foreground"}`} />
-                {importFile ? (
-                  <p className="text-sm font-medium">{importFile.name}</p>
-                ) : isDragging ? (
-                  <p className="text-sm font-medium text-primary">
-                    Drop your CSV file here
-                  </p>
-                ) : (
-                  <>
-                    <p className="text-sm text-muted-foreground">
-                      Click to upload or drag and drop
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      CSV files only
-                    </p>
-                  </>
-                )}
-              </div>
-            </div>
-            
-            <div className="space-y-2">
-              <Label>Segment (optional)</Label>
-              <Select>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select segment" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="general">General</SelectItem>
-                  <SelectItem value="vip">VIP</SelectItem>
-                  <SelectItem value="newsletter">Newsletter</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => {
-              setIsImportDialogOpen(false);
-              setImportFile(null);
-            }}>
-              Cancel
-            </Button>
-            <Button 
-              onClick={() => {
-                setIsImportDialogOpen(false);
-                setImportFile(null);
-              }}
-              disabled={!importFile}
-            >
-              Import contacts
             </Button>
           </DialogFooter>
         </DialogContent>
