@@ -26,56 +26,90 @@ const mockLogs = [
     endpoint: "/emails",
     status: 200,
     method: "POST",
+    source: "api" as const,
     created: "2 minutes ago",
     userAgent: "resend-node:6.4.0",
   },
   {
     id: "2",
+    endpoint: "/tools/send_email",
+    status: 200,
+    method: "POST",
+    source: "mcp" as const,
+    created: "3 minutes ago",
+    userAgent: "mcp-client:1.0.0",
+  },
+  {
+    id: "3",
     endpoint: "/emails",
     status: 200,
     method: "POST",
+    source: "api" as const,
     created: "5 minutes ago",
     userAgent: "resend-node:6.4.0",
   },
   {
-    id: "3",
+    id: "4",
+    endpoint: "/tools/list_contacts",
+    status: 200,
+    method: "GET",
+    source: "mcp" as const,
+    created: "10 minutes ago",
+    userAgent: "mcp-client:1.0.0",
+  },
+  {
+    id: "5",
     endpoint: "/domains",
     status: 200,
     method: "GET",
+    source: "api" as const,
     created: "15 minutes ago",
     userAgent: "curl/8.1.2",
   },
   {
-    id: "4",
+    id: "6",
+    endpoint: "/tools/create_broadcast",
+    status: 429,
+    method: "POST",
+    source: "mcp" as const,
+    created: "30 minutes ago",
+    userAgent: "mcp-client:1.0.0",
+  },
+  {
+    id: "7",
     endpoint: "/emails/batch",
     status: 429,
     method: "POST",
+    source: "api" as const,
     created: "1 hour ago",
     userAgent: "resend-python:1.2.0",
   },
   {
-    id: "5",
+    id: "8",
+    endpoint: "/tools/get_metrics",
+    status: 500,
+    method: "GET",
+    source: "mcp" as const,
+    created: "2 hours ago",
+    userAgent: "mcp-client:1.0.0",
+  },
+  {
+    id: "9",
     endpoint: "/emails",
     status: 400,
     method: "POST",
+    source: "api" as const,
     created: "2 hours ago",
     userAgent: "axios/1.6.0",
   },
   {
-    id: "6",
+    id: "10",
     endpoint: "/api-keys",
     status: 200,
     method: "GET",
+    source: "api" as const,
     created: "3 hours ago",
     userAgent: "resend-node:6.4.0",
-  },
-  {
-    id: "7",
-    endpoint: "/emails",
-    status: 500,
-    method: "POST",
-    created: "5 hours ago",
-    userAgent: "resend-go:1.0.0",
   },
 ];
 
@@ -179,9 +213,9 @@ export default function LogsPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Endpoint</TableHead>
+                <TableHead>Source</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Method</TableHead>
-                {/* <TableHead>User Agent</TableHead> */}
                 <TableHead>Created</TableHead>
               </TableRow>
             </TableHeader>
@@ -196,14 +230,19 @@ export default function LogsPage() {
                     <code className="font-mono text-sm">{log.endpoint}</code>
                   </TableCell>
                   <TableCell>
+                    <span className={cn(
+                      "inline-flex items-center rounded px-2 py-0.5 text-xs font-medium uppercase",
+                      log.source === "api" ? "bg-primary/10 text-primary" : "bg-accent text-accent-foreground"
+                    )}>
+                      {log.source}
+                    </span>
+                  </TableCell>
+                  <TableCell>
                     <StatusCode code={log.status} />
                   </TableCell>
                   <TableCell>
                     <MethodBadge method={log.method} />
                   </TableCell>
-                  {/* <TableCell className="font-mono text-xs text-muted-foreground">
-                    {log.userAgent}
-                  </TableCell> */}
                   <TableCell className="text-muted-foreground">{log.created}</TableCell>
                 </TableRow>
               ))}
@@ -213,7 +252,7 @@ export default function LogsPage() {
 
         {/* Pagination hint */}
         <div className="mt-4 flex items-center justify-between text-sm text-muted-foreground">
-          <span>Showing 7 of 7 logs</span>
+          <span>Showing 10 of 10 logs</span>
         </div>
       </div>
     </>
