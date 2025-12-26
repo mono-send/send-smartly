@@ -58,6 +58,7 @@ export default function DomainsPage() {
   const [domainToRemove, setDomainToRemove] = useState<{ id: string; domain: string } | null>(null);
   const [domains, setDomains] = useState<Domain[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const fetchDomains = async () => {
     try {
@@ -284,10 +285,30 @@ export default function DomainsPage() {
         onOpenChange={(open) => !open && setDomainToRemove(null)}
         title="Remove domain"
         description={`Are you sure you want to remove "${domainToRemove?.domain}"? This action cannot be undone and will stop all email sending and receiving for this domain.`}
-        confirmLabel="Remove domain"
-        onConfirm={() => {
-          toast.success("Domain removed successfully");
-          setDomainToRemove(null);
+        confirmLabel={isDeleting ? "Removing..." : "Remove domain"}
+        onConfirm={async () => {
+          if (!domainToRemove) return;
+          setIsDeleting(true);
+          try {
+            const response = await api(`/domains/${domainToRemove.id}`, {
+              method: "DELETE",
+            });
+            if (response.ok) {
+              const data = await response.json();
+              toast.success(data.message || "Domain removed successfully");
+              setDomainToRemove(null);
+              fetchDomains();
+            } else {
+              const data = await response.json();
+              toast.error(data.detail || "Failed to remove domain");
+            }
+          } catch (error: any) {
+            if (error.message !== "Unauthorized") {
+              toast.error("An error occurred. Please try again.");
+            }
+          } finally {
+            setIsDeleting(false);
+          }
         }}
       />
     </>
