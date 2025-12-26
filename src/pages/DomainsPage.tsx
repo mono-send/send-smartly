@@ -1,3 +1,4 @@
+import { formatDistanceToNow } from "date-fns";
 import { TopBar } from "@/components/layout/TopBar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -201,7 +202,7 @@ export default function DomainsPage() {
                       {domain.region}
                     </TableCell>
                     <TableCell className="text-muted-foreground">
-                      {new Date(domain.created_at).toLocaleDateString()}
+                      {formatDistanceToNow(new Date(domain.created_at), { addSuffix: true })}
                     </TableCell>
                     <TableCell onClick={(e) => e.stopPropagation()}>
                       <DropdownMenu>
