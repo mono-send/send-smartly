@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { Loader2, CheckCircle, XCircle } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 const MagicLinkConfirmPage = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { setAuth } = useAuth();
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -29,6 +31,9 @@ const MagicLinkConfirmPage = () => {
         });
 
         if (response.ok) {
+          const data = await response.json();
+          // Save auth token and user data
+          setAuth(data.access_token, data.user);
           setStatus("success");
           // Redirect to dashboard after 2 seconds
           setTimeout(() => {
@@ -46,7 +51,7 @@ const MagicLinkConfirmPage = () => {
     };
 
     confirmMagicLink();
-  }, [searchParams, navigate]);
+  }, [searchParams, navigate, setAuth]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background">
