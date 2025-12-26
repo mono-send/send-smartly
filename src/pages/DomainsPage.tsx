@@ -67,8 +67,41 @@ export default function DomainsPage() {
   const [search, setSearch] = useState("");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [newDomain, setNewDomain] = useState("");
+  const [selectedRegion, setSelectedRegion] = useState("us-east-1");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [domainToRemove, setDomainToRemove] = useState<{ id: string; domain: string } | null>(null);
 
+  const handleAddDomain = async () => {
+    if (!newDomain.trim()) {
+      toast.error("Please enter a domain name");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const response = await fetch("https://api-z6l7.onrender.com/v1.0/domains", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ domain: newDomain, region: selectedRegion }),
+      });
+
+      if (response.ok) {
+        toast.success("Domain added successfully");
+        setIsAddDialogOpen(false);
+        setNewDomain("");
+        setSelectedRegion("us-east-1");
+      } else {
+        const data = await response.json();
+        toast.error(data.detail || "Failed to add domain");
+      }
+    } catch (error) {
+      toast.error("An error occurred. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
   return (
     <>
       <TopBar 
@@ -197,7 +230,7 @@ export default function DomainsPage() {
             
             <div className="space-y-2">
               <Label htmlFor="region">Region</Label>
-              <Select defaultValue="us-east-1">
+              <Select value={selectedRegion} onValueChange={setSelectedRegion}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -211,11 +244,11 @@ export default function DomainsPage() {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
+            <Button variant="outline" onClick={() => setIsAddDialogOpen(false)} disabled={isSubmitting}>
               Cancel
             </Button>
-            <Button onClick={() => setIsAddDialogOpen(false)}>
-              Add domain
+            <Button onClick={handleAddDomain} disabled={isSubmitting}>
+              {isSubmitting ? "Adding..." : "Add domain"}
             </Button>
           </DialogFooter>
         </DialogContent>
