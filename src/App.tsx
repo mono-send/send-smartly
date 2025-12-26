@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import LoginPage from "./pages/LoginPage";
+import MagicLinkConfirmPage from "./pages/MagicLinkConfirmPage";
 import EmailsPage from "./pages/EmailsPage";
 import EmailDetailsPage from "./pages/EmailDetailsPage";
 import DomainsPage from "./pages/DomainsPage";
@@ -60,6 +61,7 @@ const App = () => (
             <Route path="/onboarding" element={<OnboardingPage />} />
           </Route>
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/auth/magic" element={<MagicLinkConfirmPage />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
