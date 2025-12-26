@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import LoginPage from "./pages/LoginPage";
 import EmailsPage from "./pages/EmailsPage";
 import EmailDetailsPage from "./pages/EmailDetailsPage";
 import DomainsPage from "./pages/DomainsPage";
@@ -58,6 +59,7 @@ const App = () => (
             <Route path="/notifications/preferences" element={<NotificationPreferencesPage />} />
             <Route path="/onboarding" element={<OnboardingPage />} />
           </Route>
+          <Route path="/login" element={<LoginPage />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
