@@ -54,10 +54,10 @@ const App = () => (
             <Route path="/api-keys/:id" element={<ApiKeyDetailsPage />} />
             <Route path="/webhooks" element={<WebhooksPage />} />
             <Route path="/settings" element={<SettingsPage />} />
-            <Route path="/notifications" element={<NotificationsPage />} />
+          <Route path="/notifications" element={<NotificationsPage />} />
             <Route path="/notifications/preferences" element={<NotificationPreferencesPage />} />
+            <Route path="/onboarding" element={<OnboardingPage />} />
           </Route>
-          <Route path="/onboarding" element={<OnboardingPage />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
