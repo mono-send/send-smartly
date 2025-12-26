@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { Analytics } from "@vercel/analytics/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "@/contexts/AuthContext";
 import Index from "./pages/Index";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import LoginPage from "./pages/LoginPage";
@@ -32,11 +33,12 @@ const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
+    <AuthProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
           <Route element={<DashboardLayout />}>
             <Route path="/" element={<Index />} />
           </Route>
@@ -63,10 +65,11 @@ const App = () => (
           <Route path="/login" element={<LoginPage />} />
           <Route path="/auth/magic" element={<MagicLinkConfirmPage />} />
           <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-      <Analytics />
-    </TooltipProvider>
+          </Routes>
+        </BrowserRouter>
+        <Analytics />
+      </TooltipProvider>
+    </AuthProvider>
   </QueryClientProvider>
 );
 

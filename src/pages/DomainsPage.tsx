@@ -37,6 +37,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ConfirmDeleteDialog } from "@/components/dialogs/ConfirmDeleteDialog";
 import { toast } from "sonner";
+import { api } from "@/lib/api";
 
 const mockDomains = [
   {
@@ -79,12 +80,9 @@ export default function DomainsPage() {
 
     setIsSubmitting(true);
     try {
-      const response = await fetch("https://api-z6l7.onrender.com/v1.0/domains", {
+      const response = await api("/domains", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ domain: newDomain, region: selectedRegion }),
+        body: { domain: newDomain, region: selectedRegion },
       });
 
       if (response.ok) {
@@ -96,8 +94,10 @@ export default function DomainsPage() {
         const data = await response.json();
         toast.error(data.detail || "Failed to add domain");
       }
-    } catch (error) {
-      toast.error("An error occurred. Please try again.");
+    } catch (error: any) {
+      if (error.message !== "Unauthorized") {
+        toast.error("An error occurred. Please try again.");
+      }
     } finally {
       setIsSubmitting(false);
     }
