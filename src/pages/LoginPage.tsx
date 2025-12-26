@@ -17,11 +17,26 @@ const LoginPage = () => {
       return;
     }
     setIsLoading(true);
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      const response = await fetch("https://api-z6l7.onrender.com/v1.0/signin", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email }),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || "Failed to send magic link");
+      }
+      
       toast.success("Magic link sent! Check your inbox.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to send magic link");
+    } finally {
       setIsLoading(false);
-    }, 1500);
+    }
   };
 
   const handleGoogleLogin = () => {
