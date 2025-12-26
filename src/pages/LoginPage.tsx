@@ -50,8 +50,7 @@ const LoginPage = () => {
         <div className="w-full max-w-md mx-auto">
           {/* Logo */}
           <div className="flex items-center gap-2 mb-8">
-            <img src="/logo.png" alt="Logo" className="h-8 w-8" />
-            <span className="text-xl font-semibold text-foreground">Resend</span>
+            <img src="/logo.png" alt="Logo" className="h-12" />
           </div>
 
           <h1 className="text-3xl font-bold text-foreground mb-2">Welcome back</h1>
