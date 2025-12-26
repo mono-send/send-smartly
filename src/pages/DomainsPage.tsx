@@ -17,8 +17,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { Search, MoreHorizontal, ExternalLink } from "lucide-react";
-import { useState } from "react";
+import { Search, MoreHorizontal, ExternalLink, Loader2 } from "lucide-react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Dialog,
@@ -39,29 +39,13 @@ import { ConfirmDeleteDialog } from "@/components/dialogs/ConfirmDeleteDialog";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
 
-const mockDomains = [
-  {
-    id: "1",
-    domain: "mail.monosend.io",
-    status: "verified" as const,
-    region: "us-east-1",
-    created: "2 days ago",
-  },
-  {
-    id: "2",
-    domain: "notify.example.com",
-    status: "verified" as const,
-    region: "us-east-1",
-    created: "1 week ago",
-  },
-  {
-    id: "3",
-    domain: "updates.startup.io",
-    status: "pending" as const,
-    region: "eu-west-1",
-    created: "3 hours ago",
-  },
-];
+interface Domain {
+  id: string;
+  domain: string;
+  status: "pending" | "verified";
+  region: string;
+  created_at: string;
+}
 
 export default function DomainsPage() {
   const navigate = useNavigate();
@@ -71,6 +55,28 @@ export default function DomainsPage() {
   const [selectedRegion, setSelectedRegion] = useState("us-east-1");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [domainToRemove, setDomainToRemove] = useState<{ id: string; domain: string } | null>(null);
+  const [domains, setDomains] = useState<Domain[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const fetchDomains = async () => {
+    try {
+      const response = await api("/domains");
+      if (response.ok) {
+        const data = await response.json();
+        setDomains(data);
+      }
+    } catch (error: any) {
+      if (error.message !== "Unauthorized") {
+        toast.error("Failed to load domains");
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchDomains();
+  }, []);
 
   const handleAddDomain = async () => {
     if (!newDomain.trim()) {
@@ -90,6 +96,7 @@ export default function DomainsPage() {
         setIsAddDialogOpen(false);
         setNewDomain("");
         setSelectedRegion("us-east-1");
+        fetchDomains(); // Refresh the list
       } else {
         const data = await response.json();
         toast.error(data.detail || "Failed to add domain");
@@ -162,46 +169,62 @@ export default function DomainsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {mockDomains.map((domain) => (
-                <TableRow 
-                  key={domain.id} 
-                  className="cursor-pointer hover:bg-muted/50"
-                  onClick={() => navigate(`/domains/${domain.id}`)}
-                >
-                  <TableCell className="font-medium">
-                    <div className="flex items-center gap-2">
-                      {domain.domain}
-                      <ExternalLink className="h-3.5 w-3.5 text-muted-foreground" />
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <StatusBadge status={domain.status} />
-                  </TableCell>
-                  <TableCell className="font-mono text-sm text-muted-foreground">
-                    {domain.region}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">{domain.created}</TableCell>
-                  <TableCell onClick={(e) => e.stopPropagation()}>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem>View DNS records</DropdownMenuItem>
-                        <DropdownMenuItem>Configure</DropdownMenuItem>
-                        <DropdownMenuItem 
-                          className="text-destructive"
-                          onClick={() => setDomainToRemove({ id: domain.id, domain: domain.domain })}
-                        >
-                          Remove
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="h-24 text-center">
+                    <Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" />
                   </TableCell>
                 </TableRow>
-              ))}
+              ) : domains.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
+                    No domains found
+                  </TableCell>
+                </TableRow>
+              ) : (
+                domains.map((domain) => (
+                  <TableRow 
+                    key={domain.id} 
+                    className="cursor-pointer hover:bg-muted/50"
+                    onClick={() => navigate(`/domains/${domain.id}`)}
+                  >
+                    <TableCell className="font-medium">
+                      <div className="flex items-center gap-2">
+                        {domain.domain}
+                        <ExternalLink className="h-3.5 w-3.5 text-muted-foreground" />
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <StatusBadge status={domain.status} />
+                    </TableCell>
+                    <TableCell className="font-mono text-sm text-muted-foreground">
+                      {domain.region}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {new Date(domain.created_at).toLocaleDateString()}
+                    </TableCell>
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem>View DNS records</DropdownMenuItem>
+                          <DropdownMenuItem>Configure</DropdownMenuItem>
+                          <DropdownMenuItem 
+                            className="text-destructive"
+                            onClick={() => setDomainToRemove({ id: domain.id, domain: domain.domain })}
+                          >
+                            Remove
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </div>
