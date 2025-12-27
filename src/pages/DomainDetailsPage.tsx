@@ -112,10 +112,35 @@ export default function DomainDetailsPage() {
   const [domain, setDomain] = useState<DomainData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [sendingEnabled, setSendingEnabled] = useState(false);
+  const [isUpdatingSending, setIsUpdatingSending] = useState(false);
   const [receivingEnabled, setReceivingEnabled] = useState(false);
   const [isUpdatingReceiving, setIsUpdatingReceiving] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleSendingToggle = async (checked: boolean) => {
+    if (!domain) return;
+    setIsUpdatingSending(true);
+    try {
+      const response = await api(`/domains/${domain.id}/flags`, {
+        method: "PATCH",
+        body: { enable_sending: checked },
+      });
+      if (response.ok) {
+        setSendingEnabled(checked);
+        toast.success(`Sending ${checked ? "enabled" : "disabled"} successfully.`);
+      } else {
+        const data = await response.json();
+        toast.error(data.detail || "Failed to update sending status");
+      }
+    } catch (error: any) {
+      if (error.message !== "Unauthorized") {
+        toast.error("An error occurred. Please try again.");
+      }
+    } finally {
+      setIsUpdatingSending(false);
+    }
+  };
 
   const handleReceivingToggle = async (checked: boolean) => {
     if (!domain) return;
@@ -331,7 +356,8 @@ export default function DomainDetailsPage() {
               <h3 className="font-medium text-foreground">Enable Sending</h3>
               <Switch 
                 checked={sendingEnabled} 
-                onCheckedChange={setSendingEnabled}
+                onCheckedChange={handleSendingToggle}
+                disabled={isUpdatingSending}
               />
             </div>
             <div className="flex items-center gap-2 mb-4">
