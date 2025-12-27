@@ -113,8 +113,33 @@ export default function DomainDetailsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [sendingEnabled, setSendingEnabled] = useState(false);
   const [receivingEnabled, setReceivingEnabled] = useState(false);
+  const [isUpdatingReceiving, setIsUpdatingReceiving] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleReceivingToggle = async (checked: boolean) => {
+    if (!domain) return;
+    setIsUpdatingReceiving(true);
+    try {
+      const response = await api(`/domains/${domain.id}/flags`, {
+        method: "PATCH",
+        body: { enable_receiving: checked },
+      });
+      if (response.ok) {
+        setReceivingEnabled(checked);
+        toast.success(`Receiving ${checked ? "enabled" : "disabled"} successfully.`);
+      } else {
+        const data = await response.json();
+        toast.error(data.detail || "Failed to update receiving status");
+      }
+    } catch (error: any) {
+      if (error.message !== "Unauthorized") {
+        toast.error("An error occurred. Please try again.");
+      }
+    } finally {
+      setIsUpdatingReceiving(false);
+    }
+  };
 
   useEffect(() => {
     const fetchDomain = async () => {
@@ -326,7 +351,8 @@ export default function DomainDetailsPage() {
               <h3 className="font-medium text-foreground">Enable Receiving</h3>
               <Switch 
                 checked={receivingEnabled} 
-                onCheckedChange={setReceivingEnabled}
+                onCheckedChange={handleReceivingToggle}
+                disabled={isUpdatingReceiving}
               />
             </div>
             <div className="flex items-center gap-2 mb-4">
