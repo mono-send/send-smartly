@@ -21,7 +21,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Mail, Megaphone, CreditCard, Users2, Server, Link2, ArrowUpRight, MoreHorizontal, Clock, Send, X, AlertTriangle, LogIn, UserPlus, UserMinus, Shield, Activity, Filter, CalendarIcon, Loader2 } from "lucide-react";
+import { Mail, Megaphone, CreditCard, Users2, Server, Link2, ArrowUpRight, MoreHorizontal, Clock, Send, X, LogIn, UserMinus, Shield, Activity, Filter, CalendarIcon, Loader2 } from "lucide-react";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
@@ -39,38 +39,33 @@ import {
 import { ConfirmDeleteDialog } from "@/components/dialogs/ConfirmDeleteDialog";
 import { api } from "@/lib/api";
 
+interface ApiTeamMember {
+  id: string;
+  role: string;
+  user_id: string;
+  status: string;
+  name: string;
+  first_name: string | null;
+  last_name: string | null;
+  joined_at: string;
+  email?: string;
+}
+
 interface TeamMember {
   id: string;
   name: string;
   email: string;
-  role: "owner" | "admin" | "editor" | "viewer";
+  role: "owner" | "admin" | "developer" | "viewer";
   avatar: string;
 }
-
-const initialTeamMembers: TeamMember[] = [
-  { id: "1", name: "You", email: "user@example.com", role: "owner", avatar: "U" },
-  { id: "2", name: "Jane Smith", email: "jane@example.com", role: "admin", avatar: "J" },
-  { id: "3", name: "Mike Johnson", email: "mike@example.com", role: "editor", avatar: "M" },
-];
 
 interface PendingInvitation {
   id: string;
   email: string;
-  role: "admin" | "editor" | "viewer";
+  name: string;
+  role: "owner" | "admin" | "developer" | "viewer";
   sentAt: Date;
-  expiresAt: Date;
 }
-
-// Helper to create dates relative to now
-const hoursAgo = (hours: number) => new Date(Date.now() - hours * 60 * 60 * 1000);
-const daysFromNow = (days: number) => new Date(Date.now() + days * 24 * 60 * 60 * 1000);
-const hoursFromNow = (hours: number) => new Date(Date.now() + hours * 60 * 60 * 1000);
-
-const initialPendingInvitations: PendingInvitation[] = [
-  { id: "inv1", email: "sarah@example.com", role: "editor", sentAt: hoursAgo(2), expiresAt: daysFromNow(7) },
-  { id: "inv2", email: "tom@example.com", role: "viewer", sentAt: hoursAgo(24), expiresAt: daysFromNow(6) },
-  { id: "inv3", email: "expiring@example.com", role: "admin", sentAt: hoursAgo(168), expiresAt: hoursFromNow(12) },
-];
 
 // Invitation expiry duration in days
 const INVITATION_EXPIRY_DAYS = 7;
@@ -88,20 +83,6 @@ const formatTimeAgo = (date: Date): string => {
   return `${diffDays} day${diffDays !== 1 ? 's' : ''} ago`;
 };
 
-const getExpiryStatus = (expiresAt: Date): { label: string; isExpired: boolean; isExpiringSoon: boolean } => {
-  const now = new Date();
-  const diffMs = expiresAt.getTime() - now.getTime();
-  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-  if (diffMs <= 0) {
-    return { label: "Expired", isExpired: true, isExpiringSoon: false };
-  }
-  if (diffHours < 24) {
-    return { label: `Expires in ${diffHours} hour${diffHours !== 1 ? "s" : ""}`, isExpired: false, isExpiringSoon: true };
-  }
-  return { label: `Expires in ${diffDays} day${diffDays !== 1 ? "s" : ""}`, isExpired: false, isExpiringSoon: false };
-};
 
 interface ApiActivityLogEntry {
   id: string;
@@ -160,16 +141,19 @@ const mapApiCategoryToType = (category: string): ActivityLogEntry["type"] => {
 const roleLabels: Record<string, string> = {
   owner: "Owner",
   admin: "Admin",
-  editor: "Editor",
+  developer: "Developer",
   viewer: "Viewer",
 };
 
 export default function SettingsPage() {
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
-  const [inviteRole, setInviteRole] = useState("editor");
-  const [teamMembers, setTeamMembers] = useState<TeamMember[]>(initialTeamMembers);
-  const [pendingInvitations, setPendingInvitations] = useState<PendingInvitation[]>(initialPendingInvitations);
+  const [inviteRole, setInviteRole] = useState("developer");
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const [pendingInvitations, setPendingInvitations] = useState<PendingInvitation[]>([]);
+  const [isLoadingMembers, setIsLoadingMembers] = useState(false);
+  const [isLoadingInvitations, setIsLoadingInvitations] = useState(false);
+  const [isInviting, setIsInviting] = useState(false);
   const [memberToRemove, setMemberToRemove] = useState<TeamMember | null>(null);
   const [memberToEdit, setMemberToEdit] = useState<TeamMember | null>(null);
   const [invitationToCancel, setInvitationToCancel] = useState<PendingInvitation | null>(null);
@@ -211,6 +195,63 @@ export default function SettingsPage() {
     fetchActivityLog();
   }, []);
 
+  // Fetch team members from API
+  const fetchTeamMembers = async () => {
+    setIsLoadingMembers(true);
+    try {
+      const response = await api("/team_members?status=accepted");
+      if (response.ok) {
+        const data = await response.json();
+        const mapped: TeamMember[] = data.items.map((item: ApiTeamMember) => ({
+          id: item.id,
+          name: item.name || "Unknown",
+          email: item.email || "",
+          role: item.role as TeamMember["role"],
+          avatar: (item.name || "U").charAt(0).toUpperCase(),
+        }));
+        setTeamMembers(mapped);
+      } else {
+        toast.error("Failed to load team members");
+      }
+    } catch (error) {
+      console.error("Error fetching team members:", error);
+      toast.error("Failed to load team members");
+    } finally {
+      setIsLoadingMembers(false);
+    }
+  };
+
+  // Fetch pending invitations from API
+  const fetchPendingInvitations = async () => {
+    setIsLoadingInvitations(true);
+    try {
+      const response = await api("/team_members?status=invited");
+      if (response.ok) {
+        const data = await response.json();
+        const mapped: PendingInvitation[] = data.items.map((item: ApiTeamMember) => ({
+          id: item.id,
+          email: item.email || "",
+          name: item.name || "",
+          role: item.role as PendingInvitation["role"],
+          sentAt: new Date(item.joined_at),
+        }));
+        setPendingInvitations(mapped);
+      } else {
+        toast.error("Failed to load pending invitations");
+      }
+    } catch (error) {
+      console.error("Error fetching pending invitations:", error);
+      toast.error("Failed to load pending invitations");
+    } finally {
+      setIsLoadingInvitations(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchTeamMembers();
+    fetchPendingInvitations();
+  }, []);
+
   const filteredActivityLog = activityLog.filter(entry => {
     // Type filter
     if (activityFilter.length > 0 && !activityFilter.includes(entry.type)) {
@@ -245,46 +286,33 @@ export default function SettingsPage() {
     setActivityVisibleCount(ACTIVITY_PAGE_SIZE);
   }, [activityFilter, dateRange]);
 
-  // Auto-remove expired invitations on mount and periodically
-  useEffect(() => {
-    const removeExpired = () => {
-      setPendingInvitations(prev => {
-        const now = new Date();
-        const active = prev.filter(inv => inv.expiresAt.getTime() > now.getTime());
-        if (active.length < prev.length) {
-          const expiredCount = prev.length - active.length;
-          toast.info(`${expiredCount} expired invitation${expiredCount !== 1 ? 's' : ''} removed`);
-        }
-        return active;
-      });
-    };
-
-    removeExpired();
-    // Check every minute for expired invitations
-    const interval = setInterval(removeExpired, 60000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const handleInvite = () => {
+  const handleInvite = async () => {
     if (!inviteEmail.trim()) {
       toast.error("Please enter an email address");
       return;
     }
-    // Add to pending invitations with expiry date
-    const now = new Date();
-    const expiresAt = new Date(now.getTime() + INVITATION_EXPIRY_DAYS * 24 * 60 * 60 * 1000);
-    const newInvitation: PendingInvitation = {
-      id: `inv${Date.now()}`,
-      email: inviteEmail,
-      role: inviteRole as PendingInvitation["role"],
-      sentAt: now,
-      expiresAt,
-    };
-    setPendingInvitations(prev => [newInvitation, ...prev]);
-    toast.success(`Invitation sent to ${inviteEmail}`);
-    setInviteEmail("");
-    setInviteRole("editor");
-    setIsInviteDialogOpen(false);
+    setIsInviting(true);
+    try {
+      const response = await api("/team_members/invite", {
+        method: "POST",
+        body: { email: inviteEmail, role: inviteRole },
+      });
+      if (response.ok) {
+        toast.success(`Invitation sent to ${inviteEmail}`);
+        setInviteEmail("");
+        setInviteRole("developer");
+        setIsInviteDialogOpen(false);
+        fetchPendingInvitations();
+      } else {
+        const error = await response.json();
+        toast.error(error.message || "Failed to send invitation");
+      }
+    } catch (error) {
+      console.error("Error sending invitation:", error);
+      toast.error("Failed to send invitation");
+    } finally {
+      setIsInviting(false);
+    }
   };
 
   const handleRemoveMember = () => {
@@ -468,46 +496,56 @@ export default function SettingsPage() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="divide-y divide-border">
-                  {teamMembers.map((member) => (
-                    <div key={member.id} className="flex items-center justify-between py-3">
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-xs font-medium text-primary-foreground">
-                          {member.avatar}
+                {isLoadingMembers ? (
+                  <div className="flex justify-center py-8">
+                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  </div>
+                ) : teamMembers.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-4">
+                    No team members found
+                  </p>
+                ) : (
+                  <div className="divide-y divide-border">
+                    {teamMembers.map((member) => (
+                      <div key={member.id} className="flex items-center justify-between py-3">
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-xs font-medium text-primary-foreground">
+                            {member.avatar}
+                          </div>
+                          <div>
+                            <p className="font-medium">{member.name}</p>
+                            <p className="text-sm text-muted-foreground">{member.email}</p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="font-medium">{member.name}</p>
-                          <p className="text-sm text-muted-foreground">{member.email}</p>
+                        <div className="flex items-center gap-2">
+                          <Badge variant={member.role === "owner" ? "default" : "secondary"}>
+                            {roleLabels[member.role]}
+                          </Badge>
+                          {member.role !== "owner" && (
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => openEditDialog(member)}>
+                                  Change role
+                                </DropdownMenuItem>
+                                <DropdownMenuItem 
+                                  className="text-destructive"
+                                  onClick={() => setMemberToRemove(member)}
+                                >
+                                  Remove
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          )}
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant={member.role === "owner" ? "default" : "secondary"}>
-                          {roleLabels[member.role]}
-                        </Badge>
-                        {member.role !== "owner" && (
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8">
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => openEditDialog(member)}>
-                                Change role
-                              </DropdownMenuItem>
-                              <DropdownMenuItem 
-                                className="text-destructive"
-                                onClick={() => setMemberToRemove(member)}
-                              >
-                                Remove
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
                 <Button variant="outline" className="mt-4" onClick={() => setIsInviteDialogOpen(true)}>
                   Invite team member
                 </Button>
@@ -515,7 +553,7 @@ export default function SettingsPage() {
             </Card>
 
             {/* Pending Invitations */}
-            {pendingInvitations.length > 0 && (
+            {(isLoadingInvitations || pendingInvitations.length > 0) && (
               <Card>
                 <CardHeader>
                   <div className="flex items-center gap-3">
@@ -527,59 +565,51 @@ export default function SettingsPage() {
                       <CardDescription>{pendingInvitations.length} invitation{pendingInvitations.length !== 1 ? 's' : ''} waiting to be accepted</CardDescription>
                     </div>
                   </div>
-                </CardHeader>
-                <CardContent>
+              </CardHeader>
+              <CardContent>
+                {isLoadingInvitations ? (
+                  <div className="flex justify-center py-8">
+                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  </div>
+                ) : (
                   <div className="divide-y divide-border">
-                    {pendingInvitations.map((invitation) => {
-                      const expiryStatus = getExpiryStatus(invitation.expiresAt);
-                      return (
-                        <div key={invitation.id} className={cn(
-                          "flex items-center justify-between py-3",
-                          expiryStatus.isExpiringSoon && "bg-warning/5 -mx-4 px-4 rounded-lg"
-                        )}>
-                          <div className="flex items-center gap-3">
-                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted text-xs font-medium text-muted-foreground">
-                              {invitation.email.charAt(0).toUpperCase()}
-                            </div>
-                            <div>
-                              <p className="font-medium">{invitation.email}</p>
-                              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                <span>Sent {formatTimeAgo(invitation.sentAt)}</span>
-                                <span>•</span>
-                                <span className={cn(
-                                  expiryStatus.isExpiringSoon && "text-warning font-medium",
-                                  expiryStatus.isExpired && "text-destructive font-medium"
-                                )}>
-                                  {expiryStatus.isExpiringSoon && <AlertTriangle className="inline h-3 w-3 mr-1" />}
-                                  {expiryStatus.label}
-                                </span>
-                              </div>
-                            </div>
+                    {pendingInvitations.map((invitation) => (
+                      <div key={invitation.id} className="flex items-center justify-between py-3">
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted text-xs font-medium text-muted-foreground">
+                            {(invitation.name || invitation.email).charAt(0).toUpperCase()}
                           </div>
-                          <div className="flex items-center gap-2">
-                            <Badge variant="outline">{roleLabels[invitation.role]}</Badge>
-                            <Button 
-                              variant="ghost" 
-                              size="sm"
-                              onClick={() => handleResendInvitation(invitation)}
-                            >
-                              <Send className="mr-1 h-3.5 w-3.5" />
-                              Resend
-                            </Button>
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              className="h-8 w-8 text-destructive hover:text-destructive"
-                              onClick={() => setInvitationToCancel(invitation)}
-                            >
-                              <X className="h-4 w-4" />
-                            </Button>
+                          <div>
+                            <p className="font-medium">{invitation.name || invitation.email}</p>
+                            <p className="text-sm text-muted-foreground">
+                              Invited {formatTimeAgo(invitation.sentAt)}
+                            </p>
                           </div>
                         </div>
-                      );
-                    })}
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline">{roleLabels[invitation.role]}</Badge>
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => handleResendInvitation(invitation)}
+                          >
+                            <Send className="mr-1 h-3.5 w-3.5" />
+                            Resend
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8 text-destructive hover:text-destructive"
+                            onClick={() => setInvitationToCancel(invitation)}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                </CardContent>
+                )}
+              </CardContent>
               </Card>
             )}
 
@@ -809,23 +839,24 @@ export default function SettingsPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="viewer">Viewer - Can view only</SelectItem>
-                  <SelectItem value="editor">Editor - Can edit projects</SelectItem>
+                  <SelectItem value="developer">Developer - Can edit projects</SelectItem>
                   <SelectItem value="admin">Admin - Can manage settings</SelectItem>
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground">
                 {inviteRole === "viewer" && "Viewers can see all data but cannot make changes."}
-                {inviteRole === "editor" && "Editors can create and edit emails, domains, and campaigns."}
+                {inviteRole === "developer" && "Developers can create and edit emails, domains, and campaigns."}
                 {inviteRole === "admin" && "Admins have full access including billing and team management."}
               </p>
             </div>
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsInviteDialogOpen(false)}>
+            <Button variant="outline" onClick={() => setIsInviteDialogOpen(false)} disabled={isInviting}>
               Cancel
             </Button>
-            <Button onClick={handleInvite}>
+            <Button onClick={handleInvite} disabled={isInviting}>
+              {isInviting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Send invitation
             </Button>
           </DialogFooter>
@@ -864,13 +895,13 @@ export default function SettingsPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="viewer">Viewer - Can view only</SelectItem>
-                  <SelectItem value="editor">Editor - Can edit projects</SelectItem>
+                  <SelectItem value="developer">Developer - Can edit projects</SelectItem>
                   <SelectItem value="admin">Admin - Can manage settings</SelectItem>
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground">
                 {editRole === "viewer" && "Viewers can see all data but cannot make changes."}
-                {editRole === "editor" && "Editors can create and edit emails, domains, and campaigns."}
+                {editRole === "developer" && "Developers can create and edit emails, domains, and campaigns."}
                 {editRole === "admin" && "Admins have full access including billing and team management."}
               </p>
             </div>
