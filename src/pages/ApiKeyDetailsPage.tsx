@@ -28,7 +28,7 @@ interface ApiKeyDetails {
   permission: string;
   domain: string | null;
   total_uses: number;
-  token_prefix: string;
+  key: string;
   last_used_at: string | null;
   created_at: string;
   created_by: string;
@@ -162,7 +162,7 @@ export default function ApiKeyDetailsPage() {
 
   const handleCopy = () => {
     if (!apiKey) return;
-    navigator.clipboard.writeText(apiKey.token_prefix);
+    navigator.clipboard.writeText(apiKey.key);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -326,7 +326,7 @@ export default function ApiKeyDetailsPage() {
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Token</p>
             <div className="flex items-center gap-2">
               <code className="rounded bg-muted px-2 py-1 font-mono text-sm text-foreground">
-                ms_live_{apiKey.token_prefix}...
+                ms_live_{apiKey.key}...
               </code>
               <Button
                 variant="ghost"
