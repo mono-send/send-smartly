@@ -11,7 +11,8 @@ type StatusType =
   | "queued"
   | "verified"
   | "subscribed"
-  | "unsubscribed";
+  | "unsubscribed"
+  | "suspended";
 
 const statusConfig: Record<StatusType, { label: string; className: string }> = {
   delivered: {
@@ -57,6 +58,10 @@ const statusConfig: Record<StatusType, { label: string; className: string }> = {
   unsubscribed: {
     label: "Unsubscribed",
     className: "bg-muted text-muted-foreground border-border",
+  },
+  suspended: {
+    label: "Suspended",
+    className: "bg-warning/10 text-warning border-warning/20",
   },
 };
 
