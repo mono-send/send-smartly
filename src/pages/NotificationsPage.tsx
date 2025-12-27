@@ -1,9 +1,11 @@
 import { TopBar } from "@/components/layout/TopBar";
-import { Bell, Mail, AlertCircle, CheckCircle, Info, ExternalLink, Trash2, Settings } from "lucide-react";
+import { Bell, Mail, AlertCircle, CheckCircle, Info, ExternalLink, Trash2, Settings, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { api } from "@/lib/api";
+import { formatDistanceToNow } from "date-fns";
 import {
   Dialog,
   DialogContent,
@@ -12,6 +14,19 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+
+interface ApiNotification {
+  id: string;
+  user_id: string;
+  subject: string;
+  body: string;
+  type: string;
+  details: string;
+  cta: string | null;
+  is_read: boolean;
+  read_at: string | null;
+  created_at: string;
+}
 
 interface Notification {
   id: string;
@@ -25,74 +40,37 @@ interface Notification {
   actionLabel?: string;
 }
 
-const mockNotifications: Notification[] = [
-  {
-    id: "1",
-    type: "email",
-    title: "Email delivered successfully",
-    description: "Your email to user@example.com was delivered.",
-    details: "The transactional email with subject 'Welcome to MonoSend' was successfully delivered to user@example.com at 09:45 AM. The recipient's mail server accepted the message without any issues. Delivery time: 1.2 seconds.",
-    time: "2 minutes ago",
-    read: false,
-    actionUrl: "/emails/1",
-    actionLabel: "View Email",
-  },
-  {
-    id: "2",
-    type: "warning",
-    title: "Rate limit warning",
-    description: "You're approaching your daily email limit (80% used).",
-    details: "You have sent 8,000 out of your 10,000 daily email quota. At the current sending rate, you may reach your limit within the next 2 hours. Consider upgrading your plan or spacing out your email sends to avoid hitting the limit.",
-    time: "15 minutes ago",
-    read: false,
-    actionUrl: "/settings",
-    actionLabel: "Upgrade Plan",
-  },
-  {
-    id: "3",
-    type: "success",
-    title: "Domain verified",
-    description: "monosend.io has been successfully verified.",
-    details: "Your domain monosend.io has passed all DNS verification checks. DKIM, SPF, and DMARC records are properly configured. You can now send emails from any address @monosend.io with full deliverability.",
-    time: "1 hour ago",
-    read: false,
-    actionUrl: "/domains/1",
-    actionLabel: "View Domain",
-  },
-  {
-    id: "4",
-    type: "info",
-    title: "New feature available",
-    description: "MCP integration is now available for your account.",
-    details: "We've enabled Model Context Protocol (MCP) integration for your account. This allows AI assistants and automation tools to interact with your MonoSend account programmatically. Check the logs page to monitor MCP activity.",
-    time: "2 hours ago",
-    read: true,
-    actionUrl: "/logs",
-    actionLabel: "View Logs",
-  },
-  {
-    id: "5",
-    type: "email",
-    title: "Broadcast completed",
-    description: "Weekly Newsletter was sent to 1,247 recipients.",
-    details: "Your broadcast 'Weekly Newsletter' has been successfully sent to all 1,247 recipients in your 'Newsletter Subscribers' audience. Delivery stats: 1,241 delivered, 4 bounced, 2 pending. Open rate tracking has begun.",
-    time: "3 hours ago",
-    read: true,
-    actionUrl: "/broadcasts",
-    actionLabel: "View Broadcast",
-  },
-  {
-    id: "6",
-    type: "warning",
-    title: "Bounce rate increase",
-    description: "Your bounce rate has increased by 5% in the last 24 hours.",
-    details: "Your email bounce rate has increased from 2.1% to 7.1% over the past 24 hours. This may affect your sender reputation. We recommend reviewing your audience list and removing invalid email addresses. Common causes include outdated email lists or sending to unverified addresses.",
-    time: "5 hours ago",
-    read: true,
-    actionUrl: "/metrics",
-    actionLabel: "View Metrics",
-  },
-];
+function mapApiTypeToUiType(apiType: string): Notification["type"] {
+  switch (apiType.toLowerCase()) {
+    case "email":
+    case "broadcast":
+      return "email";
+    case "success":
+    case "verified":
+      return "success";
+    case "warning":
+    case "alert":
+      return "warning";
+    case "info":
+    case "welcome":
+    default:
+      return "info";
+  }
+}
+
+function mapApiNotificationToUi(apiNotification: ApiNotification): Notification {
+  return {
+    id: apiNotification.id,
+    type: mapApiTypeToUiType(apiNotification.type),
+    title: apiNotification.subject,
+    description: apiNotification.body,
+    details: apiNotification.details || apiNotification.body,
+    time: formatDistanceToNow(new Date(apiNotification.created_at), { addSuffix: true }),
+    read: apiNotification.is_read,
+    actionUrl: apiNotification.cta || undefined,
+    actionLabel: apiNotification.cta ? "View" : undefined,
+  };
+}
 
 function NotificationIcon({ type, size = "md" }: { type: Notification["type"]; size?: "sm" | "md" | "lg" }) {
   const sizeClass = size === "lg" ? "h-8 w-8" : size === "sm" ? "h-5 w-5" : "h-5 w-5";
@@ -126,9 +104,31 @@ function getTypeLabel(type: Notification["type"]) {
 
 export default function NotificationsPage() {
   const navigate = useNavigate();
-  const [notifications, setNotifications] = useState(mockNotifications);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null);
   
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      try {
+        const response = await api("/notifications");
+        if (response.ok) {
+          const data = await response.json();
+          const mappedNotifications = (data.items || []).map(mapApiNotificationToUi);
+          setNotifications(mappedNotifications);
+        }
+      } catch (error: any) {
+        if (error.message !== "Unauthorized") {
+          console.error("Failed to fetch notifications:", error);
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchNotifications();
+  }, []);
+
   const unreadCount = notifications.filter(n => !n.read).length;
 
   const markAllAsRead = () => {
@@ -184,8 +184,16 @@ export default function NotificationsPage() {
           </div>
         </div>
 
+        {/* Loading state */}
+        {isLoading && (
+          <div className="flex items-center justify-center py-16">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          </div>
+        )}
+
         {/* Notifications list */}
-        <div className="space-y-2">
+        {!isLoading && notifications.length > 0 && (
+          <div className="space-y-2">
           {notifications.map((notification) => (
             <div
               key={notification.id}
@@ -221,9 +229,10 @@ export default function NotificationsPage() {
               </div>
             </div>
           ))}
-        </div>
+          </div>
+        )}
 
-        {notifications.length === 0 && (
+        {!isLoading && notifications.length === 0 && (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <Bell className="h-12 w-12 text-muted-foreground/50 mb-4" />
             <h3 className="font-medium text-foreground">No notifications</h3>
