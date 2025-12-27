@@ -154,6 +154,7 @@ export default function SettingsPage() {
   const [isLoadingMembers, setIsLoadingMembers] = useState(false);
   const [isLoadingInvitations, setIsLoadingInvitations] = useState(false);
   const [isInviting, setIsInviting] = useState(false);
+  const [isUpdatingRole, setIsUpdatingRole] = useState(false);
   const [memberToRemove, setMemberToRemove] = useState<TeamMember | null>(null);
   const [memberToEdit, setMemberToEdit] = useState<TeamMember | null>(null);
   const [invitationToCancel, setInvitationToCancel] = useState<PendingInvitation | null>(null);
@@ -323,16 +324,29 @@ export default function SettingsPage() {
     }
   };
 
-  const handleUpdateRole = () => {
-    if (memberToEdit && editRole) {
-      setTeamMembers(members => 
-        members.map(m => 
-          m.id === memberToEdit.id ? { ...m, role: editRole as TeamMember["role"] } : m
-        )
-      );
-      toast.success(`${memberToEdit.name}'s role updated to ${roleLabels[editRole]}`);
-      setMemberToEdit(null);
-      setEditRole("");
+  const handleUpdateRole = async () => {
+    if (!memberToEdit || !editRole) return;
+    
+    setIsUpdatingRole(true);
+    try {
+      const response = await api(`/team_members/${memberToEdit.id}`, {
+        method: "PUT",
+        body: { role: editRole },
+      });
+      if (response.ok) {
+        toast.success(`${memberToEdit.name}'s role updated to ${roleLabels[editRole]}`);
+        setMemberToEdit(null);
+        setEditRole("");
+        fetchTeamMembers();
+      } else {
+        const error = await response.json();
+        toast.error(error.message || "Failed to update role");
+      }
+    } catch (error) {
+      console.error("Error updating role:", error);
+      toast.error("Failed to update role");
+    } finally {
+      setIsUpdatingRole(false);
     }
   };
 
@@ -908,10 +922,11 @@ export default function SettingsPage() {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setMemberToEdit(null)}>
+            <Button variant="outline" onClick={() => setMemberToEdit(null)} disabled={isUpdatingRole}>
               Cancel
             </Button>
-            <Button onClick={handleUpdateRole}>
+            <Button onClick={handleUpdateRole} disabled={isUpdatingRole}>
+              {isUpdatingRole && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Update role
             </Button>
           </DialogFooter>
