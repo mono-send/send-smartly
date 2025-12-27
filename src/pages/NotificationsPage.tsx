@@ -131,8 +131,22 @@ export default function NotificationsPage() {
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
-  const markAllAsRead = () => {
-    setNotifications(notifications.map(n => ({ ...n, read: true })));
+  const [isMarkingAllRead, setIsMarkingAllRead] = useState(false);
+
+  const markAllAsRead = async () => {
+    setIsMarkingAllRead(true);
+    try {
+      const response = await api("/notifications/read", { method: "POST" });
+      if (response.ok) {
+        setNotifications(notifications.map(n => ({ ...n, read: true })));
+      }
+    } catch (error: any) {
+      if (error.message !== "Unauthorized") {
+        console.error("Failed to mark notifications as read:", error);
+      }
+    } finally {
+      setIsMarkingAllRead(false);
+    }
   };
 
   const markAsRead = (id: string) => {
@@ -169,8 +183,8 @@ export default function NotificationsPage() {
           </div>
           <div className="flex items-center gap-2">
             {unreadCount > 0 && (
-              <Button variant="outline" size="sm" onClick={markAllAsRead}>
-                Mark all as read
+              <Button variant="outline" size="sm" onClick={markAllAsRead} disabled={isMarkingAllRead}>
+                {isMarkingAllRead ? "Marking..." : "Mark all as read"}
               </Button>
             )}
             <Button 
