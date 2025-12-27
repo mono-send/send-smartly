@@ -54,6 +54,8 @@ export default function DomainsPage() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [newDomain, setNewDomain] = useState("");
   const [selectedRegion, setSelectedRegion] = useState("us-east-1");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [regionFilter, setRegionFilter] = useState("all");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [domainToRemove, setDomainToRemove] = useState<{ id: string; domain: string } | null>(null);
   const [domains, setDomains] = useState<Domain[]>([]);
@@ -61,8 +63,24 @@ export default function DomainsPage() {
   const [isDeleting, setIsDeleting] = useState(false);
 
   const fetchDomains = async () => {
+    setIsLoading(true);
     try {
-      const response = await api("/domains");
+      const params = new URLSearchParams();
+
+      if (search.trim()) {
+        params.append("search", search.trim());
+      }
+
+      if (statusFilter !== "all") {
+        params.append("status", statusFilter);
+      }
+
+      if (regionFilter !== "all") {
+        params.append("region", regionFilter);
+      }
+
+      const queryString = params.toString();
+      const response = await api(`/domains${queryString ? `?${queryString}` : ""}`);
       if (response.ok) {
         const data = await response.json();
         setDomains(data);
@@ -77,8 +95,12 @@ export default function DomainsPage() {
   };
 
   useEffect(() => {
-    fetchDomains();
-  }, []);
+    const timeout = setTimeout(() => {
+      fetchDomains();
+    }, 300);
+
+    return () => clearTimeout(timeout);
+  }, [search, statusFilter, regionFilter]);
 
   const handleAddDomain = async () => {
     if (!newDomain.trim()) {
@@ -135,7 +157,7 @@ export default function DomainsPage() {
             />
           </div>
           
-          <Select defaultValue="all">
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-[140px]">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
@@ -147,7 +169,7 @@ export default function DomainsPage() {
             </SelectContent>
           </Select>
 
-          <Select defaultValue="all">
+          <Select value={regionFilter} onValueChange={setRegionFilter}>
             <SelectTrigger className="w-[140px]">
               <SelectValue placeholder="Region" />
             </SelectTrigger>
@@ -155,6 +177,7 @@ export default function DomainsPage() {
               <SelectItem value="all">All regions</SelectItem>
               <SelectItem value="us-east-1">us-east-1</SelectItem>
               <SelectItem value="eu-west-1">eu-west-1</SelectItem>
+              <SelectItem value="ap-south-1">ap-south-1</SelectItem>
             </SelectContent>
           </Select>
         </div>
