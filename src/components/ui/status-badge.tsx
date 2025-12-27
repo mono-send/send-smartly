@@ -61,7 +61,7 @@ const statusConfig: Record<StatusType, { label: string; className: string }> = {
   },
   suspended: {
     label: "Suspended",
-    className: "bg-warning/10 text-warning border-warning/20",
+    className: "bg-orange-500/10 text-orange-600 border-orange-500/20",
   },
 };
 
