@@ -21,7 +21,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Mail, Megaphone, CreditCard, Users2, Server, Link2, ArrowUpRight, MoreHorizontal, Clock, Send, X, AlertTriangle, LogIn, UserPlus, UserMinus, Shield, Activity, Filter, CalendarIcon } from "lucide-react";
+import { Mail, Megaphone, CreditCard, Users2, Server, Link2, ArrowUpRight, MoreHorizontal, Clock, Send, X, AlertTriangle, LogIn, UserPlus, UserMinus, Shield, Activity, Filter, CalendarIcon, Loader2 } from "lucide-react";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
@@ -37,6 +37,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ConfirmDeleteDialog } from "@/components/dialogs/ConfirmDeleteDialog";
+import { api } from "@/lib/api";
 
 interface TeamMember {
   id: string;
@@ -102,34 +103,27 @@ const getExpiryStatus = (expiresAt: Date): { label: string; isExpired: boolean; 
   return { label: `Expires in ${diffDays} day${diffDays !== 1 ? "s" : ""}`, isExpired: false, isExpiringSoon: false };
 };
 
-interface ActivityLogEntry {
+interface ApiActivityLogEntry {
   id: string;
-  type: "login" | "role_change" | "invitation_sent" | "invitation_accepted" | "member_removed";
-  actor: string;
-  target?: string;
-  details?: string;
-  timestamp: Date;
+  account_id: string;
+  actor_id: string;
+  subject: string;
+  description: string | null;
+  category: string;
+  metadata: Record<string, unknown>;
+  created_at: string;
+  actor_name: string;
+  actor_email: string;
 }
 
-const mockActivityLog: ActivityLogEntry[] = [
-  { id: "act1", type: "login", actor: "You", timestamp: hoursAgo(0.5) },
-  { id: "act2", type: "invitation_sent", actor: "You", target: "sarah@example.com", details: "Editor", timestamp: hoursAgo(2) },
-  { id: "act3", type: "role_change", actor: "You", target: "Jane Smith", details: "Editor → Admin", timestamp: hoursAgo(5) },
-  { id: "act4", type: "invitation_accepted", actor: "Mike Johnson", timestamp: hoursAgo(24) },
-  { id: "act5", type: "login", actor: "Jane Smith", timestamp: hoursAgo(26) },
-  { id: "act6", type: "member_removed", actor: "You", target: "Alex Brown", timestamp: hoursAgo(72) },
-  { id: "act7", type: "invitation_sent", actor: "Jane Smith", target: "tom@example.com", details: "Viewer", timestamp: hoursAgo(96) },
-  { id: "act8", type: "login", actor: "Mike Johnson", timestamp: hoursAgo(120) },
-  // Additional older entries for pagination demo
-  { id: "act9", type: "login", actor: "You", timestamp: hoursAgo(144) },
-  { id: "act10", type: "role_change", actor: "Jane Smith", target: "David Lee", details: "Viewer → Editor", timestamp: hoursAgo(168) },
-  { id: "act11", type: "invitation_sent", actor: "You", target: "chris@example.com", details: "Admin", timestamp: hoursAgo(192) },
-  { id: "act12", type: "login", actor: "Jane Smith", timestamp: hoursAgo(216) },
-  { id: "act13", type: "member_removed", actor: "Jane Smith", target: "David Lee", timestamp: hoursAgo(240) },
-  { id: "act14", type: "invitation_accepted", actor: "Emma Wilson", timestamp: hoursAgo(264) },
-  { id: "act15", type: "login", actor: "You", timestamp: hoursAgo(288) },
-  { id: "act16", type: "invitation_sent", actor: "You", target: "frank@example.com", details: "Viewer", timestamp: hoursAgo(312) },
-];
+interface ActivityLogEntry {
+  id: string;
+  type: "login" | "role_change" | "invitation" | "removal";
+  actor: string;
+  subject: string;
+  description?: string;
+  timestamp: Date;
+}
 
 const ACTIVITY_PAGE_SIZE = 5;
 
@@ -139,31 +133,27 @@ const getActivityIcon = (type: ActivityLogEntry["type"]) => {
       return <LogIn className="h-4 w-4 text-info" />;
     case "role_change":
       return <Shield className="h-4 w-4 text-warning" />;
-    case "invitation_sent":
+    case "invitation":
       return <Send className="h-4 w-4 text-primary" />;
-    case "invitation_accepted":
-      return <UserPlus className="h-4 w-4 text-success" />;
-    case "member_removed":
+    case "removal":
       return <UserMinus className="h-4 w-4 text-destructive" />;
     default:
       return <Activity className="h-4 w-4 text-muted-foreground" />;
   }
 };
 
-const getActivityMessage = (entry: ActivityLogEntry): string => {
-  switch (entry.type) {
+const mapApiCategoryToType = (category: string): ActivityLogEntry["type"] => {
+  switch (category) {
     case "login":
-      return `${entry.actor} logged in`;
+      return "login";
     case "role_change":
-      return `${entry.actor} changed ${entry.target}'s role to ${entry.details?.split(" → ")[1]}`;
-    case "invitation_sent":
-      return `${entry.actor} invited ${entry.target} as ${entry.details}`;
-    case "invitation_accepted":
-      return `${entry.actor} accepted the invitation and joined the team`;
-    case "member_removed":
-      return `${entry.actor} removed ${entry.target} from the team`;
+      return "role_change";
+    case "invitation":
+      return "invitation";
+    case "removal":
+      return "removal";
     default:
-      return "Unknown activity";
+      return "login";
   }
 };
 
@@ -187,8 +177,41 @@ export default function SettingsPage() {
   const [activityVisibleCount, setActivityVisibleCount] = useState(ACTIVITY_PAGE_SIZE);
   const [activityFilter, setActivityFilter] = useState<string[]>([]);
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
+  const [activityLog, setActivityLog] = useState<ActivityLogEntry[]>([]);
+  const [isLoadingActivity, setIsLoadingActivity] = useState(false);
 
-  const filteredActivityLog = mockActivityLog.filter(entry => {
+  // Fetch activity log from API
+  useEffect(() => {
+    const fetchActivityLog = async () => {
+      setIsLoadingActivity(true);
+      try {
+        const response = await api("/activity_logs");
+        if (response.ok) {
+          const data = await response.json();
+          const mappedLogs: ActivityLogEntry[] = data.items.map((item: ApiActivityLogEntry) => ({
+            id: item.id,
+            type: mapApiCategoryToType(item.category),
+            actor: item.actor_name,
+            subject: item.subject,
+            description: item.description,
+            timestamp: new Date(item.created_at),
+          }));
+          setActivityLog(mappedLogs);
+        } else {
+          toast.error("Failed to load activity log");
+        }
+      } catch (error) {
+        console.error("Error fetching activity log:", error);
+        toast.error("Failed to load activity log");
+      } finally {
+        setIsLoadingActivity(false);
+      }
+    };
+
+    fetchActivityLog();
+  }, []);
+
+  const filteredActivityLog = activityLog.filter(entry => {
     // Type filter
     if (activityFilter.length > 0 && !activityFilter.includes(entry.type)) {
       return false;
@@ -586,16 +609,13 @@ export default function SettingsPage() {
                       <ToggleGroupItem value="login" size="sm" className="text-xs gap-1">
                         <LogIn className="h-3 w-3" /> Logins
                       </ToggleGroupItem>
-                      <ToggleGroupItem value="invitation_sent" size="sm" className="text-xs gap-1">
+                      <ToggleGroupItem value="invitation" size="sm" className="text-xs gap-1">
                         <Send className="h-3 w-3" /> Invitations
-                      </ToggleGroupItem>
-                      <ToggleGroupItem value="invitation_accepted" size="sm" className="text-xs gap-1">
-                        <UserPlus className="h-3 w-3" /> Joined
                       </ToggleGroupItem>
                       <ToggleGroupItem value="role_change" size="sm" className="text-xs gap-1">
                         <Shield className="h-3 w-3" /> Role Changes
                       </ToggleGroupItem>
-                      <ToggleGroupItem value="member_removed" size="sm" className="text-xs gap-1">
+                      <ToggleGroupItem value="removal" size="sm" className="text-xs gap-1">
                         <UserMinus className="h-3 w-3" /> Removed
                       </ToggleGroupItem>
                     </ToggleGroup>
@@ -646,7 +666,11 @@ export default function SettingsPage() {
                 </div>
               </CardHeader>
               <CardContent>
-                {filteredActivityLog.length === 0 ? (
+                {isLoadingActivity ? (
+                  <div className="flex justify-center py-8">
+                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  </div>
+                ) : filteredActivityLog.length === 0 ? (
                   <p className="text-sm text-muted-foreground text-center py-4">
                     No activities match the selected filters
                   </p>
@@ -659,10 +683,15 @@ export default function SettingsPage() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm text-foreground">
-                            {getActivityMessage(entry)}
+                            {entry.subject}
                           </p>
+                          {entry.description && (
+                            <p className="text-xs text-muted-foreground">
+                              {entry.description}
+                            </p>
+                          )}
                           <p className="text-xs text-muted-foreground mt-0.5">
-                            {formatTimeAgo(entry.timestamp)}
+                            {entry.actor} • {formatTimeAgo(entry.timestamp)}
                           </p>
                         </div>
                       </div>
