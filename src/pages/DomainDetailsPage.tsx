@@ -1,6 +1,6 @@
 import { TopBar } from "@/components/layout/TopBar";
 import { Button } from "@/components/ui/button";
-import { Globe, Code, MoreHorizontal, ExternalLink, AlertTriangle, Mail, Loader2 } from "lucide-react";
+import { Globe, Code, MoreHorizontal, ExternalLink, AlertTriangle, Mail, Loader2, Copy, Check } from "lucide-react";
 import { useParams, useNavigate } from "react-router-dom";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Switch } from "@/components/ui/switch";
@@ -24,6 +24,8 @@ import { ConfirmDeleteDialog } from "@/components/dialogs/ConfirmDeleteDialog";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
 import { formatDistanceToNow } from "date-fns";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface DNSRecord {
   id: string;
@@ -73,35 +75,77 @@ function RecordStatusBadge({ status }: { status: "verified" | "pending" | "not_s
   );
 }
 
+function CopyableValue({ value, truncate }: { value: string; truncate?: boolean }) {
+  const [copied, setCopied] = useState(false);
+  const [open, setOpen] = useState(false);
+
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(value);
+    setCopied(true);
+    setOpen(true);
+    setTimeout(() => {
+      setCopied(false);
+      setOpen(false);
+    }, 1500);
+  };
+
+  return (
+    <div className="flex items-center gap-2">
+      <span className={cn("font-mono text-sm", truncate && "truncate max-w-[200px]")}>{value}</span>
+      <Tooltip open={copied ? true : open} onOpenChange={setOpen} delayDuration={100}>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 text-code-foreground/60 hover:text-code-foreground hover:bg-code-foreground/10 opacity-0 group-hover:opacity-100 transition-opacity"
+            onClick={handleCopy}
+          >
+            {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>
+          <p>{copied ? "Copied" : "Copy"}</p>
+        </TooltipContent>
+      </Tooltip>
+    </div>
+  );
+}
+
 function DNSRecordsTable({ records }: { records: DNSRecord[] }) {
   return (
     <div className="rounded-lg border border-border overflow-hidden">
-      <Table>
-        <TableHeader>
-          <TableRow className="bg-muted/50">
-            <TableHead className="w-[80px]">Type</TableHead>
-            <TableHead className="w-[180px]">Name</TableHead>
-            <TableHead>Content</TableHead>
+      <TooltipProvider>
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-muted/50">
+              <TableHead className="w-[80px]">Type</TableHead>
+              <TableHead className="w-[180px]">Name</TableHead>
+              <TableHead>Content</TableHead>
             <TableHead className="w-[80px]">TTL</TableHead>
             <TableHead className="w-[80px]">Priority</TableHead>
             <TableHead className="w-[100px]">Status</TableHead>
           </TableRow>
-        </TableHeader>
-        <TableBody>
-          {records.map((record) => (
-            <TableRow key={record.id}>
-              <TableCell className="font-mono text-sm">{record.record_type}</TableCell>
-              <TableCell className="font-mono text-sm">{record.name}</TableCell>
-              <TableCell className="font-mono text-sm truncate max-w-[200px]">{record.content}</TableCell>
-              <TableCell className="text-muted-foreground">{record.ttl}</TableCell>
-              <TableCell className="text-muted-foreground">{record.priority ?? "-"}</TableCell>
-              <TableCell>
-                <RecordStatusBadge status={record.status} />
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {records.map((record) => (
+              <TableRow key={record.id} className="group">
+                <TableCell className="font-mono text-sm">{record.record_type}</TableCell>
+                <TableCell>
+                  <CopyableValue value={record.name} />
+                </TableCell>
+                <TableCell>
+                  <CopyableValue value={record.content} truncate />
+                </TableCell>
+                <TableCell className="text-muted-foreground">{record.ttl}</TableCell>
+                <TableCell className="text-muted-foreground">{record.priority ?? "-"}</TableCell>
+                <TableCell>
+                  <RecordStatusBadge status={record.status} />
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TooltipProvider>
     </div>
   );
 }
