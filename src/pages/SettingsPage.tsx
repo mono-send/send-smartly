@@ -156,6 +156,7 @@ export default function SettingsPage() {
   const [isInviting, setIsInviting] = useState(false);
   const [isUpdatingRole, setIsUpdatingRole] = useState(false);
   const [isRemovingMember, setIsRemovingMember] = useState(false);
+  const [isResendingInvitation, setIsResendingInvitation] = useState<string | null>(null);
   const [memberToRemove, setMemberToRemove] = useState<TeamMember | null>(null);
   const [memberToEdit, setMemberToEdit] = useState<TeamMember | null>(null);
   const [invitationToCancel, setInvitationToCancel] = useState<PendingInvitation | null>(null);
@@ -372,18 +373,26 @@ export default function SettingsPage() {
     setEditRole(member.role);
   };
 
-  const handleResendInvitation = (invitation: PendingInvitation) => {
-    // Reset expiry when resending
-    const now = new Date();
-    const newExpiresAt = new Date(now.getTime() + INVITATION_EXPIRY_DAYS * 24 * 60 * 60 * 1000);
-    setPendingInvitations(prev => 
-      prev.map(inv => 
-        inv.id === invitation.id 
-          ? { ...inv, sentAt: now, expiresAt: newExpiresAt }
-          : inv
-      )
-    );
-    toast.success(`Invitation resent to ${invitation.email}`);
+  const handleResendInvitation = async (invitation: PendingInvitation) => {
+    setIsResendingInvitation(invitation.id);
+    try {
+      const response = await api(`/team_members/${invitation.id}/resend_invitation`, {
+        method: "POST",
+      });
+      if (response.ok) {
+        const data = await response.json();
+        toast.success(`Invitation resent to ${data.email}`);
+        fetchPendingInvitations();
+      } else {
+        const error = await response.json();
+        toast.error(error.detail || error.message || "Failed to resend invitation");
+      }
+    } catch (error) {
+      console.error("Error resending invitation:", error);
+      toast.error("Failed to resend invitation");
+    } finally {
+      setIsResendingInvitation(null);
+    }
   };
 
   const handleCancelInvitation = () => {
@@ -623,8 +632,13 @@ export default function SettingsPage() {
                             variant="ghost" 
                             size="sm"
                             onClick={() => handleResendInvitation(invitation)}
+                            disabled={isResendingInvitation === invitation.id}
                           >
-                            <Send className="mr-1 h-3.5 w-3.5" />
+                            {isResendingInvitation === invitation.id ? (
+                              <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+                            ) : (
+                              <Send className="mr-1 h-3.5 w-3.5" />
+                            )}
                             Resend
                           </Button>
                           <Button 
