@@ -255,7 +255,7 @@ export default function ApiKeysPage() {
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <code className="rounded bg-muted px-2 py-1 font-mono text-xs">
-                          ms_live_{key.key}...
+                          {key.key}...
                         </code>
                         <Button
                           variant="ghost"
