@@ -7,7 +7,7 @@ export function useNotificationCount() {
 
   const fetchCount = useCallback(async () => {
     try {
-      const response = await api("/notifications/count");
+      const response = await api("/notifications/count?is_read=0");
       if (response.ok) {
         const data = await response.json();
         setCount(data.count || 0);
