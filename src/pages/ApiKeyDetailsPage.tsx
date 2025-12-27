@@ -326,7 +326,7 @@ export default function ApiKeyDetailsPage() {
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Token</p>
             <div className="flex items-center gap-2">
               <code className="rounded bg-muted px-2 py-1 font-mono text-sm text-foreground">
-                ms_live_{apiKey.token_prefix}...
+                {apiKey.token_prefix}...
               </code>
               <Button
                 variant="ghost"
