@@ -35,7 +35,7 @@ interface ApiKeyDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   mode: "create" | "edit";
-  initialData?: ApiKeyData;
+  editingKeyId?: string | null;
   onSubmit: (data: ApiKeyData) => void;
   isSubmitting?: boolean;
 }
@@ -56,7 +56,7 @@ export function ApiKeyDialog({
   open,
   onOpenChange,
   mode,
-  initialData,
+  editingKeyId,
   onSubmit,
   isSubmitting = false,
 }: ApiKeyDialogProps) {
@@ -66,25 +66,42 @@ export function ApiKeyDialog({
   const [selectedDomainId, setSelectedDomainId] = useState<string | null>(null);
   const [domains, setDomains] = useState<Domain[]>([]);
   const [isLoadingDomains, setIsLoadingDomains] = useState(false);
+  const [isLoadingKey, setIsLoadingKey] = useState(false);
 
+  // Fetch API key details when editing
   useEffect(() => {
-    if (open && initialData) {
-      setName(initialData.name);
-      setPermission(permissionValueMap[initialData.permission] || initialData.permission || "full_access");
-      if (initialData.domain) {
-        setDomainType("specific");
-        setSelectedDomainId(initialData.domain);
-      } else {
-        setDomainType("all");
-        setSelectedDomainId(null);
-      }
-    } else if (open && !initialData) {
+    if (open && mode === "edit" && editingKeyId) {
+      fetchKeyDetails(editingKeyId);
+    } else if (open && mode === "create") {
       setName("");
       setPermission("full_access");
       setDomainType("all");
       setSelectedDomainId(null);
     }
-  }, [open, initialData]);
+  }, [open, mode, editingKeyId]);
+
+  const fetchKeyDetails = async (keyId: string) => {
+    try {
+      setIsLoadingKey(true);
+      const response = await api(`/api_keys/${keyId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setName(data.name || "");
+        setPermission(data.permission || "full_access");
+        if (data.domain) {
+          setDomainType("specific");
+          setSelectedDomainId(data.domain);
+        } else {
+          setDomainType("all");
+          setSelectedDomainId(null);
+        }
+      }
+    } catch (error) {
+      console.error("Failed to fetch API key details:", error);
+    } finally {
+      setIsLoadingKey(false);
+    }
+  };
 
   useEffect(() => {
     if (open && domainType === "specific" && domains.length === 0) {
@@ -138,15 +155,21 @@ export function ApiKeyDialog({
         </DialogHeader>
 
         <div className="space-y-4 py-4">
-          <div className="space-y-2">
-            <Label htmlFor="keyName">Name</Label>
-            <Input
-              id="keyName"
-              placeholder="e.g., Production"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
-          </div>
+          {isLoadingKey ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : (
+            <>
+              <div className="space-y-2">
+                <Label htmlFor="keyName">Name</Label>
+                <Input
+                  id="keyName"
+                  placeholder="e.g., Production"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                />
+              </div>
 
           <div className="space-y-2">
             <Label htmlFor="permission">Permission</Label>
@@ -200,7 +223,9 @@ export function ApiKeyDialog({
                 </Select>
               )}
             </div>
-          )}
+            )}
+          </>
+        )}
         </div>
 
         <DialogFooter>
