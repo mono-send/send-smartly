@@ -8,8 +8,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Copy, Check, MoreHorizontal, Key } from "lucide-react";
-import { useState } from "react";
+import { Copy, Check, MoreHorizontal, Key, Loader2 } from "lucide-react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   DropdownMenu,
@@ -29,66 +29,101 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { api } from "@/lib/api";
+import { toast } from "sonner";
+import { formatDistanceToNow } from "date-fns";
 
-const mockApiKeys = [
-  {
-    id: "1",
-    name: "Production",
-    token: "ms_live_••••••••••••••••",
-    permission: "Full access",
-    lastUsed: "2 minutes ago",
-    created: "1 month ago",
-  },
-  {
-    id: "2",
-    name: "Development",
-    token: "ms_test_••••••••••••••••",
-    permission: "Sending access",
-    lastUsed: "1 hour ago",
-    created: "2 weeks ago",
-  },
-  {
-    id: "3",
-    name: "Analytics",
-    token: "ms_live_••••••••••••••••",
-    permission: "Read only",
-    lastUsed: "Never",
-    created: "3 days ago",
-  },
-];
+interface ApiKeyItem {
+  id: string;
+  name: string;
+  key: string;
+  permission: string;
+  last_used_at: string | null;
+  created_at: string;
+}
+
+const permissionLabels: Record<string, string> = {
+  full_access: "Full access",
+  sending_access: "Sending access",
+  read_only: "Read only",
+};
 
 export default function ApiKeysPage() {
   const navigate = useNavigate();
+  const [apiKeys, setApiKeys] = useState<ApiKeyItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [dialogMode, setDialogMode] = useState<"create" | "edit">("create");
   const [editingKey, setEditingKey] = useState<ApiKeyData | undefined>(undefined);
+  const [editingKeyId, setEditingKeyId] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [revokeDialogOpen, setRevokeDialogOpen] = useState(false);
-  const [keyToRevoke, setKeyToRevoke] = useState<typeof mockApiKeys[0] | null>(null);
+  const [keyToRevoke, setKeyToRevoke] = useState<ApiKeyItem | null>(null);
+  const [isRevoking, setIsRevoking] = useState(false);
 
-  const handleOpenRevoke = (key: typeof mockApiKeys[0]) => {
+  useEffect(() => {
+    fetchApiKeys();
+  }, []);
+
+  const fetchApiKeys = async () => {
+    try {
+      setIsLoading(true);
+      const response = await api("/api_keys");
+      if (response.ok) {
+        const data = await response.json();
+        setApiKeys(data.items || []);
+      }
+    } catch (error) {
+      console.error("Failed to fetch API keys:", error);
+      toast.error("Failed to load API keys");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleOpenRevoke = (key: ApiKeyItem) => {
     setKeyToRevoke(key);
     setRevokeDialogOpen(true);
   };
 
-  const handleConfirmRevoke = () => {
-    console.log("Revoked key:", keyToRevoke?.id);
-    // In real app, would revoke key via backend
-    setRevokeDialogOpen(false);
-    setKeyToRevoke(null);
+  const handleConfirmRevoke = async () => {
+    if (!keyToRevoke) return;
+    
+    try {
+      setIsRevoking(true);
+      const response = await api(`/api_keys/${keyToRevoke.id}`, { method: "DELETE" });
+      
+      if (response.ok) {
+        toast.success("API key revoked successfully");
+        setApiKeys((prev) => prev.filter((k) => k.id !== keyToRevoke.id));
+      } else if (response.status === 404) {
+        toast.error("API key not found");
+      } else {
+        toast.error("Failed to revoke API key");
+      }
+    } catch (error) {
+      console.error("Failed to revoke API key:", error);
+      toast.error("Failed to revoke API key");
+    } finally {
+      setIsRevoking(false);
+      setRevokeDialogOpen(false);
+      setKeyToRevoke(null);
+    }
   };
 
   const handleOpenCreate = () => {
     setDialogMode("create");
     setEditingKey(undefined);
+    setEditingKeyId(null);
     setIsDialogOpen(true);
   };
 
-  const handleOpenEdit = (key: typeof mockApiKeys[0]) => {
+  const handleOpenEdit = (key: ApiKeyItem) => {
     setDialogMode("edit");
+    setEditingKeyId(key.id);
     setEditingKey({
       name: key.name,
-      permission: key.permission,
+      permission: permissionLabels[key.permission] || key.permission,
       domain: "All domains",
     });
     setIsDialogOpen(true);
@@ -96,13 +131,23 @@ export default function ApiKeysPage() {
 
   const handleSubmit = (data: ApiKeyData) => {
     console.log("Submitted:", data);
-    // In real app, would save to backend
+    // Refresh the list after dialog closes
+    fetchApiKeys();
   };
 
   const handleCopy = (id: string, token: string) => {
     navigator.clipboard.writeText(token);
     setCopiedId(id);
     setTimeout(() => setCopiedId(null), 2000);
+  };
+
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return "Never";
+    try {
+      return formatDistanceToNow(new Date(dateString), { addSuffix: true });
+    } catch {
+      return "Unknown";
+    }
   };
 
   return (
@@ -134,75 +179,93 @@ export default function ApiKeysPage() {
 
         {/* Table */}
         <div className="rounded-lg border border-border bg-card">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Token</TableHead>
-                <TableHead>Permission</TableHead>
-                <TableHead>Last used</TableHead>
-                <TableHead>Created</TableHead>
-                <TableHead className="w-[50px]"></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {mockApiKeys.map((key) => (
-                <TableRow 
-                  key={key.id} 
-                  className="cursor-pointer"
-                  onClick={() => navigate(`/api-keys/${key.id}`)}
-                >
-                  <TableCell className="font-medium">{key.name}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <code className="rounded bg-muted px-2 py-1 font-mono text-xs">
-                        {key.token}
-                      </code>
-                        <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleCopy(key.id, key.token);
-                        }}
-                      >
-                        {copiedId === key.id ? (
-                          <Check className="h-3.5 w-3.5 text-success" />
-                        ) : (
-                          <Copy className="h-3.5 w-3.5" />
-                        )}
-                      </Button>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="secondary">{key.permission}</Badge>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">{key.lastUsed}</TableCell>
-                  <TableCell className="text-muted-foreground">{key.created}</TableCell>
-                  <TableCell onClick={(e) => e.stopPropagation()}>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => handleOpenEdit(key)}>Edit</DropdownMenuItem>
-                        <DropdownMenuItem>Roll key</DropdownMenuItem>
-                        <DropdownMenuItem 
-                          className="text-destructive"
-                          onClick={() => handleOpenRevoke(key)}
-                        >
-                          Revoke
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
+          {isLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : apiKeys.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <Key className="h-10 w-10 text-muted-foreground/50 mb-3" />
+              <p className="text-muted-foreground">No API keys yet</p>
+              <p className="text-sm text-muted-foreground/70">Create your first API key to get started</p>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Token</TableHead>
+                  <TableHead>Permission</TableHead>
+                  <TableHead>Last used</TableHead>
+                  <TableHead>Created</TableHead>
+                  <TableHead className="w-[50px]"></TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {apiKeys.map((key) => (
+                  <TableRow 
+                    key={key.id} 
+                    className="cursor-pointer"
+                    onClick={() => navigate(`/api-keys/${key.id}`)}
+                  >
+                    <TableCell className="font-medium">{key.name}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <code className="rounded bg-muted px-2 py-1 font-mono text-xs">
+                          ms_live_{key.key}...
+                        </code>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleCopy(key.id, key.key);
+                          }}
+                        >
+                          {copiedId === key.id ? (
+                            <Check className="h-3.5 w-3.5 text-success" />
+                          ) : (
+                            <Copy className="h-3.5 w-3.5" />
+                          )}
+                        </Button>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="secondary">
+                        {permissionLabels[key.permission] || key.permission}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {formatDate(key.last_used_at)}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {formatDate(key.created_at)}
+                    </TableCell>
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => handleOpenEdit(key)}>Edit</DropdownMenuItem>
+                          <DropdownMenuItem>Roll key</DropdownMenuItem>
+                          <DropdownMenuItem 
+                            className="text-destructive"
+                            onClick={() => handleOpenRevoke(key)}
+                          >
+                            Revoke
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </div>
       </div>
 
@@ -223,12 +286,20 @@ export default function ApiKeysPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={isRevoking}>Cancel</AlertDialogCancel>
             <AlertDialogAction 
               onClick={handleConfirmRevoke}
+              disabled={isRevoking}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Revoke
+              {isRevoking ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Revoking...
+                </>
+              ) : (
+                "Revoke"
+              )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
