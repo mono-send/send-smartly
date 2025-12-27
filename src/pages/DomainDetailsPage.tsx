@@ -25,7 +25,6 @@ import { toast } from "sonner";
 import { api } from "@/lib/api";
 import { formatDistanceToNow } from "date-fns";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface DNSRecord {
   id: string;
