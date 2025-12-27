@@ -17,11 +17,18 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useState, useEffect } from "react";
+import { api } from "@/lib/api";
+import { Loader2 } from "lucide-react";
 
 export interface ApiKeyData {
   name: string;
   permission: string;
-  domain: string;
+  domain: string | null;
+}
+
+interface Domain {
+  id: string;
+  name: string;
 }
 
 interface ApiKeyDialogProps {
@@ -30,28 +37,19 @@ interface ApiKeyDialogProps {
   mode: "create" | "edit";
   initialData?: ApiKeyData;
   onSubmit: (data: ApiKeyData) => void;
+  isSubmitting?: boolean;
 }
 
 const permissionValueMap: Record<string, string> = {
-  "Full access": "full",
-  "Sending access": "sending",
-  "Read only": "read",
+  "Full access": "full_access",
+  "Sending access": "sending_access",
+  "Read only": "read_only",
 };
 
 const permissionLabelMap: Record<string, string> = {
-  full: "Full access",
-  sending: "Sending access",
-  read: "Read only",
-};
-
-const domainValueMap: Record<string, string> = {
-  "All domains": "all",
-  "Specific domains": "specific",
-};
-
-const domainLabelMap: Record<string, string> = {
-  all: "All domains",
-  specific: "Specific domains",
+  full_access: "Full access",
+  sending_access: "Sending access",
+  read_only: "Read only",
 };
 
 export function ApiKeyDialog({
@@ -60,33 +58,72 @@ export function ApiKeyDialog({
   mode,
   initialData,
   onSubmit,
+  isSubmitting = false,
 }: ApiKeyDialogProps) {
   const [name, setName] = useState("");
-  const [permission, setPermission] = useState("full");
-  const [domain, setDomain] = useState("all");
+  const [permission, setPermission] = useState("full_access");
+  const [domainType, setDomainType] = useState<"all" | "specific">("all");
+  const [selectedDomainId, setSelectedDomainId] = useState<string | null>(null);
+  const [domains, setDomains] = useState<Domain[]>([]);
+  const [isLoadingDomains, setIsLoadingDomains] = useState(false);
 
   useEffect(() => {
     if (open && initialData) {
       setName(initialData.name);
-      setPermission(permissionValueMap[initialData.permission] || "full");
-      setDomain(domainValueMap[initialData.domain] || "all");
+      setPermission(permissionValueMap[initialData.permission] || initialData.permission || "full_access");
+      if (initialData.domain) {
+        setDomainType("specific");
+        setSelectedDomainId(initialData.domain);
+      } else {
+        setDomainType("all");
+        setSelectedDomainId(null);
+      }
     } else if (open && !initialData) {
       setName("");
-      setPermission("full");
-      setDomain("all");
+      setPermission("full_access");
+      setDomainType("all");
+      setSelectedDomainId(null);
     }
   }, [open, initialData]);
+
+  useEffect(() => {
+    if (open && domainType === "specific" && domains.length === 0) {
+      fetchDomains();
+    }
+  }, [open, domainType]);
+
+  const fetchDomains = async () => {
+    try {
+      setIsLoadingDomains(true);
+      const response = await api("/domains");
+      if (response.ok) {
+        const data = await response.json();
+        setDomains(data.items || []);
+      }
+    } catch (error) {
+      console.error("Failed to fetch domains:", error);
+    } finally {
+      setIsLoadingDomains(false);
+    }
+  };
+
+  const handleDomainTypeChange = (value: string) => {
+    setDomainType(value as "all" | "specific");
+    if (value === "all") {
+      setSelectedDomainId(null);
+    }
+  };
 
   const handleSubmit = () => {
     onSubmit({
       name,
-      permission: permissionLabelMap[permission],
-      domain: domainLabelMap[domain],
+      permission,
+      domain: domainType === "specific" ? selectedDomainId : null,
     });
-    onOpenChange(false);
   };
 
   const isEdit = mode === "edit";
+  const isFormValid = name.trim() !== "" && (domainType === "all" || selectedDomainId);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -118,33 +155,67 @@ export function ApiKeyDialog({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="full">Full access</SelectItem>
-                <SelectItem value="sending">Sending access</SelectItem>
-                <SelectItem value="read">Read only</SelectItem>
+                <SelectItem value="full_access">Full access</SelectItem>
+                <SelectItem value="sending_access">Sending access</SelectItem>
+                <SelectItem value="read_only">Read only</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           <div className="space-y-2">
             <Label>Domain access</Label>
-            <Select value={domain} onValueChange={setDomain}>
+            <Select value={domainType} onValueChange={handleDomainTypeChange}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All domains</SelectItem>
-                <SelectItem value="specific">Specific domains</SelectItem>
+                <SelectItem value="specific">Specific domain</SelectItem>
               </SelectContent>
             </Select>
           </div>
+
+          {domainType === "specific" && (
+            <div className="space-y-2">
+              <Label>Select domain</Label>
+              {isLoadingDomains ? (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Loading domains...
+                </div>
+              ) : domains.length === 0 ? (
+                <p className="text-sm text-muted-foreground py-2">No domains available</p>
+              ) : (
+                <Select value={selectedDomainId || ""} onValueChange={setSelectedDomainId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a domain" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {domains.map((domain) => (
+                      <SelectItem key={domain.id} value={domain.id}>
+                        {domain.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+          )}
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
             Cancel
           </Button>
-          <Button onClick={handleSubmit}>
-            {isEdit ? "Save changes" : "Create key"}
+          <Button onClick={handleSubmit} disabled={!isFormValid || isSubmitting}>
+            {isSubmitting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                {isEdit ? "Saving..." : "Creating..."}
+              </>
+            ) : (
+              isEdit ? "Save changes" : "Create key"
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>

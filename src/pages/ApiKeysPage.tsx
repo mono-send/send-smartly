@@ -60,6 +60,7 @@ export default function ApiKeysPage() {
   const [revokeDialogOpen, setRevokeDialogOpen] = useState(false);
   const [keyToRevoke, setKeyToRevoke] = useState<ApiKeyItem | null>(null);
   const [isRevoking, setIsRevoking] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
 
   useEffect(() => {
     fetchApiKeys();
@@ -129,10 +130,44 @@ export default function ApiKeysPage() {
     setIsDialogOpen(true);
   };
 
-  const handleSubmit = (data: ApiKeyData) => {
-    console.log("Submitted:", data);
-    // Refresh the list after dialog closes
-    fetchApiKeys();
+  const handleSubmit = async (data: ApiKeyData) => {
+    if (dialogMode === "create") {
+      try {
+        setIsCreating(true);
+        const response = await api("/api_keys", {
+          method: "POST",
+          body: JSON.stringify({
+            name: data.name,
+            permission: data.permission,
+            domain: data.domain,
+          }),
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          toast.success("API key created successfully");
+          // Copy the full token to clipboard
+          if (result.token) {
+            navigator.clipboard.writeText(result.token);
+            toast.info("Full token copied to clipboard - save it now, it won't be shown again!");
+          }
+          setIsDialogOpen(false);
+          fetchApiKeys();
+        } else {
+          const error = await response.json().catch(() => ({}));
+          toast.error(error.detail || "Failed to create API key");
+        }
+      } catch (error) {
+        console.error("Failed to create API key:", error);
+        toast.error("Failed to create API key");
+      } finally {
+        setIsCreating(false);
+      }
+    } else {
+      // Edit mode - just refresh
+      setIsDialogOpen(false);
+      fetchApiKeys();
+    }
   };
 
   const handleCopy = (id: string, token: string) => {
@@ -275,6 +310,7 @@ export default function ApiKeysPage() {
         mode={dialogMode}
         initialData={editingKey}
         onSubmit={handleSubmit}
+        isSubmitting={isCreating}
       />
 
       <AlertDialog open={revokeDialogOpen} onOpenChange={setRevokeDialogOpen}>
