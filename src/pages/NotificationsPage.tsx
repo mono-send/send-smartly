@@ -155,9 +155,29 @@ export default function NotificationsPage() {
     ));
   };
 
-  const openNotification = (notification: Notification) => {
-    markAsRead(notification.id);
+  const [isLoadingDetails, setIsLoadingDetails] = useState(false);
+
+  const openNotification = async (notification: Notification) => {
     setSelectedNotification(notification);
+    markAsRead(notification.id);
+    setIsLoadingDetails(true);
+    try {
+      const response = await api(`/notifications/${notification.id}`);
+      if (response.ok) {
+        const data: ApiNotification = await response.json();
+        const updatedNotification = mapApiNotificationToUi(data);
+        setSelectedNotification(updatedNotification);
+        setNotifications(prev => prev.map(n => 
+          n.id === notification.id ? updatedNotification : n
+        ));
+      }
+    } catch (error: any) {
+      if (error.message !== "Unauthorized") {
+        console.error("Failed to fetch notification details:", error);
+      }
+    } finally {
+      setIsLoadingDetails(false);
+    }
   };
 
   const deleteNotification = (id: string) => {
