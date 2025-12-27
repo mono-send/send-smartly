@@ -1,10 +1,10 @@
 import { TopBar } from "@/components/layout/TopBar";
 import { Button } from "@/components/ui/button";
-import { Globe, Code, MoreHorizontal, ExternalLink, AlertTriangle, Mail } from "lucide-react";
+import { Globe, Code, MoreHorizontal, ExternalLink, AlertTriangle, Mail, Loader2 } from "lucide-react";
 import { useParams, useNavigate } from "react-router-dom";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Switch } from "@/components/ui/switch";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Table,
   TableBody,
@@ -22,180 +22,39 @@ import {
 import { cn } from "@/lib/utils";
 import { ConfirmDeleteDialog } from "@/components/dialogs/ConfirmDeleteDialog";
 import { toast } from "sonner";
+import { api } from "@/lib/api";
+import { formatDistanceToNow } from "date-fns";
 
-// Mock data - in real app would fetch by ID
-const mockDomains: Record<string, {
+interface DNSRecord {
+  id: string;
+  dns_standard: "DKIM" | "SPF" | "MX";
+  record_type: string;
+  name: string;
+  content: string;
+  ttl: string;
+  priority: number | null;
+  status: "verified" | "pending" | "not_started";
+  created_at: string;
+}
+
+interface DomainData {
   id: string;
   domain: string;
   status: "verified" | "pending";
   region: string;
-  regionLabel: string;
-  created: string;
-  sendingEnabled: boolean;
-  receivingEnabled: boolean;
-  dkimRecords: Array<{
-    type: string;
-    name: string;
-    content: string;
-    ttl: string;
-    priority?: string;
-    status: "verified" | "pending" | "not_started";
-  }>;
-  spfRecords: Array<{
-    type: string;
-    name: string;
-    content: string;
-    ttl: string;
-    priority?: string;
-    status: "verified" | "pending" | "not_started";
-  }>;
-  mxRecords: Array<{
-    type: string;
-    name: string;
-    content: string;
-    ttl: string;
-    priority?: string;
-    status: "verified" | "pending" | "not_started";
-  }>;
-}> = {
-  "1": {
-    id: "1",
-    domain: "mail.monosend.co",
-    status: "verified",
-    region: "us-east-1",
-    regionLabel: "North Virginia (us-east-1)",
-    created: "2 days ago",
-    sendingEnabled: true,
-    receivingEnabled: false,
-    dkimRecords: [
-      {
-        type: "TXT",
-        name: "resend._domainkey",
-        content: "p=MIGfMA0GCSqGSIb3DQEB...",
-        ttl: "Auto",
-        status: "verified"
-      }
-    ],
-    spfRecords: [
-      {
-        type: "MX",
-        name: "send",
-        content: "feedback-smtp.us-east-1...",
-        ttl: "60",
-        priority: "10",
-        status: "verified"
-      },
-      {
-        type: "TXT",
-        name: "send",
-        content: "v=spf1 include:amazonses...",
-        ttl: "60",
-        status: "verified"
-      }
-    ],
-    mxRecords: [
-      {
-        type: "MX",
-        name: "@",
-        content: "inbound-smtp.us-east-1...",
-        ttl: "60",
-        priority: "9",
-        status: "not_started"
-      }
-    ]
-  },
-  "2": {
-    id: "2",
-    domain: "notify.example.com",
-    status: "verified",
-    region: "us-east-1",
-    regionLabel: "North Virginia (us-east-1)",
-    created: "1 week ago",
-    sendingEnabled: true,
-    receivingEnabled: true,
-    dkimRecords: [
-      {
-        type: "TXT",
-        name: "resend._domainkey",
-        content: "p=MIGfMA0GCSqGSIb3DQEB...",
-        ttl: "Auto",
-        status: "verified"
-      }
-    ],
-    spfRecords: [
-      {
-        type: "MX",
-        name: "send",
-        content: "feedback-smtp.us-east-1...",
-        ttl: "60",
-        priority: "10",
-        status: "verified"
-      },
-      {
-        type: "TXT",
-        name: "send",
-        content: "v=spf1 include:amazonses...",
-        ttl: "60",
-        status: "verified"
-      }
-    ],
-    mxRecords: [
-      {
-        type: "MX",
-        name: "@",
-        content: "inbound-smtp.us-east-1...",
-        ttl: "60",
-        priority: "9",
-        status: "verified"
-      }
-    ]
-  },
-  "3": {
-    id: "3",
-    domain: "updates.startup.io",
-    status: "pending",
-    region: "eu-west-1",
-    regionLabel: "Ireland (eu-west-1)",
-    created: "3 hours ago",
-    sendingEnabled: false,
-    receivingEnabled: false,
-    dkimRecords: [
-      {
-        type: "TXT",
-        name: "resend._domainkey",
-        content: "p=MIGfMA0GCSqGSIb3DQEB...",
-        ttl: "Auto",
-        status: "pending"
-      }
-    ],
-    spfRecords: [
-      {
-        type: "MX",
-        name: "send",
-        content: "feedback-smtp.eu-west-1...",
-        ttl: "60",
-        priority: "10",
-        status: "pending"
-      },
-      {
-        type: "TXT",
-        name: "send",
-        content: "v=spf1 include:amazonses...",
-        ttl: "60",
-        status: "pending"
-      }
-    ],
-    mxRecords: [
-      {
-        type: "MX",
-        name: "@",
-        content: "inbound-smtp.eu-west-1...",
-        ttl: "60",
-        priority: "9",
-        status: "not_started"
-      }
-    ]
-  }
+  enable_sending: boolean;
+  enable_receiving: boolean;
+  created_at: string;
+  dns_records: DNSRecord[];
+}
+
+const regionLabels: Record<string, { label: string; flag: string }> = {
+  "us-east-1": { label: "North Virginia (us-east-1)", flag: "🇺🇸" },
+  "us-west-2": { label: "Oregon (us-west-2)", flag: "🇺🇸" },
+  "eu-west-1": { label: "Ireland (eu-west-1)", flag: "🇮🇪" },
+  "eu-central-1": { label: "Frankfurt (eu-central-1)", flag: "🇩🇪" },
+  "ap-southeast-1": { label: "Singapore (ap-southeast-1)", flag: "🇸🇬" },
+  "ap-northeast-1": { label: "Tokyo (ap-northeast-1)", flag: "🇯🇵" },
 };
 
 function RecordStatusBadge({ status }: { status: "verified" | "pending" | "not_started" }) {
@@ -214,7 +73,7 @@ function RecordStatusBadge({ status }: { status: "verified" | "pending" | "not_s
   );
 }
 
-function DNSRecordsTable({ records }: { records: typeof mockDomains["1"]["dkimRecords"] }) {
+function DNSRecordsTable({ records }: { records: DNSRecord[] }) {
   return (
     <div className="rounded-lg border border-border overflow-hidden">
       <Table>
@@ -229,13 +88,13 @@ function DNSRecordsTable({ records }: { records: typeof mockDomains["1"]["dkimRe
           </TableRow>
         </TableHeader>
         <TableBody>
-          {records.map((record, index) => (
-            <TableRow key={index}>
-              <TableCell className="font-mono text-sm">{record.type}</TableCell>
+          {records.map((record) => (
+            <TableRow key={record.id}>
+              <TableCell className="font-mono text-sm">{record.record_type}</TableCell>
               <TableCell className="font-mono text-sm">{record.name}</TableCell>
               <TableCell className="font-mono text-sm truncate max-w-[200px]">{record.content}</TableCell>
               <TableCell className="text-muted-foreground">{record.ttl}</TableCell>
-              <TableCell className="text-muted-foreground">{record.priority || "-"}</TableCell>
+              <TableCell className="text-muted-foreground">{record.priority ?? "-"}</TableCell>
               <TableCell>
                 <RecordStatusBadge status={record.status} />
               </TableCell>
@@ -250,19 +109,79 @@ function DNSRecordsTable({ records }: { records: typeof mockDomains["1"]["dkimRe
 export default function DomainDetailsPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [domain, setDomain] = useState<DomainData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [sendingEnabled, setSendingEnabled] = useState(false);
   const [receivingEnabled, setReceivingEnabled] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  
-  const domain = id ? mockDomains[id] : null;
+  const [isDeleting, setIsDeleting] = useState(false);
 
-  // Initialize state from domain data
-  useState(() => {
-    if (domain) {
-      setSendingEnabled(domain.sendingEnabled);
-      setReceivingEnabled(domain.receivingEnabled);
+  useEffect(() => {
+    const fetchDomain = async () => {
+      if (!id) return;
+      try {
+        const response = await api(`/domains/${id}`);
+        if (response.ok) {
+          const data = await response.json();
+          setDomain(data);
+          setSendingEnabled(data.enable_sending);
+          setReceivingEnabled(data.enable_receiving);
+        } else {
+          const data = await response.json();
+          toast.error(data.detail || "Failed to load domain");
+          setDomain(null);
+        }
+      } catch (error: any) {
+        if (error.message !== "Unauthorized") {
+          toast.error("An error occurred while loading domain");
+        }
+        setDomain(null);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchDomain();
+  }, [id]);
+
+  const handleDelete = async () => {
+    if (!domain) return;
+    setIsDeleting(true);
+    try {
+      const response = await api(`/domains/${domain.id}`, {
+        method: "DELETE",
+      });
+      if (response.ok) {
+        const data = await response.json();
+        toast.success(data.message || "Domain removed successfully");
+        navigate("/domains");
+      } else {
+        const data = await response.json();
+        toast.error(data.detail || "Failed to remove domain");
+      }
+    } catch (error: any) {
+      if (error.message !== "Unauthorized") {
+        toast.error("An error occurred. Please try again.");
+      }
+    } finally {
+      setIsDeleting(false);
     }
-  });
+  };
+
+  if (isLoading) {
+    return (
+      <>
+        <TopBar 
+          title="Domains" 
+          showBackButton
+          onBack={() => navigate("/domains")}
+        />
+        <div className="flex items-center justify-center p-12">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      </>
+    );
+  }
 
   if (!domain) {
     return (
@@ -278,6 +197,12 @@ export default function DomainDetailsPage() {
       </>
     );
   }
+
+  const dkimRecords = domain.dns_records.filter(r => r.dns_standard === "DKIM");
+  const spfRecords = domain.dns_records.filter(r => r.dns_standard === "SPF");
+  const mxRecords = domain.dns_records.filter(r => r.dns_standard === "MX");
+
+  const regionInfo = regionLabels[domain.region] || { label: domain.region, flag: "🌍" };
 
   return (
     <>
@@ -329,7 +254,9 @@ export default function DomainDetailsPage() {
         <div className="grid grid-cols-2 md:grid-cols-3 gap-8 mb-10">
           <div>
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Created</p>
-            <p className="text-foreground">{domain.created}</p>
+            <p className="text-foreground">
+              {formatDistanceToNow(new Date(domain.created_at), { addSuffix: true })}
+            </p>
           </div>
           <div>
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Status</p>
@@ -338,8 +265,8 @@ export default function DomainDetailsPage() {
           <div>
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Region</p>
             <div className="flex items-center gap-2">
-              <span className="text-lg">🇺🇸</span>
-              <p className="text-foreground">{domain.regionLabel}</p>
+              <span className="text-lg">{regionInfo.flag}</span>
+              <p className="text-foreground">{regionInfo.label}</p>
             </div>
           </div>
         </div>
@@ -366,7 +293,11 @@ export default function DomainDetailsPage() {
               <span className="font-medium text-sm">DKIM</span>
               <ExternalLink className="h-3.5 w-3.5 text-muted-foreground" />
             </div>
-            <DNSRecordsTable records={domain.dkimRecords} />
+            {dkimRecords.length > 0 ? (
+              <DNSRecordsTable records={dkimRecords} />
+            ) : (
+              <p className="text-sm text-muted-foreground">No DKIM records configured</p>
+            )}
           </div>
 
           {/* Enable Sending - SPF */}
@@ -382,7 +313,11 @@ export default function DomainDetailsPage() {
               <span className="font-medium text-sm">SPF</span>
               <ExternalLink className="h-3.5 w-3.5 text-muted-foreground" />
             </div>
-            <DNSRecordsTable records={domain.spfRecords} />
+            {spfRecords.length > 0 ? (
+              <DNSRecordsTable records={spfRecords} />
+            ) : (
+              <p className="text-sm text-muted-foreground">No SPF records configured</p>
+            )}
           </div>
 
           {/* Enable Receiving - MX */}
@@ -398,7 +333,11 @@ export default function DomainDetailsPage() {
               <span className="font-medium text-sm">MX</span>
               <ExternalLink className="h-3.5 w-3.5 text-muted-foreground" />
             </div>
-            <DNSRecordsTable records={domain.mxRecords} />
+            {mxRecords.length > 0 ? (
+              <DNSRecordsTable records={mxRecords} />
+            ) : (
+              <p className="text-sm text-muted-foreground">No MX records configured</p>
+            )}
           </div>
         </div>
       </div>
@@ -408,11 +347,8 @@ export default function DomainDetailsPage() {
         onOpenChange={setIsDeleteDialogOpen}
         title="Remove domain"
         description={`Are you sure you want to remove "${domain.domain}"? This action cannot be undone and will stop all email sending and receiving for this domain.`}
-        confirmLabel="Remove domain"
-        onConfirm={() => {
-          toast.success("Domain removed successfully");
-          navigate("/domains");
-        }}
+        confirmLabel={isDeleting ? "Removing..." : "Remove domain"}
+        onConfirm={handleDelete}
       />
     </>
   );
