@@ -307,7 +307,7 @@ export default function SettingsPage() {
         fetchPendingInvitations();
       } else {
         const error = await response.json();
-        toast.error(error.message || "Failed to send invitation");
+        toast.error(error.detail || error.message || "Failed to send invitation");
       }
     } catch (error) {
       console.error("Error sending invitation:", error);
