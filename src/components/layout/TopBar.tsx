@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Plus, Bell } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useNotificationCount } from "@/hooks/useNotificationCount";
 
 interface TopBarProps {
   title: string;
@@ -14,11 +15,9 @@ interface TopBarProps {
   children?: React.ReactNode;
 }
 
-// Mock unread count - in real app would come from state/context
-const UNREAD_NOTIFICATIONS = 3;
-
 export function TopBar({ title, subtitle, action, showBackButton, onBack, children }: TopBarProps) {
   const navigate = useNavigate();
+  const { count: unreadCount } = useNotificationCount();
 
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-border bg-background/95 px-6 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -51,7 +50,7 @@ export function TopBar({ title, subtitle, action, showBackButton, onBack, childr
           onClick={() => navigate("/notifications")}
         >
           <Bell className="h-4 w-4" />
-          {UNREAD_NOTIFICATIONS > 0 && (
+          {unreadCount > 0 && (
             <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-destructive" />
           )}
         </Button>
