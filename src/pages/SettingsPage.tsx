@@ -155,6 +155,7 @@ export default function SettingsPage() {
   const [isLoadingInvitations, setIsLoadingInvitations] = useState(false);
   const [isInviting, setIsInviting] = useState(false);
   const [isUpdatingRole, setIsUpdatingRole] = useState(false);
+  const [isRemovingMember, setIsRemovingMember] = useState(false);
   const [memberToRemove, setMemberToRemove] = useState<TeamMember | null>(null);
   const [memberToEdit, setMemberToEdit] = useState<TeamMember | null>(null);
   const [invitationToCancel, setInvitationToCancel] = useState<PendingInvitation | null>(null);
@@ -316,11 +317,27 @@ export default function SettingsPage() {
     }
   };
 
-  const handleRemoveMember = () => {
-    if (memberToRemove) {
-      setTeamMembers(members => members.filter(m => m.id !== memberToRemove.id));
-      toast.success(`${memberToRemove.name} has been removed from the team`);
-      setMemberToRemove(null);
+  const handleRemoveMember = async () => {
+    if (!memberToRemove) return;
+    
+    setIsRemovingMember(true);
+    try {
+      const response = await api(`/team_members/${memberToRemove.id}`, {
+        method: "DELETE",
+      });
+      if (response.ok) {
+        toast.success(`${memberToRemove.name} has been removed from the team`);
+        setMemberToRemove(null);
+        fetchTeamMembers();
+      } else {
+        const error = await response.json();
+        toast.error(error.message || "Failed to remove team member");
+      }
+    } catch (error) {
+      console.error("Error removing team member:", error);
+      toast.error("Failed to remove team member");
+    } finally {
+      setIsRemovingMember(false);
     }
   };
 
@@ -936,11 +953,12 @@ export default function SettingsPage() {
       {/* Remove Member Confirmation Dialog */}
       <ConfirmDeleteDialog
         open={!!memberToRemove}
-        onOpenChange={(open) => !open && setMemberToRemove(null)}
+        onOpenChange={(open) => !open && !isRemovingMember && setMemberToRemove(null)}
         title="Remove team member"
         description={`Are you sure you want to remove ${memberToRemove?.name} (${memberToRemove?.email}) from your team? They will immediately lose access to your account.`}
         confirmLabel="Remove member"
         onConfirm={handleRemoveMember}
+        isLoading={isRemovingMember}
       />
 
       {/* Cancel Invitation Confirmation Dialog */}
