@@ -436,11 +436,7 @@ export default function ApiKeyDetailsPage() {
         open={isEditDialogOpen}
         onOpenChange={setIsEditDialogOpen}
         mode="edit"
-        initialData={{
-          name: apiKey.name,
-          permission: permissionLabels[apiKey.permission] || apiKey.permission,
-          domain: apiKey.domain || "All domains",
-        }}
+        editingKeyId={id}
         onSubmit={handleEditSubmit}
       />
 

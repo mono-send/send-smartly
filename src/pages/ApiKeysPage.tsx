@@ -54,13 +54,12 @@ export default function ApiKeysPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [dialogMode, setDialogMode] = useState<"create" | "edit">("create");
-  const [editingKey, setEditingKey] = useState<ApiKeyData | undefined>(undefined);
   const [editingKeyId, setEditingKeyId] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [revokeDialogOpen, setRevokeDialogOpen] = useState(false);
   const [keyToRevoke, setKeyToRevoke] = useState<ApiKeyItem | null>(null);
   const [isRevoking, setIsRevoking] = useState(false);
-  const [isCreating, setIsCreating] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     fetchApiKeys();
@@ -114,7 +113,6 @@ export default function ApiKeysPage() {
 
   const handleOpenCreate = () => {
     setDialogMode("create");
-    setEditingKey(undefined);
     setEditingKeyId(null);
     setIsDialogOpen(true);
   };
@@ -122,31 +120,26 @@ export default function ApiKeysPage() {
   const handleOpenEdit = (key: ApiKeyItem) => {
     setDialogMode("edit");
     setEditingKeyId(key.id);
-    setEditingKey({
-      name: key.name,
-      permission: permissionLabels[key.permission] || key.permission,
-      domain: "All domains",
-    });
     setIsDialogOpen(true);
   };
 
   const handleSubmit = async (data: ApiKeyData) => {
-    if (dialogMode === "create") {
-      try {
-        setIsCreating(true);
+    try {
+      setIsSubmitting(true);
+      
+      if (dialogMode === "create") {
         const response = await api("/api_keys", {
           method: "POST",
-          body: JSON.stringify({
+          body: {
             name: data.name,
             permission: data.permission,
             domain: data.domain,
-          }),
+          },
         });
 
         if (response.ok) {
           const result = await response.json();
           toast.success("API key created successfully");
-          // Copy the full token to clipboard
           if (result.token) {
             navigator.clipboard.writeText(result.token);
             toast.info("Full token copied to clipboard - save it now, it won't be shown again!");
@@ -157,16 +150,31 @@ export default function ApiKeysPage() {
           const error = await response.json().catch(() => ({}));
           toast.error(error.detail || "Failed to create API key");
         }
-      } catch (error) {
-        console.error("Failed to create API key:", error);
-        toast.error("Failed to create API key");
-      } finally {
-        setIsCreating(false);
+      } else {
+        // Edit mode - PUT request
+        const response = await api(`/api_keys/${editingKeyId}`, {
+          method: "PUT",
+          body: {
+            name: data.name,
+            permission: data.permission,
+            domain: data.domain,
+          },
+        });
+
+        if (response.ok) {
+          toast.success("API key updated successfully");
+          setIsDialogOpen(false);
+          fetchApiKeys();
+        } else {
+          const error = await response.json().catch(() => ({}));
+          toast.error(error.detail || "Failed to update API key");
+        }
       }
-    } else {
-      // Edit mode - just refresh
-      setIsDialogOpen(false);
-      fetchApiKeys();
+    } catch (error) {
+      console.error("Failed to save API key:", error);
+      toast.error(`Failed to ${dialogMode === "create" ? "create" : "update"} API key`);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -308,9 +316,9 @@ export default function ApiKeysPage() {
         open={isDialogOpen}
         onOpenChange={setIsDialogOpen}
         mode={dialogMode}
-        initialData={editingKey}
+        editingKeyId={editingKeyId}
         onSubmit={handleSubmit}
-        isSubmitting={isCreating}
+        isSubmitting={isSubmitting}
       />
 
       <AlertDialog open={revokeDialogOpen} onOpenChange={setRevokeDialogOpen}>
