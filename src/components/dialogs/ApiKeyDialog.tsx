@@ -28,7 +28,14 @@ export interface ApiKeyData {
 
 interface Domain {
   id: string;
-  name: string;
+  domain: string;
+  name?: string;
+}
+
+interface DomainApiResponse {
+  id: string;
+  domain?: string;
+  name?: string;
 }
 
 interface ApiKeyDialogProps {
@@ -107,7 +114,7 @@ export function ApiKeyDialog({
     if (open && domainType === "specific" && domains.length === 0) {
       fetchDomains();
     }
-  }, [open, domainType]);
+  }, [open, domainType, domains.length]);
 
   const fetchDomains = async () => {
     try {
@@ -115,7 +122,13 @@ export function ApiKeyDialog({
       const response = await api("/domains");
       if (response.ok) {
         const data = await response.json();
-        setDomains(data.items || []);
+        const domainItems: DomainApiResponse[] = Array.isArray(data) ? data : data.items || [];
+        const normalizedDomains = domainItems.map((domain) => ({
+          id: domain.id,
+          domain: domain.domain || domain.name || "",
+          name: domain.name,
+        }));
+        setDomains(normalizedDomains);
       }
     } catch (error) {
       console.error("Failed to fetch domains:", error);
@@ -216,7 +229,7 @@ export function ApiKeyDialog({
                   <SelectContent>
                     {domains.map((domain) => (
                       <SelectItem key={domain.id} value={domain.id}>
-                        {domain.name}
+                        {domain.domain || domain.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
