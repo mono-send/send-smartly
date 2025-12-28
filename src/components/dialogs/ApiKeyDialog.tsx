@@ -70,7 +70,7 @@ export function ApiKeyDialog({
   const [name, setName] = useState("");
   const [permission, setPermission] = useState("full_access");
   const [domainType, setDomainType] = useState<"all" | "specific">("all");
-  const [selectedDomainId, setSelectedDomainId] = useState<string | null>(null);
+  const [selectedDomain, setSelectedDomain] = useState<string | null>(null);
   const [domains, setDomains] = useState<Domain[]>([]);
   const [isLoadingDomains, setIsLoadingDomains] = useState(false);
   const [isLoadingKey, setIsLoadingKey] = useState(false);
@@ -83,7 +83,7 @@ export function ApiKeyDialog({
       setName("");
       setPermission("full_access");
       setDomainType("all");
-      setSelectedDomainId(null);
+      setSelectedDomain(null);
     }
   }, [open, mode, editingKeyId]);
 
@@ -97,10 +97,10 @@ export function ApiKeyDialog({
         setPermission(data.permission || "full_access");
         if (data.domain) {
           setDomainType("specific");
-          setSelectedDomainId(data.domain);
+          setSelectedDomain(data.domain);
         } else {
           setDomainType("all");
-          setSelectedDomainId(null);
+          setSelectedDomain(null);
         }
       }
     } catch (error) {
@@ -123,11 +123,17 @@ export function ApiKeyDialog({
       if (response.ok) {
         const data = await response.json();
         const domainItems: DomainApiResponse[] = Array.isArray(data) ? data : data.items || [];
-        const normalizedDomains = domainItems.map((domain) => ({
-          id: domain.id,
-          domain: domain.domain || domain.name || "",
-          name: domain.name,
-        }));
+        const normalizedDomains = domainItems
+          .map((domain) => {
+            const domainString = domain.domain || domain.name || "";
+
+            return {
+              id: domain.id,
+              domain: domainString,
+              name: domain.name,
+            };
+          })
+          .filter((domain) => domain.domain);
         setDomains(normalizedDomains);
       }
     } catch (error) {
@@ -140,7 +146,7 @@ export function ApiKeyDialog({
   const handleDomainTypeChange = (value: string) => {
     setDomainType(value as "all" | "specific");
     if (value === "all") {
-      setSelectedDomainId(null);
+      setSelectedDomain(null);
     }
   };
 
@@ -148,12 +154,12 @@ export function ApiKeyDialog({
     onSubmit({
       name,
       permission,
-      domain: domainType === "specific" ? selectedDomainId : null,
+      domain: domainType === "specific" ? selectedDomain : null,
     });
   };
 
   const isEdit = mode === "edit";
-  const isFormValid = name.trim() !== "" && (domainType === "all" || selectedDomainId);
+  const isFormValid = name.trim() !== "" && (domainType === "all" || selectedDomain);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -222,13 +228,13 @@ export function ApiKeyDialog({
               ) : domains.length === 0 ? (
                 <p className="text-sm text-muted-foreground py-2">No domains available</p>
               ) : (
-                <Select value={selectedDomainId || ""} onValueChange={setSelectedDomainId}>
+                <Select value={selectedDomain || ""} onValueChange={setSelectedDomain}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select a domain" />
                   </SelectTrigger>
                   <SelectContent>
                     {domains.map((domain) => (
-                      <SelectItem key={domain.id} value={domain.id}>
+                      <SelectItem key={domain.id || domain.domain} value={domain.domain}>
                         {domain.domain || domain.name}
                       </SelectItem>
                     ))}
