@@ -133,7 +133,7 @@ export default function ApiKeysPage() {
           body: {
             name: data.name,
             permission: data.permission,
-            domain_id: data.domainId,
+            domain: data.domain,
           },
         });
 
@@ -157,7 +157,7 @@ export default function ApiKeysPage() {
           body: {
             name: data.name,
             permission: data.permission,
-            domain_id: data.domainId,
+            domain: data.domain,
           },
         });
 

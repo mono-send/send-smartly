@@ -176,7 +176,7 @@ export default function ApiKeyDetailsPage() {
         method: "PUT",
         body: {
           name: data.name,
-          domain_id: data.domainId,
+          domain: data.domain === "All domains" ? null : data.domain,
           permission: permissionValues[data.permission] || "full_access",
         },
       });
