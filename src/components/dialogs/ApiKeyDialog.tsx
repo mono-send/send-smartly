@@ -23,7 +23,7 @@ import { Loader2 } from "lucide-react";
 export interface ApiKeyData {
   name: string;
   permission: string;
-  domain: string | null;
+  domainId: string | null;
 }
 
 interface Domain {
@@ -70,7 +70,7 @@ export function ApiKeyDialog({
   const [name, setName] = useState("");
   const [permission, setPermission] = useState("full_access");
   const [domainType, setDomainType] = useState<"all" | "specific">("all");
-  const [selectedDomain, setSelectedDomain] = useState<string | null>(null);
+  const [selectedDomainId, setSelectedDomainId] = useState<string | null>(null);
   const [domains, setDomains] = useState<Domain[]>([]);
   const [isLoadingDomains, setIsLoadingDomains] = useState(false);
   const [isLoadingKey, setIsLoadingKey] = useState(false);
@@ -83,7 +83,7 @@ export function ApiKeyDialog({
       setName("");
       setPermission("full_access");
       setDomainType("all");
-      setSelectedDomain(null);
+      setSelectedDomainId(null);
     }
   }, [open, mode, editingKeyId]);
 
@@ -95,12 +95,12 @@ export function ApiKeyDialog({
         const data = await response.json();
         setName(data.name || "");
         setPermission(data.permission || "full_access");
-        if (data.domain) {
+        if (data.domain_id || data.domain) {
           setDomainType("specific");
-          setSelectedDomain(data.domain);
+          setSelectedDomainId(data.domain_id || data.domain);
         } else {
           setDomainType("all");
-          setSelectedDomain(null);
+          setSelectedDomainId(null);
         }
       }
     } catch (error) {
@@ -146,7 +146,7 @@ export function ApiKeyDialog({
   const handleDomainTypeChange = (value: string) => {
     setDomainType(value as "all" | "specific");
     if (value === "all") {
-      setSelectedDomain(null);
+      setSelectedDomainId(null);
     }
   };
 
@@ -154,12 +154,12 @@ export function ApiKeyDialog({
     onSubmit({
       name,
       permission,
-      domain: domainType === "specific" ? selectedDomain : null,
+      domainId: domainType === "specific" ? selectedDomainId : null,
     });
   };
 
   const isEdit = mode === "edit";
-  const isFormValid = name.trim() !== "" && (domainType === "all" || selectedDomain);
+  const isFormValid = name.trim() !== "" && (domainType === "all" || selectedDomainId);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -228,13 +228,13 @@ export function ApiKeyDialog({
               ) : domains.length === 0 ? (
                 <p className="text-sm text-muted-foreground py-2">No domains available</p>
               ) : (
-                <Select value={selectedDomain || ""} onValueChange={setSelectedDomain}>
+                <Select value={selectedDomainId || ""} onValueChange={setSelectedDomainId}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select a domain" />
                   </SelectTrigger>
                   <SelectContent>
                     {domains.map((domain) => (
-                      <SelectItem key={domain.id || domain.domain} value={domain.domain}>
+                      <SelectItem key={domain.id || domain.domain} value={domain.id || domain.domain}>
                         {domain.domain || domain.name}
                       </SelectItem>
                     ))}
