@@ -57,6 +57,14 @@ interface Segment {
   created_at: string;
 }
 
+interface Category {
+  id: string;
+  name: string;
+  type: string;
+  visibility: string;
+  created_at: string;
+}
+
 export default function AudiencePage() {
   const [search, setSearch] = useState("");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -77,14 +85,22 @@ export default function AudiencePage() {
   const [isLoadingSegment, setIsLoadingSegment] = useState(false);
 
   // Category management state
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [isLoadingCategories, setIsLoadingCategories] = useState(false);
   const [isAddCategoryOpen, setIsAddCategoryOpen] = useState(false);
+  const [isEditCategoryOpen, setIsEditCategoryOpen] = useState(false);
+  const [isDeleteCategoryOpen, setIsDeleteCategoryOpen] = useState(false);
   const [categoryName, setCategoryName] = useState("");
   const [categoryVisibility, setCategoryVisibility] = useState("private");
-  const [categoryDefaultsTo, setCategoryDefaultsTo] = useState("system");
+  const [categoryType, setCategoryType] = useState("custom");
+  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
+  const [isLoadingCategory, setIsLoadingCategory] = useState(false);
+  const [isCategorySubmitting, setIsCategorySubmitting] = useState(false);
 
-  // Fetch segments on mount
+  // Fetch segments and categories on mount
   useEffect(() => {
     fetchSegments();
+    fetchCategories();
   }, []);
 
   const fetchSegments = async () => {
@@ -206,6 +222,148 @@ export default function AudiencePage() {
   const openDeleteDialog = (segment: Segment) => {
     setSelectedSegment(segment);
     setIsDeleteSegmentOpen(true);
+  };
+
+  // Category API functions
+  const fetchCategories = async () => {
+    setIsLoadingCategories(true);
+    try {
+      const response = await api("/contact-categories");
+      if (response.ok) {
+        const data = await response.json();
+        setCategories(data.items || []);
+      } else {
+        toast.error("Failed to load categories");
+      }
+    } catch (error) {
+      toast.error("Failed to load categories");
+    } finally {
+      setIsLoadingCategories(false);
+    }
+  };
+
+  const handleAddCategory = async () => {
+    if (!categoryName.trim()) return;
+    setIsCategorySubmitting(true);
+    try {
+      const response = await api("/contact-categories", {
+        method: "POST",
+        body: { 
+          name: categoryName.trim(),
+          type: categoryType,
+          visibility: categoryVisibility
+        },
+      });
+      if (response.ok) {
+        const newCategory = await response.json();
+        setCategories([...categories, newCategory]);
+        setCategoryName("");
+        setCategoryVisibility("private");
+        setCategoryType("custom");
+        setIsAddCategoryOpen(false);
+        toast.success("Category created successfully");
+      } else {
+        const error = await response.json();
+        toast.error(error.detail || "Failed to create category");
+      }
+    } catch (error) {
+      toast.error("Failed to create category");
+    } finally {
+      setIsCategorySubmitting(false);
+    }
+  };
+
+  const handleEditCategory = async () => {
+    if (!categoryName.trim() || !selectedCategory) return;
+    setIsCategorySubmitting(true);
+    try {
+      const response = await api(`/contact-categories/${selectedCategory.id}`, {
+        method: "PUT",
+        body: { 
+          name: categoryName.trim(),
+          type: categoryType,
+          visibility: categoryVisibility
+        },
+      });
+      if (response.ok) {
+        const updatedCategory = await response.json();
+        setCategories(categories.map(c => 
+          c.id === selectedCategory.id ? updatedCategory : c
+        ));
+        resetCategoryForm();
+        setIsEditCategoryOpen(false);
+        toast.success("Category updated successfully");
+      } else {
+        const error = await response.json();
+        toast.error(error.detail || "Failed to update category");
+      }
+    } catch (error) {
+      toast.error("Failed to update category");
+    } finally {
+      setIsCategorySubmitting(false);
+    }
+  };
+
+  const handleDeleteCategory = async () => {
+    if (!selectedCategory) return;
+    setIsCategorySubmitting(true);
+    try {
+      const response = await api(`/contact-categories/${selectedCategory.id}`, {
+        method: "DELETE",
+      });
+      if (response.ok) {
+        setCategories(categories.filter(c => c.id !== selectedCategory.id));
+        setSelectedCategory(null);
+        setIsDeleteCategoryOpen(false);
+        toast.success("Category deleted successfully");
+      } else {
+        const error = await response.json();
+        toast.error(error.detail || "Failed to delete category");
+      }
+    } catch (error) {
+      toast.error("Failed to delete category");
+    } finally {
+      setIsCategorySubmitting(false);
+    }
+  };
+
+  const openEditCategoryDialog = async (category: Category) => {
+    setSelectedCategory(category);
+    setIsEditCategoryOpen(true);
+    setIsLoadingCategory(true);
+    try {
+      const response = await api(`/contact-categories/${category.id}`);
+      if (response.ok) {
+        const data = await response.json();
+        setCategoryName(data.name);
+        setCategoryType(data.type);
+        setCategoryVisibility(data.visibility);
+      } else {
+        setCategoryName(category.name);
+        setCategoryType(category.type);
+        setCategoryVisibility(category.visibility);
+        toast.error("Failed to load category details");
+      }
+    } catch (error) {
+      setCategoryName(category.name);
+      setCategoryType(category.type);
+      setCategoryVisibility(category.visibility);
+      toast.error("Failed to load category details");
+    } finally {
+      setIsLoadingCategory(false);
+    }
+  };
+
+  const openDeleteCategoryDialog = (category: Category) => {
+    setSelectedCategory(category);
+    setIsDeleteCategoryOpen(true);
+  };
+
+  const resetCategoryForm = () => {
+    setCategoryName("");
+    setCategoryVisibility("private");
+    setCategoryType("custom");
+    setSelectedCategory(null);
   };
 
   const formatDate = (dateString: string) => {
@@ -440,10 +598,10 @@ export default function AudiencePage() {
             </div>
           </TabsContent>
 
-          <TabsContent value="categories">
-            <div className="flex justify-end mb-4">
-              <Button onClick={() => setIsAddCategoryOpen(true)}>
-                <Plus className="mr-2 h-4 w-4" />
+          <TabsContent value="categories" className="space-y-4">
+            <div className="flex justify-end">
+              <Button size="sm" className="gap-2" onClick={() => setIsAddCategoryOpen(true)}>
+                <Plus className="h-4 w-4" />
                 Add category
               </Button>
             </div>
@@ -452,24 +610,59 @@ export default function AudiencePage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Name</TableHead>
-                    <TableHead>Default</TableHead>
+                    <TableHead>Type</TableHead>
                     <TableHead>Visibility</TableHead>
                     <TableHead>Created</TableHead>
+                    <TableHead className="w-[50px]"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  <TableRow>
-                    <TableCell className="font-medium">Product Updates</TableCell>
-                    <TableCell>Opt-in</TableCell>
-                    <TableCell>Public</TableCell>
-                    <TableCell className="text-muted-foreground">2 weeks ago</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell className="font-medium">Marketing</TableCell>
-                    <TableCell>Opt-out</TableCell>
-                    <TableCell>Public</TableCell>
-                    <TableCell className="text-muted-foreground">1 month ago</TableCell>
-                  </TableRow>
+                  {isLoadingCategories ? (
+                    <TableRow>
+                      <TableCell colSpan={5} className="h-24">
+                        <div className="flex items-center justify-center">
+                          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ) : categories.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
+                        No categories yet
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    categories.map((category) => (
+                      <TableRow key={category.id}>
+                        <TableCell className="font-medium">{category.name}</TableCell>
+                        <TableCell className="capitalize">{category.type}</TableCell>
+                        <TableCell className="capitalize">{category.visibility}</TableCell>
+                        <TableCell className="text-muted-foreground">{formatDate(category.created_at)}</TableCell>
+                        <TableCell>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8">
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => openEditCategoryDialog(category)}>
+                                <Pencil className="h-4 w-4 mr-2" />
+                                Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuItem 
+                                onClick={() => openDeleteCategoryDialog(category)}
+                                className="text-destructive focus:text-destructive"
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
                 </TableBody>
               </Table>
             </div>
@@ -608,11 +801,7 @@ export default function AudiencePage() {
       {/* Add Category Dialog */}
       <Dialog open={isAddCategoryOpen} onOpenChange={(open) => {
         setIsAddCategoryOpen(open);
-        if (!open) {
-          setCategoryName("");
-          setCategoryVisibility("private");
-          setCategoryDefaultsTo("system");
-        }
+        if (!open) resetCategoryForm();
       }}>
         <DialogContent>
           <DialogHeader>
@@ -647,8 +836,8 @@ export default function AudiencePage() {
             </div>
             
             <div className="space-y-2">
-              <Label>Defaults to</Label>
-              <Select value={categoryDefaultsTo} onValueChange={setCategoryDefaultsTo}>
+              <Label>Type</Label>
+              <Select value={categoryType} onValueChange={setCategoryType}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -665,22 +854,91 @@ export default function AudiencePage() {
               Cancel
             </Button>
             <Button 
-              onClick={() => {
-                if (!categoryName.trim()) {
-                  toast.error("Category name is required");
-                  return;
-                }
-                // TODO: API integration
-                toast.success("Category created successfully");
-                setIsAddCategoryOpen(false);
-              }}
-              disabled={!categoryName.trim()}
+              onClick={handleAddCategory}
+              disabled={!categoryName.trim() || isCategorySubmitting}
             >
+              {isCategorySubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Add category
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Edit Category Dialog */}
+      <Dialog open={isEditCategoryOpen} onOpenChange={setIsEditCategoryOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit category</DialogTitle>
+            <DialogDescription>
+              Update the category details.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            {isLoadingCategory ? (
+              <div className="flex items-center justify-center py-4">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-category-name">Name <span className="text-destructive">*</span></Label>
+                  <Input
+                    id="edit-category-name"
+                    placeholder="Enter category name"
+                    value={categoryName}
+                    onChange={(e) => setCategoryName(e.target.value)}
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label>Visibility</Label>
+                  <Select value={categoryVisibility} onValueChange={setCategoryVisibility}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="private">Private</SelectItem>
+                      <SelectItem value="public">Public</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label>Type</Label>
+                  <Select value={categoryType} onValueChange={setCategoryType}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="system">System (Default)</SelectItem>
+                      <SelectItem value="custom">Custom</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setIsEditCategoryOpen(false); resetCategoryForm(); }}>
+              Cancel
+            </Button>
+            <Button onClick={handleEditCategory} disabled={!categoryName.trim() || isCategorySubmitting || isLoadingCategory}>
+              {isCategorySubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Save changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Category Dialog */}
+      <ConfirmDeleteDialog
+        open={isDeleteCategoryOpen}
+        onOpenChange={setIsDeleteCategoryOpen}
+        title="Delete category"
+        description={`Are you sure you want to delete "${selectedCategory?.name}"? This action cannot be undone.`}
+        confirmLabel="Delete"
+        onConfirm={handleDeleteCategory}
+      />
 
       <ContactsAPISection isOpen={isAPIOpen} onClose={() => setIsAPIOpen(false)} />
     </>
