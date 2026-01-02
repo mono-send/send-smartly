@@ -43,6 +43,10 @@ const LoginPage = () => {
     toast.info("Google authentication requires backend integration");
   };
 
+  const handleGithubLogin = () => {
+    toast.info("GitHub authentication requires backend integration");
+  };
+
   return (
     <div className="min-h-screen flex">
       {/* Left Section - Login Form */}
@@ -63,7 +67,7 @@ const LoginPage = () => {
           {/* Google Login Button */}
           <Button
             variant="outline"
-            className="w-full mb-6"
+            className="w-full mb-3"
             onClick={handleGoogleLogin}
           >
             <svg className="mr-2 h-5 w-5" viewBox="0 0 24 24">
@@ -85,6 +89,21 @@ const LoginPage = () => {
               />
             </svg>
             Continue with Google
+          </Button>
+          <Button
+            variant="outline"
+            className="w-full mb-6"
+            onClick={handleGithubLogin}
+          >
+            <svg className="mr-2 h-5 w-5" viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                fill="currentColor"
+                fillRule="evenodd"
+                d="M12 1.5a10.5 10.5 0 0 0-3.32 20.47c.53.1.72-.23.72-.5v-1.74c-2.95.64-3.57-1.42-3.57-1.42-.48-1.22-1.17-1.55-1.17-1.55-.95-.64.07-.63.07-.63 1.05.07 1.6 1.07 1.6 1.07.93 1.6 2.45 1.14 3.05.87.09-.67.36-1.13.65-1.39-2.36-.27-4.85-1.18-4.85-5.25 0-1.16.42-2.1 1.1-2.84-.11-.27-.48-1.35.1-2.82 0 0 .9-.29 2.95 1.08a10.2 10.2 0 0 1 5.37 0c2.05-1.37 2.95-1.08 2.95-1.08.58 1.47.21 2.55.1 2.82.68.74 1.1 1.68 1.1 2.84 0 4.08-2.5 4.97-4.87 5.24.37.32.7.94.7 1.9v2.82c0 .27.18.6.73.5A10.5 10.5 0 0 0 12 1.5Z"
+                clipRule="evenodd"
+              />
+            </svg>
+            Continue with GitHub
           </Button>
 
           <div className="relative mb-6">
