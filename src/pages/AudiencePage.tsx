@@ -536,7 +536,7 @@ export default function AudiencePage() {
             <div className="grid overflow-hidden rounded-xl border bg-card text-card-foreground shadow-sm md:grid-cols-5 md:divide-x">
               <div className="border-b md:border-b-0">
                 <CardContent className="flex flex-col items-center gap-4 py-6">
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-5">
                     <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
                       <Users className="h-5 w-5 text-muted-foreground" />
                     </div>
@@ -551,8 +551,7 @@ export default function AudiencePage() {
               </div>
               <div className="border-b md:border-b-0">
                 <CardContent className="flex flex-col items-center gap-4 py-6">
-                  <p className="text-sm font-medium text-muted-foreground text-center">Subscribers</p>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-5">
                     <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-success/10">
                       <UserCheck className="h-5 w-5 text-success" />
                     </div>
@@ -562,12 +561,12 @@ export default function AudiencePage() {
                       <p className="text-3xl font-semibold">{contactStats?.subscribed ?? 0}</p>
                     )}
                   </div>
+                  <p className="text-sm font-medium text-muted-foreground text-center">Subscribers</p>
                 </CardContent>
               </div>
               <div className="border-b md:border-b-0">
                 <CardContent className="flex flex-col items-center gap-4 py-6">
-                  <p className="text-sm font-medium text-muted-foreground text-center">Unsubscribers</p>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-5">
                     <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
                       <UserMinus className="h-5 w-5 text-muted-foreground" />
                     </div>
@@ -577,12 +576,12 @@ export default function AudiencePage() {
                       <p className="text-3xl font-semibold">{contactStats?.unsubscribed ?? 0}</p>
                     )}
                   </div>
+                  <p className="text-sm font-medium text-muted-foreground text-center">Unsubscribers</p>
                 </CardContent>
               </div>
               <div className="border-b md:border-b-0">
                 <CardContent className="flex flex-col items-center gap-4 py-6">
-                  <p className="text-sm font-medium text-muted-foreground text-center">Bounced</p>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-5">
                     <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-destructive/10">
                       <AlertTriangle className="h-5 w-5 text-destructive" />
                     </div>
@@ -592,12 +591,12 @@ export default function AudiencePage() {
                       <p className="text-3xl font-semibold">{contactStats?.bounced ?? 0}</p>
                     )}
                   </div>
+                  <p className="text-sm font-medium text-muted-foreground text-center">Bounced</p>
                 </CardContent>
               </div>
               <div>
                 <CardContent className="flex flex-col items-center gap-4 py-6">
-                  <p className="text-sm font-medium text-muted-foreground text-center">Complained</p>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-5">
                     <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-destructive/10">
                       <Ban className="h-5 w-5 text-destructive" />
                     </div>
@@ -607,6 +606,7 @@ export default function AudiencePage() {
                       <p className="text-3xl font-semibold">{contactStats?.complained ?? 0}</p>
                     )}
                   </div>
+                  <p className="text-sm font-medium text-muted-foreground text-center">Complained</p>
                 </CardContent>
               </div>
             </div>
