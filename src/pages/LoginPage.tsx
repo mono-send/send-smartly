@@ -50,6 +50,7 @@ const LoginPage = () => {
         <div className="w-full max-w-md mx-auto">
           {/* Logo */}
           <div className="flex items-center gap-2 mb-8">
+            <img src="/favicon-48x48.png" alt="Logo" className="h-12" />
             <img src="/logo.png" alt="Logo" className="h-12" />
           </div>
 
