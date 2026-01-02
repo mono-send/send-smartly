@@ -47,7 +47,7 @@ const LoginPage = () => {
     <div className="min-h-screen flex">
       {/* Left Section - Login Form */}
       <div className="flex-1 flex flex-col justify-center px-8 lg:px-16 xl:px-24 bg-background">
-        <div className="w-full max-w-md mx-auto">
+        <div className="w-full max-w-[350px] mx-auto">
           {/* Logo */}
           <div className="flex items-center gap-2 mb-8">
             <img src="/favicon-48x48.png" alt="Logo" className="h-12" />
@@ -63,7 +63,7 @@ const LoginPage = () => {
           {/* Google Login Button */}
           <Button
             variant="outline"
-            className="w-full mb-6 h-11"
+            className="w-full mb-6"
             onClick={handleGoogleLogin}
           >
             <svg className="mr-2 h-5 w-5" viewBox="0 0 24 24">
@@ -109,7 +109,7 @@ const LoginPage = () => {
             </div>
             <Button
               type="submit"
-              className="w-full h-11"
+              className="w-full "
               disabled={isLoading}
             >
               {isLoading ? (
