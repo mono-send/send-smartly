@@ -76,6 +76,12 @@ export default function AudiencePage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoadingSegment, setIsLoadingSegment] = useState(false);
 
+  // Category management state
+  const [isAddCategoryOpen, setIsAddCategoryOpen] = useState(false);
+  const [categoryName, setCategoryName] = useState("");
+  const [categoryVisibility, setCategoryVisibility] = useState("private");
+  const [categoryDefaultsTo, setCategoryDefaultsTo] = useState("system");
+
   // Fetch segments on mount
   useEffect(() => {
     fetchSegments();
@@ -436,7 +442,7 @@ export default function AudiencePage() {
 
           <TabsContent value="categories">
             <div className="flex justify-end mb-4">
-              <Button>
+              <Button onClick={() => setIsAddCategoryOpen(true)}>
                 <Plus className="mr-2 h-4 w-4" />
                 Add category
               </Button>
@@ -598,6 +604,83 @@ export default function AudiencePage() {
         confirmLabel="Delete"
         onConfirm={handleDeleteSegment}
       />
+
+      {/* Add Category Dialog */}
+      <Dialog open={isAddCategoryOpen} onOpenChange={(open) => {
+        setIsAddCategoryOpen(open);
+        if (!open) {
+          setCategoryName("");
+          setCategoryVisibility("private");
+          setCategoryDefaultsTo("system");
+        }
+      }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add category</DialogTitle>
+            <DialogDescription>
+              Create a new category for organizing your contacts.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="category-name">Name <span className="text-destructive">*</span></Label>
+              <Input
+                id="category-name"
+                placeholder="Enter category name"
+                value={categoryName}
+                onChange={(e) => setCategoryName(e.target.value)}
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label>Visibility</Label>
+              <Select value={categoryVisibility} onValueChange={setCategoryVisibility}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="private">Private</SelectItem>
+                  <SelectItem value="public">Public</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <Label>Defaults to</Label>
+              <Select value={categoryDefaultsTo} onValueChange={setCategoryDefaultsTo}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="system">System (Default)</SelectItem>
+                  <SelectItem value="custom">Custom</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsAddCategoryOpen(false)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={() => {
+                if (!categoryName.trim()) {
+                  toast.error("Category name is required");
+                  return;
+                }
+                // TODO: API integration
+                toast.success("Category created successfully");
+                setIsAddCategoryOpen(false);
+              }}
+              disabled={!categoryName.trim()}
+            >
+              Add category
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <ContactsAPISection isOpen={isAPIOpen} onClose={() => setIsAPIOpen(false)} />
     </>
