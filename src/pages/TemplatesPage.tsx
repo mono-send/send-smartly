@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { TopBar } from "@/components/layout/TopBar";
 import { EmptyState } from "@/components/ui/empty-state";
-import { FileText } from "lucide-react";
+import { FileText, MoreHorizontal, Copy, Trash2 } from "lucide-react";
 import { api } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -23,6 +23,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { ConfirmDeleteDialog } from "@/components/dialogs/ConfirmDeleteDialog";
 import { format } from "date-fns";
 
 interface Template {
@@ -45,6 +52,9 @@ export default function TemplatesPage() {
     subject: "",
     body: "",
   });
+  const [templateToDelete, setTemplateToDelete] = useState<Template | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isDuplicating, setIsDuplicating] = useState<string | null>(null);
 
   const fetchTemplates = async () => {
     try {
@@ -104,6 +114,65 @@ export default function TemplatesPage() {
     }
   };
 
+  const handleDuplicate = async (template: Template) => {
+    setIsDuplicating(template.id);
+    try {
+      const response = await api("/templates", {
+        method: "POST",
+        body: {
+          name: `${template.name} (copy)`,
+          subject: template.subject,
+          body: template.body,
+        },
+      });
+
+      if (response.ok) {
+        const newTemplate = await response.json();
+        setTemplates((prev) => [newTemplate, ...prev]);
+        toast({
+          title: "Template duplicated",
+          description: "Your template has been duplicated successfully.",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to duplicate template",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDuplicating(null);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!templateToDelete) return;
+    
+    setIsDeleting(true);
+    try {
+      const response = await api(`/templates/${templateToDelete.id}`, {
+        method: "DELETE",
+      });
+
+      if (response.ok) {
+        setTemplates((prev) => prev.filter((t) => t.id !== templateToDelete.id));
+        toast({
+          title: "Template deleted",
+          description: "Your template has been deleted successfully.",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete template",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleting(false);
+      setTemplateToDelete(null);
+    }
+  };
+
   return (
     <>
       <TopBar 
@@ -139,6 +208,7 @@ export default function TemplatesPage() {
                   <TableHead>Subject</TableHead>
                   <TableHead>Created</TableHead>
                   <TableHead>Updated</TableHead>
+                  <TableHead className="w-12"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -148,6 +218,31 @@ export default function TemplatesPage() {
                     <TableCell>{template.subject}</TableCell>
                     <TableCell>{format(new Date(template.created_at), "MMM d, yyyy")}</TableCell>
                     <TableCell>{format(new Date(template.updated_at), "MMM d, yyyy")}</TableCell>
+                    <TableCell>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            onClick={() => handleDuplicate(template)}
+                            disabled={isDuplicating === template.id}
+                          >
+                            <Copy className="mr-2 h-4 w-4" />
+                            Duplicate
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            className="text-destructive focus:text-destructive"
+                            onClick={() => setTemplateToDelete(template)}
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -201,6 +296,15 @@ export default function TemplatesPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDeleteDialog
+        open={!!templateToDelete}
+        onOpenChange={(open) => !open && setTemplateToDelete(null)}
+        onConfirm={handleDelete}
+        title="Delete template"
+        description={`Are you sure you want to delete "${templateToDelete?.name}"? This action cannot be undone.`}
+        isLoading={isDeleting}
+      />
     </>
   );
 }
