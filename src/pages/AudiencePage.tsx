@@ -258,7 +258,7 @@ export default function AudiencePage() {
             <TabsTrigger value="contacts">Contacts</TabsTrigger>
             <TabsTrigger value="properties">Properties</TabsTrigger>
             <TabsTrigger value="segments">Segments</TabsTrigger>
-            <TabsTrigger value="topics">Topics</TabsTrigger>
+            <TabsTrigger value="categories">Categories</TabsTrigger>
           </TabsList>
 
           <TabsContent value="contacts" className="space-y-6">
@@ -434,7 +434,13 @@ export default function AudiencePage() {
             </div>
           </TabsContent>
 
-          <TabsContent value="topics">
+          <TabsContent value="categories">
+            <div className="flex justify-end mb-4">
+              <Button>
+                <Plus className="mr-2 h-4 w-4" />
+                Add category
+              </Button>
+            </div>
             <div className="rounded-lg border border-border bg-card">
               <Table>
                 <TableHeader>
