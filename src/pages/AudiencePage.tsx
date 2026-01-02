@@ -533,7 +533,7 @@ export default function AudiencePage() {
 
           <TabsContent value="contacts" className="space-y-6">
             {/* Metrics */}
-            <div className="grid gap-4 md:grid-cols-5">
+            <div className="grid gap-4 md:grid-cols-5 md:gap-0">
               <Card>
                 <CardContent className="pt-6">
                   <div className="flex items-center gap-4">
