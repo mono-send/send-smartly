@@ -54,7 +54,7 @@ const LoginPage = () => {
             <img src="/logo.png" alt="Logo" className="h-12" />
           </div>
 
-          <h1 className="text-3xl font-bold text-foreground mb-2">Log in</h1>
+          <h1 className="text-2xl font-bold text-foreground mb-8">Log in</h1>
           {/* <h1 className="text-3xl font-bold text-foreground mb-2">Welcome back</h1> */}
           {/* <p className="text-muted-foreground mb-8">
             Sign in to your account to continue
@@ -90,7 +90,7 @@ const LoginPage = () => {
           <div className="relative mb-6">
             <Separator />
             <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-background px-2 text-xs text-muted-foreground">
-              or continue with email
+              OR
             </span>
           </div>
 
