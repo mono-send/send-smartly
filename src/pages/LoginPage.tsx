@@ -104,7 +104,7 @@ const LoginPage = () => {
                 placeholder="name@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="h-11"
+                className=""
               />
             </div>
             <Button
