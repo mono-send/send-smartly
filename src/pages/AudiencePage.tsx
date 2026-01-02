@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/table";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent } from "@/components/ui/card";
+import { CardContent } from "@/components/ui/card";
 import { Search, Plus, Users, UserCheck, UserMinus, Download, Upload, UserPlus, ChevronDown, Code, BookOpen, MoreVertical, Pencil, Trash2, Loader2, AlertTriangle, Ban } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useState, useEffect } from "react";
@@ -533,8 +533,8 @@ export default function AudiencePage() {
 
           <TabsContent value="contacts" className="space-y-6">
             {/* Metrics */}
-            <div className="grid gap-4 md:grid-cols-5 md:gap-0">
-              <Card>
+            <div className="grid overflow-hidden rounded-xl border bg-card text-card-foreground shadow-sm md:grid-cols-5 md:divide-x">
+              <div className="border-b md:border-b-0">
                 <CardContent className="pt-6">
                   <div className="flex items-center gap-4">
                     <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
@@ -542,7 +542,7 @@ export default function AudiencePage() {
                     </div>
                     <div>
                       {isLoadingStats ? (
-                        <Skeleton className="h-8 w-12 mb-1" />
+                        <Skeleton className="mb-1 h-8 w-12" />
                       ) : (
                         <p className="text-2xl font-bold">{contactStats?.all ?? 0}</p>
                       )}
@@ -550,8 +550,8 @@ export default function AudiencePage() {
                     </div>
                   </div>
                 </CardContent>
-              </Card>
-              <Card>
+              </div>
+              <div className="border-b md:border-b-0">
                 <CardContent className="pt-6">
                   <div className="flex items-center gap-4">
                     <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-success/10">
@@ -559,7 +559,7 @@ export default function AudiencePage() {
                     </div>
                     <div>
                       {isLoadingStats ? (
-                        <Skeleton className="h-8 w-12 mb-1" />
+                        <Skeleton className="mb-1 h-8 w-12" />
                       ) : (
                         <p className="text-2xl font-bold">{contactStats?.subscribed ?? 0}</p>
                       )}
@@ -567,8 +567,8 @@ export default function AudiencePage() {
                     </div>
                   </div>
                 </CardContent>
-              </Card>
-              <Card>
+              </div>
+              <div className="border-b md:border-b-0">
                 <CardContent className="pt-6">
                   <div className="flex items-center gap-4">
                     <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
@@ -576,7 +576,7 @@ export default function AudiencePage() {
                     </div>
                     <div>
                       {isLoadingStats ? (
-                        <Skeleton className="h-8 w-12 mb-1" />
+                        <Skeleton className="mb-1 h-8 w-12" />
                       ) : (
                         <p className="text-2xl font-bold">{contactStats?.unsubscribed ?? 0}</p>
                       )}
@@ -584,8 +584,8 @@ export default function AudiencePage() {
                     </div>
                   </div>
                 </CardContent>
-              </Card>
-              <Card>
+              </div>
+              <div className="border-b md:border-b-0">
                 <CardContent className="pt-6">
                   <div className="flex items-center gap-4">
                     <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-destructive/10">
@@ -593,7 +593,7 @@ export default function AudiencePage() {
                     </div>
                     <div>
                       {isLoadingStats ? (
-                        <Skeleton className="h-8 w-12 mb-1" />
+                        <Skeleton className="mb-1 h-8 w-12" />
                       ) : (
                         <p className="text-2xl font-bold">{contactStats?.bounced ?? 0}</p>
                       )}
@@ -601,8 +601,8 @@ export default function AudiencePage() {
                     </div>
                   </div>
                 </CardContent>
-              </Card>
-              <Card>
+              </div>
+              <div>
                 <CardContent className="pt-6">
                   <div className="flex items-center gap-4">
                     <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-destructive/10">
@@ -610,7 +610,7 @@ export default function AudiencePage() {
                     </div>
                     <div>
                       {isLoadingStats ? (
-                        <Skeleton className="h-8 w-12 mb-1" />
+                        <Skeleton className="mb-1 h-8 w-12" />
                       ) : (
                         <p className="text-2xl font-bold">{contactStats?.complained ?? 0}</p>
                       )}
@@ -618,7 +618,7 @@ export default function AudiencePage() {
                     </div>
                   </div>
                 </CardContent>
-              </Card>
+              </div>
             </div>
 
             {/* Filters */}
