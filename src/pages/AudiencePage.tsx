@@ -900,20 +900,7 @@ export default function AudiencePage() {
                       <SelectItem value="private">Private</SelectItem>
                       <SelectItem value="public">Public</SelectItem>
                     </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label>Type</Label>
-                  <Select value={categoryType} onValueChange={setCategoryType}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="system">System (Default)</SelectItem>
-                      <SelectItem value="custom">Custom</SelectItem>
-                    </SelectContent>
-                  </Select>
+                </Select>
                 </div>
               </>
             )}
