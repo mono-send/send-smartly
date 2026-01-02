@@ -281,7 +281,6 @@ export default function AudiencePage() {
         method: "PUT",
         body: { 
           name: categoryName.trim(),
-          type: categoryType,
           visibility: categoryVisibility
         },
       });
