@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { TopBar } from "@/components/layout/TopBar";
-import { EmptyState } from "@/components/ui/empty-state";
-import { FileText, MoreHorizontal, Copy, Trash2 } from "lucide-react";
+import { MoreHorizontal, Copy, Trash2, Search, Loader2 } from "lucide-react";
 import { api } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -30,7 +29,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ConfirmDeleteDialog } from "@/components/dialogs/ConfirmDeleteDialog";
-import { format } from "date-fns";
+import { formatDistanceToNow } from "date-fns";
 
 interface Template {
   id: string;
@@ -47,6 +46,7 @@ export default function TemplatesPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
+  const [search, setSearch] = useState("");
   const [formData, setFormData] = useState({
     name: "",
     subject: "",
@@ -57,8 +57,17 @@ export default function TemplatesPage() {
   const [isDuplicating, setIsDuplicating] = useState<string | null>(null);
 
   const fetchTemplates = async () => {
+    setIsLoading(true);
     try {
-      const response = await api("/templates?sort_by=created_at&sort_dir=desc");
+      const params = new URLSearchParams();
+      params.append("sort_by", "created_at");
+      params.append("sort_dir", "desc");
+      
+      if (search.trim()) {
+        params.append("search", search.trim());
+      }
+
+      const response = await api(`/templates?${params.toString()}`);
       if (response.ok) {
         const data = await response.json();
         setTemplates(data.items || []);
@@ -71,8 +80,12 @@ export default function TemplatesPage() {
   };
 
   useEffect(() => {
-    fetchTemplates();
-  }, []);
+    const timeout = setTimeout(() => {
+      fetchTemplates();
+    }, 300);
+
+    return () => clearTimeout(timeout);
+  }, [search]);
 
   const handleOpenDialog = () => {
     setFormData({ name: "", subject: "", body: "" });
@@ -185,40 +198,56 @@ export default function TemplatesPage() {
       />
       
       <div className="p-6">
-        {isLoading ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+        {/* Search */}
+        <div className="mb-6 flex flex-wrap items-center gap-3">
+          <div className="relative flex-1 min-w-[200px] max-w-sm">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Search templates..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-9"
+            />
           </div>
-        ) : templates.length === 0 ? (
-          <EmptyState
-            icon={FileText}
-            title="No templates yet"
-            description="Create reusable email templates with React Email compatible syntax."
-            action={{
-              label: "Create template",
-              onClick: handleOpenDialog,
-            }}
-          />
-        ) : (
-          <div className="rounded-lg border border-border">
-            <Table>
-              <TableHeader>
+        </div>
+
+        {/* Table */}
+        <div className="rounded-lg border border-border bg-card">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Subject</TableHead>
+                <TableHead>Created</TableHead>
+                <TableHead>Updated</TableHead>
+                <TableHead className="w-[50px]"></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {isLoading ? (
                 <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Subject</TableHead>
-                  <TableHead>Created</TableHead>
-                  <TableHead>Updated</TableHead>
-                  <TableHead className="w-12"></TableHead>
+                  <TableCell colSpan={5} className="h-24 text-center">
+                    <Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" />
+                  </TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {templates.map((template) => (
+              ) : templates.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
+                    No templates found
+                  </TableCell>
+                </TableRow>
+              ) : (
+                templates.map((template) => (
                   <TableRow key={template.id}>
                     <TableCell className="font-medium">{template.name}</TableCell>
                     <TableCell>{template.subject}</TableCell>
-                    <TableCell>{format(new Date(template.created_at), "MMM d, yyyy")}</TableCell>
-                    <TableCell>{format(new Date(template.updated_at), "MMM d, yyyy")}</TableCell>
-                    <TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {formatDistanceToNow(new Date(template.created_at), { addSuffix: true })}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {formatDistanceToNow(new Date(template.updated_at), { addSuffix: true })}
+                    </TableCell>
+                    <TableCell onClick={(e) => e.stopPropagation()}>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -244,11 +273,11 @@ export default function TemplatesPage() {
                       </DropdownMenu>
                     </TableCell>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        )}
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
       </div>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
