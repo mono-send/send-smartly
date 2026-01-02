@@ -216,8 +216,7 @@ export default function TemplatesPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Subject</TableHead>
+                <TableHead>Email template</TableHead>
                 <TableHead>Created</TableHead>
                 <TableHead>Updated</TableHead>
                 <TableHead className="w-[50px]"></TableHead>
@@ -226,21 +225,25 @@ export default function TemplatesPage() {
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="h-24 text-center">
+                  <TableCell colSpan={4} className="h-24 text-center">
                     <Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" />
                   </TableCell>
                 </TableRow>
               ) : templates.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
+                  <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
                     No templates found
                   </TableCell>
                 </TableRow>
               ) : (
                 templates.map((template) => (
                   <TableRow key={template.id}>
-                    <TableCell className="font-medium">{template.name}</TableCell>
-                    <TableCell>{template.subject}</TableCell>
+                    <TableCell>
+                      <div className="space-y-1">
+                        <div className="font-medium">{template.name}</div>
+                        <div className="text-sm text-muted-foreground">Subject: {template.subject}</div>
+                      </div>
+                    </TableCell>
                     <TableCell className="text-muted-foreground">
                       {formatDistanceToNow(new Date(template.created_at), { addSuffix: true })}
                     </TableCell>
