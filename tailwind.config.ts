@@ -73,7 +73,8 @@ export default {
 				'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 				border: 'hsl(var(--sidebar-border))',
 				ring: 'hsl(var(--sidebar-ring))'
-			}
+			},
+			'table-header': 'hsl(var(--table-header))'
 		},
   		borderRadius: {
   			lg: 'var(--radius)',
