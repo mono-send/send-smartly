@@ -536,7 +536,6 @@ export default function AudiencePage() {
             <div className="grid overflow-hidden rounded-xl border bg-card text-card-foreground shadow-sm md:grid-cols-5 md:divide-x">
               <div className="border-b md:border-b-0">
                 <CardContent className="flex flex-col items-center gap-4 py-6">
-                  <p className="text-sm font-medium text-muted-foreground text-center">All contacts</p>
                   <div className="flex items-center gap-3">
                     <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
                       <Users className="h-5 w-5 text-muted-foreground" />
@@ -547,6 +546,7 @@ export default function AudiencePage() {
                       <p className="text-3xl font-semibold">{contactStats?.all ?? 0}</p>
                     )}
                   </div>
+                  <p className="text-sm font-medium text-muted-foreground text-center">All contacts</p>
                 </CardContent>
               </div>
               <div className="border-b md:border-b-0">
