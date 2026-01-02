@@ -53,10 +53,11 @@ const LoginPage = () => {
             <img src="/logo.png" alt="Logo" className="h-12" />
           </div>
 
-          <h1 className="text-3xl font-bold text-foreground mb-2">Welcome back</h1>
-          <p className="text-muted-foreground mb-8">
+          <h1 className="text-3xl font-bold text-foreground mb-2">Log in</h1>
+          {/* <h1 className="text-3xl font-bold text-foreground mb-2">Welcome back</h1> */}
+          {/* <p className="text-muted-foreground mb-8">
             Sign in to your account to continue
-          </p>
+          </p> */}
 
           {/* Google Login Button */}
           <Button
