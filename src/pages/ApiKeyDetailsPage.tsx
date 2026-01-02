@@ -1,6 +1,6 @@
 import { TopBar } from "@/components/layout/TopBar";
 import { Button } from "@/components/ui/button";
-import { Lock, Code, MoreHorizontal, Copy, Check, Loader2 } from "lucide-react";
+import { Lock, Code, MoreVertical, Copy, Check, Loader2 } from "lucide-react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import {
@@ -289,7 +289,7 @@ export default function ApiKeyDetailsPage() {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="icon" className="h-9 w-9">
-                  <MoreHorizontal className="h-4 w-4" />
+                  <MoreVertical className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
