@@ -200,7 +200,7 @@ export default function TemplatesPage() {
       <div className="p-6">
         {/* Search */}
         <div className="mb-6 flex flex-wrap items-center gap-3">
-          <div className="relative flex-1 min-w-[150px] max-w-sm">
+          <div className="relative flex-1 min-w-[150px] max-w-xs">
             <Input
               placeholder="Search by ID, Name or Subject"
               value={search}
