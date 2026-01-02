@@ -19,7 +19,8 @@ import {
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
-import { Search, Plus, Users, UserCheck, UserMinus, Download, Upload, UserPlus, ChevronDown, Code, BookOpen, MoreVertical, Pencil, Trash2, Loader2 } from "lucide-react";
+import { Search, Plus, Users, UserCheck, UserMinus, Download, Upload, UserPlus, ChevronDown, Code, BookOpen, MoreVertical, Pencil, Trash2, Loader2, AlertTriangle, Ban } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -43,12 +44,26 @@ import { ConfirmDeleteDialog } from "@/components/dialogs/ConfirmDeleteDialog";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
 
-const mockContacts = [
-  { id: "1", email: "john@example.com", status: "subscribed" as const, segment: "General", added: "2 days ago" },
-  { id: "2", email: "sarah@startup.io", status: "subscribed" as const, segment: "VIP", added: "1 week ago" },
-  { id: "3", email: "dev@company.com", status: "unsubscribed" as const, segment: "General", added: "2 weeks ago" },
-  { id: "4", email: "marketing@brand.co", status: "subscribed" as const, segment: "Newsletter", added: "1 month ago" },
-];
+interface Contact {
+  id: string;
+  email: string;
+  status: "subscribed" | "unsubscribed" | "bounced" | "complained";
+  category_id: string | null;
+  metadata: unknown;
+  created_at: string;
+  segment: {
+    id: string;
+    name: string;
+  } | null;
+}
+
+interface ContactStats {
+  all: number;
+  subscribed: number;
+  unsubscribed: number;
+  bounced: number;
+  complained: number;
+}
 
 interface Segment {
   id: string;
@@ -67,10 +82,20 @@ interface Category {
 
 export default function AudiencePage() {
   const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [segmentFilter, setSegmentFilter] = useState("all");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [newEmails, setNewEmails] = useState("");
+  const [selectedSegmentId, setSelectedSegmentId] = useState("");
+  const [isAddingContacts, setIsAddingContacts] = useState(false);
   const [isAPIOpen, setIsAPIOpen] = useState(false);
   const navigate = useNavigate();
+
+  // Contacts state
+  const [contacts, setContacts] = useState<Contact[]>([]);
+  const [isLoadingContacts, setIsLoadingContacts] = useState(false);
+  const [contactStats, setContactStats] = useState<ContactStats | null>(null);
+  const [isLoadingStats, setIsLoadingStats] = useState(false);
 
   // Segment management state
   const [segments, setSegments] = useState<Segment[]>([]);
@@ -97,11 +122,93 @@ export default function AudiencePage() {
   const [isLoadingCategory, setIsLoadingCategory] = useState(false);
   const [isCategorySubmitting, setIsCategorySubmitting] = useState(false);
 
-  // Fetch segments and categories on mount
+  // Fetch data on mount
   useEffect(() => {
     fetchSegments();
     fetchCategories();
+    fetchContactStats();
   }, []);
+
+  // Fetch contacts when filters change
+  useEffect(() => {
+    fetchContacts();
+  }, [search, statusFilter, segmentFilter]);
+
+  const fetchContacts = async () => {
+    setIsLoadingContacts(true);
+    try {
+      const params = new URLSearchParams();
+      if (statusFilter !== "all") params.append("status", statusFilter);
+      if (segmentFilter !== "all") params.append("segment_id", segmentFilter);
+      if (search.trim()) params.append("search", search.trim());
+      
+      const queryString = params.toString();
+      const endpoint = queryString ? `/contacts?${queryString}` : "/contacts";
+      
+      const response = await api(endpoint);
+      if (response.ok) {
+        const data = await response.json();
+        setContacts(data.items || []);
+      } else {
+        toast.error("Failed to load contacts");
+      }
+    } catch (error) {
+      toast.error("Failed to load contacts");
+    } finally {
+      setIsLoadingContacts(false);
+    }
+  };
+
+  const fetchContactStats = async () => {
+    setIsLoadingStats(true);
+    try {
+      const response = await api("/contacts/stats");
+      if (response.ok) {
+        const data = await response.json();
+        setContactStats(data);
+      }
+    } catch (error) {
+      console.error("Failed to load contact stats");
+    } finally {
+      setIsLoadingStats(false);
+    }
+  };
+
+  const handleAddContacts = async () => {
+    if (!newEmails.trim()) return;
+    setIsAddingContacts(true);
+    try {
+      const emailList = newEmails
+        .split(/[,\n]/)
+        .map(e => e.trim())
+        .filter(e => e);
+      
+      const body: { emails: string[]; segment_id?: string } = { emails: emailList };
+      if (selectedSegmentId) {
+        body.segment_id = selectedSegmentId;
+      }
+      
+      const response = await api("/contacts", {
+        method: "POST",
+        body,
+      });
+      if (response.ok) {
+        toast.success("Contacts added successfully");
+        setNewEmails("");
+        setSelectedSegmentId("");
+        setIsAddDialogOpen(false);
+        fetchContacts();
+        fetchContactStats();
+      } else {
+        const error = await response.json();
+        toast.error(error.detail || "Failed to add contacts");
+      }
+    } catch (error) {
+      toast.error("Failed to add contacts");
+    } finally {
+      setIsAddingContacts(false);
+    }
+  };
 
   const fetchSegments = async () => {
     setIsLoadingSegments(true);
@@ -426,7 +533,7 @@ export default function AudiencePage() {
 
           <TabsContent value="contacts" className="space-y-6">
             {/* Metrics */}
-            <div className="grid gap-4 md:grid-cols-3">
+            <div className="grid gap-4 md:grid-cols-5">
               <Card>
                 <CardContent className="pt-6">
                   <div className="flex items-center gap-4">
@@ -434,7 +541,11 @@ export default function AudiencePage() {
                       <Users className="h-5 w-5 text-muted-foreground" />
                     </div>
                     <div>
-                      <p className="text-2xl font-bold">4</p>
+                      {isLoadingStats ? (
+                        <Skeleton className="h-8 w-12 mb-1" />
+                      ) : (
+                        <p className="text-2xl font-bold">{contactStats?.all ?? 0}</p>
+                      )}
                       <p className="text-sm text-muted-foreground">All contacts</p>
                     </div>
                   </div>
@@ -447,7 +558,11 @@ export default function AudiencePage() {
                       <UserCheck className="h-5 w-5 text-success" />
                     </div>
                     <div>
-                      <p className="text-2xl font-bold">3</p>
+                      {isLoadingStats ? (
+                        <Skeleton className="h-8 w-12 mb-1" />
+                      ) : (
+                        <p className="text-2xl font-bold">{contactStats?.subscribed ?? 0}</p>
+                      )}
                       <p className="text-sm text-muted-foreground">Subscribers</p>
                     </div>
                   </div>
@@ -460,8 +575,46 @@ export default function AudiencePage() {
                       <UserMinus className="h-5 w-5 text-muted-foreground" />
                     </div>
                     <div>
-                      <p className="text-2xl font-bold">1</p>
+                      {isLoadingStats ? (
+                        <Skeleton className="h-8 w-12 mb-1" />
+                      ) : (
+                        <p className="text-2xl font-bold">{contactStats?.unsubscribed ?? 0}</p>
+                      )}
                       <p className="text-sm text-muted-foreground">Unsubscribers</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex items-center gap-4">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-destructive/10">
+                      <AlertTriangle className="h-5 w-5 text-destructive" />
+                    </div>
+                    <div>
+                      {isLoadingStats ? (
+                        <Skeleton className="h-8 w-12 mb-1" />
+                      ) : (
+                        <p className="text-2xl font-bold">{contactStats?.bounced ?? 0}</p>
+                      )}
+                      <p className="text-sm text-muted-foreground">Bounced</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex items-center gap-4">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-destructive/10">
+                      <Ban className="h-5 w-5 text-destructive" />
+                    </div>
+                    <div>
+                      {isLoadingStats ? (
+                        <Skeleton className="h-8 w-12 mb-1" />
+                      ) : (
+                        <p className="text-2xl font-bold">{contactStats?.complained ?? 0}</p>
+                      )}
+                      <p className="text-sm text-muted-foreground">Complained</p>
                     </div>
                   </div>
                 </CardContent>
@@ -480,14 +633,28 @@ export default function AudiencePage() {
                 />
               </div>
               
-              <Select defaultValue="all">
-                <SelectTrigger className="w-[140px]">
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-[150px]">
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All</SelectItem>
+                  <SelectItem value="all">All Statuses</SelectItem>
                   <SelectItem value="subscribed">Subscribed</SelectItem>
                   <SelectItem value="unsubscribed">Unsubscribed</SelectItem>
+                  <SelectItem value="bounced">Bounced</SelectItem>
+                  <SelectItem value="complained">Complained</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Select value={segmentFilter} onValueChange={setSegmentFilter}>
+                <SelectTrigger className="w-[150px]">
+                  <SelectValue placeholder="Segment" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Segments</SelectItem>
+                  {segments.map((segment) => (
+                    <SelectItem key={segment.id} value={segment.id}>{segment.name}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
 
@@ -509,16 +676,32 @@ export default function AudiencePage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {mockContacts.map((contact) => (
-                    <TableRow key={contact.id} className="cursor-pointer hover:bg-muted/50">
-                      <TableCell className="font-medium">{contact.email}</TableCell>
-                      <TableCell>
-                        <StatusBadge status={contact.status} />
+                  {isLoadingContacts ? (
+                    <TableRow>
+                      <TableCell colSpan={4} className="h-24">
+                        <div className="flex items-center justify-center">
+                          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                        </div>
                       </TableCell>
-                      <TableCell className="text-muted-foreground">{contact.segment}</TableCell>
-                      <TableCell className="text-muted-foreground">{contact.added}</TableCell>
                     </TableRow>
-                  ))}
+                  ) : contacts.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
+                        No contacts found
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    contacts.map((contact) => (
+                      <TableRow key={contact.id} className="cursor-pointer hover:bg-muted/50">
+                        <TableCell className="font-medium">{contact.email}</TableCell>
+                        <TableCell>
+                          <StatusBadge status={contact.status} />
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">{contact.segment?.name ?? "-"}</TableCell>
+                        <TableCell className="text-muted-foreground">{formatDate(contact.created_at)}</TableCell>
+                      </TableRow>
+                    ))
+                  )}
                 </TableBody>
               </Table>
             </div>
@@ -693,7 +876,7 @@ export default function AudiencePage() {
             
             <div className="space-y-2">
               <Label>Segment (optional)</Label>
-              <Select>
+              <Select value={selectedSegmentId} onValueChange={setSelectedSegmentId}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select segment" />
                 </SelectTrigger>
@@ -707,10 +890,15 @@ export default function AudiencePage() {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
+            <Button variant="outline" onClick={() => {
+              setIsAddDialogOpen(false);
+              setNewEmails("");
+              setSelectedSegmentId("");
+            }}>
               Cancel
             </Button>
-            <Button onClick={() => setIsAddDialogOpen(false)}>
+            <Button onClick={handleAddContacts} disabled={!newEmails.trim() || isAddingContacts}>
+              {isAddingContacts && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Add contacts
             </Button>
           </DialogFooter>

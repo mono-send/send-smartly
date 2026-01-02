@@ -12,7 +12,8 @@ type StatusType =
   | "verified"
   | "subscribed"
   | "unsubscribed"
-  | "suspended";
+  | "suspended"
+  | "complained";
 
 const statusConfig: Record<StatusType, { label: string; className: string }> = {
   delivered: {
@@ -62,6 +63,10 @@ const statusConfig: Record<StatusType, { label: string; className: string }> = {
   suspended: {
     label: "Suspended",
     className: "bg-orange-500/10 text-orange-600 border-orange-500/20",
+  },
+  complained: {
+    label: "Complained",
+    className: "bg-destructive/10 text-destructive border-destructive/20",
   },
 };
 
