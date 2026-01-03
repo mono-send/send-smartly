@@ -714,10 +714,10 @@ export default function AudiencePage() {
             <div className="rounded-lg border border-border bg-card">
               <Table>
                 <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Created</TableHead>
-                    <TableHead className="w-[50px]"></TableHead>
+                  <TableRow className="uppercase text-xs">
+                    <TableHead className="h-10">Name</TableHead>
+                    <TableHead className="h-10">Created</TableHead>
+                    <TableHead className="w-[50px] h-10"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -738,9 +738,9 @@ export default function AudiencePage() {
                   ) : (
                     segments.map((segment) => (
                       <TableRow key={segment.id}>
-                        <TableCell className="font-medium">{segment.name}</TableCell>
-                        <TableCell className="text-muted-foreground">{formatDate(segment.created_at)}</TableCell>
-                        <TableCell>
+                        <TableCell className="px-4 py-2 font-medium">{segment.name}</TableCell>
+                        <TableCell className="px-4 py-2 text-muted-foreground">{formatDate(segment.created_at)}</TableCell>
+                        <TableCell className="px-4 py-2">
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button variant="ghost" size="icon" className="h-8 w-8">
