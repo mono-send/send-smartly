@@ -36,7 +36,8 @@ import { formatDistanceToNow } from "date-fns";
 
 interface Email {
   id: string;
-  to: string;
+  to_email: string;
+  from_email: string;
   subject: string;
   status: "delivered" | "opened" | "sent" | "clicked" | "bounced" | "queued" | "failed";
   created_at: string;
@@ -45,10 +46,15 @@ interface Email {
 interface EmailsResponse {
   items: Array<{
     id: string;
-    to: string[];
+    to_email: string;
+    from_email: string;
     subject: string;
     status: string;
     created_at: string;
+    event: {
+      status: string;
+      created_at: string;
+    } | null;
   }>;
   next_cursor: string | null;
 }
@@ -124,7 +130,8 @@ export default function EmailsPage() {
       
       const mappedEmails: Email[] = data.items.map((item) => ({
         id: item.id,
-        to: item.to.join(", "),
+        to_email: item.to_email,
+        from_email: item.from_email,
         subject: item.subject,
         status: item.status as Email["status"],
         created_at: item.created_at,
@@ -165,7 +172,7 @@ export default function EmailsPage() {
 
   const handleResendEmail = () => {
     if (emailToResend) {
-      toast.success(`Email to "${emailToResend.to}" queued for resend`);
+      toast.success(`Email to "${emailToResend.to_email}" queued for resend`);
       setEmailToResend(null);
     }
   };
@@ -344,10 +351,10 @@ export default function EmailsPage() {
                       <Checkbox
                         checked={selectedIds.has(email.id)}
                         onCheckedChange={() => toggleSelect(email.id)}
-                        aria-label={`Select email to ${email.to}`}
+                        aria-label={`Select email to ${email.to_email}`}
                       />
                     </TableCell>
-                    <TableCell className="font-medium">{email.to}</TableCell>
+                    <TableCell className="font-medium">{email.to_email}</TableCell>
                     <TableCell>
                       <StatusBadge status={email.status} />
                     </TableCell>
@@ -394,7 +401,7 @@ export default function EmailsPage() {
         onOpenChange={(open) => !open && setEmailToDelete(null)}
         onConfirm={handleDeleteEmail}
         title="Delete Email"
-        description={`Are you sure you want to delete the email to "${emailToDelete?.to}"? This action cannot be undone.`}
+        description={`Are you sure you want to delete the email to "${emailToDelete?.to_email}"? This action cannot be undone.`}
       />
 
       <ConfirmDeleteDialog
@@ -410,7 +417,7 @@ export default function EmailsPage() {
         onOpenChange={(open) => !open && setEmailToResend(null)}
         onConfirm={handleResendEmail}
         title="Resend Email"
-        description={`Are you sure you want to resend the email to "${emailToResend?.to}"? A new copy of this email will be sent.`}
+        description={`Are you sure you want to resend the email to "${emailToResend?.to_email}"? A new copy of this email will be sent.`}
         confirmLabel="Resend"
       />
 
