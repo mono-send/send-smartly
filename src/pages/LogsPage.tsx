@@ -284,12 +284,12 @@ export default function LogsPage() {
         <div className="rounded-lg border border-border bg-card">
           <Table>
             <TableHeader>
-              <TableRow>
-                <TableHead>Endpoint</TableHead>
-                <TableHead>Source</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Method</TableHead>
-                <TableHead>Created</TableHead>
+              <TableRow className="uppercase text-xs">
+                <TableHead className="h-10">Endpoint</TableHead>
+                <TableHead className="h-10">Source</TableHead>
+                <TableHead className="h-10">Status</TableHead>
+                <TableHead className="h-10">Method</TableHead>
+                <TableHead className="h-10">Created</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -322,10 +322,10 @@ export default function LogsPage() {
                     className="cursor-pointer hover:bg-muted/50"
                     onClick={() => navigate(`/logs/${log.id}`)}
                   >
-                    <TableCell>
+                    <TableCell className="px-4 py-2">
                       <code className="font-mono text-sm">{log.endpoint}</code>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="px-4 py-2">
                       <span className={cn(
                         "inline-flex items-center rounded px-2 py-0.5 text-xs font-medium uppercase",
                         log.source === "api" ? "bg-primary/10 text-primary" : "bg-accent text-accent-foreground"
@@ -333,13 +333,13 @@ export default function LogsPage() {
                         {log.source}
                       </span>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="px-4 py-2">
                       <StatusCode code={log.status} />
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="px-4 py-2">
                       <MethodBadge method={log.method} />
                     </TableCell>
-                    <TableCell className="text-muted-foreground">{formatCreatedTime(log.created_at)}</TableCell>
+                    <TableCell className="px-4 py-2 text-muted-foreground">{formatCreatedTime(log.created_at)}</TableCell>
                   </TableRow>
                 ))
               )}
