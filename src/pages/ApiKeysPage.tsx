@@ -251,8 +251,8 @@ export default function ApiKeysPage() {
                     className="cursor-pointer"
                     onClick={() => navigate(`/api-keys/${key.id}`)}
                   >
-                    <TableCell className="font-medium">{key.name}</TableCell>
-                    <TableCell>
+                    <TableCell className="font-medium px-4 py-2">{key.name}</TableCell>
+                    <TableCell className="px-4 py-2">
                       <div className="flex items-center gap-2">
                         <code className="rounded bg-muted px-2 py-1 font-mono text-xs">
                           {key.key}...
@@ -274,18 +274,18 @@ export default function ApiKeysPage() {
                         </Button>
                       </div>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="px-4 py-2">
                       <Badge variant="secondary">
                         {permissionLabels[key.permission] || key.permission}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-muted-foreground">
+                    <TableCell className="text-muted-foreground px-4 py-2">
                       {formatDate(key.last_used_at)}
                     </TableCell>
-                    <TableCell className="text-muted-foreground">
+                    <TableCell className="text-muted-foreground px-4 py-2">
                       {formatDate(key.created_at)}
                     </TableCell>
-                    <TableCell onClick={(e) => e.stopPropagation()}>
+                    <TableCell className="px-4 py-2" onClick={(e) => e.stopPropagation()}>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="icon" className="h-8 w-8">
