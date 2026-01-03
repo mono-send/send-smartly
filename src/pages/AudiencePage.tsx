@@ -780,12 +780,12 @@ export default function AudiencePage() {
             <div className="rounded-lg border border-border bg-card">
               <Table>
                 <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Visibility</TableHead>
-                    <TableHead>Created</TableHead>
-                    <TableHead className="w-[50px]"></TableHead>
+                  <TableRow className="uppercase text-xs">
+                    <TableHead className="h-10">Name</TableHead>
+                    <TableHead className="h-10">Type</TableHead>
+                    <TableHead className="h-10">Visibility</TableHead>
+                    <TableHead className="h-10">Created</TableHead>
+                    <TableHead className="w-[50px] h-10"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -806,11 +806,11 @@ export default function AudiencePage() {
                   ) : (
                     categories.map((category) => (
                       <TableRow key={category.id}>
-                        <TableCell className="font-medium">{category.name}</TableCell>
-                        <TableCell className="capitalize">{category.type}</TableCell>
-                        <TableCell className="capitalize">{category.visibility}</TableCell>
-                        <TableCell className="text-muted-foreground">{formatDate(category.created_at)}</TableCell>
-                        <TableCell>
+                        <TableCell className="px-4 py-2 font-medium">{category.name}</TableCell>
+                        <TableCell className="px-4 py-2 capitalize">{category.type}</TableCell>
+                        <TableCell className="px-4 py-2 capitalize">{category.visibility}</TableCell>
+                        <TableCell className="px-4 py-2 text-muted-foreground">{formatDate(category.created_at)}</TableCell>
+                        <TableCell className="px-4 py-2">
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button variant="ghost" size="icon" className="h-8 w-8">
