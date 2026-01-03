@@ -4,7 +4,7 @@ import { TopBar } from "@/components/layout/TopBar";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { Server, MoreHorizontal, Copy, Check, Plug } from "lucide-react";
+import { Server, MoreVertical, Copy, Check, Plug } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -317,7 +317,7 @@ export default function LogDetailsPage() {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="icon" className="h-9 w-9">
-                <MoreHorizontal className="h-4 w-4" />
+                <MoreVertical className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
