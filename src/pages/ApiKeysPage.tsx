@@ -235,13 +235,13 @@ export default function ApiKeysPage() {
           ) : (
             <Table>
               <TableHeader>
-                <TableRow class="uppercase text-xs h-10">
-                  <TableHead>Name</TableHead>
-                  <TableHead>Token</TableHead>
-                  <TableHead>Permission</TableHead>
-                  <TableHead>Last used</TableHead>
-                  <TableHead>Created</TableHead>
-                  <TableHead className="w-[50px]"></TableHead>
+                <TableRow class="uppercase text-xs">
+                  <TableHead class="h-10">Name</TableHead>
+                  <TableHead class="h-10">Token</TableHead>
+                  <TableHead class="h-10">Permission</TableHead>
+                  <TableHead class="h-10">Last used</TableHead>
+                  <TableHead class="h-10">Created</TableHead>
+                  <TableHead className="w-[50px] h-10"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
