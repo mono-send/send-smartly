@@ -73,6 +73,8 @@ function getStatusRange(filter: string) {
   switch (filter) {
     case "2xx":
       return { min: 200, max: 299 };
+    case "3xx":
+      return { min: 300, max: 399 };
     case "4xx":
       return { min: 400, max: 499 };
     case "5xx":
@@ -161,8 +163,8 @@ export default function LogsPage() {
 
       const statusRange = getStatusRange(statusFilter);
       if (statusRange) {
-        params.append("status_code_gte", statusRange.min.toString());
-        params.append("status_code_lte", statusRange.max.toString());
+        params.append("status_code_from", statusRange.min.toString());
+        params.append("status_code_to", statusRange.max.toString());
       }
 
       const { start_at, end_at } = getDateRange(dateRange);
@@ -258,6 +260,7 @@ export default function LogsPage() {
             <SelectContent>
               <SelectItem value="all">All</SelectItem>
               <SelectItem value="2xx">2xx</SelectItem>
+              <SelectItem value="3xx">3xx</SelectItem>
               <SelectItem value="4xx">4xx</SelectItem>
               <SelectItem value="5xx">5xx</SelectItem>
             </SelectContent>
