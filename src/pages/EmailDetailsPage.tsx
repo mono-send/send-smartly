@@ -1,9 +1,10 @@
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { Mail, Copy, Check, ChevronLeft, MoreHorizontal, Send, CheckCircle, Code, BookOpen } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Mail, Copy, Check, ChevronLeft, MoreHorizontal, Send, CheckCircle, Code, BookOpen, Loader2 } from "lucide-react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,84 +15,30 @@ import { ConfirmActionDialog } from "@/components/dialogs/ConfirmActionDialog";
 import { ConfirmDeleteDialog } from "@/components/dialogs/ConfirmDeleteDialog";
 import { APISection } from "@/components/APISection";
 import { toast } from "sonner";
+import { api } from "@/lib/api";
+import { format } from "date-fns";
 
-// Mock email data - in production this would come from an API
-const mockEmailDetails = {
-  "1": {
-    id: "3fcd4164-be76-4555-9bb4-8a2f1c3d5e6a",
-    to: "john@example.com",
-    from: "welcome@monosend.io",
-    subject: "Welcome to MonoSend",
-    status: "delivered" as const,
-    events: [
-      { type: "sent", label: "Sent", date: "Dec 21, 9:09 PM", completed: true },
-      { type: "delivered", label: "Delivered", date: "Dec 21, 9:09 PM", completed: true },
-    ],
-    preview: `Hello John,
+interface EmailEvent {
+  status: string;
+  created_at: string;
+}
 
-Welcome to MonoSend! We're excited to have you on board.
-
-Your account has been successfully created and you can now start sending emails via our API.
-
-Best regards,
-The MonoSend Team`,
-    plainText: `Hello John,
-
-Welcome to MonoSend! We're excited to have you on board.
-
-Your account has been successfully created and you can now start sending emails via our API.
-
-Best regards,
-The MonoSend Team`,
-    html: `<!DOCTYPE html>
-<html>
-<head>
-  <title>Welcome to MonoSend</title>
-</head>
-<body>
-  <h1>Hello John,</h1>
-  <p>Welcome to MonoSend! We're excited to have you on board.</p>
-  <p>Your account has been successfully created and you can now start sending emails via our API.</p>
-  <p>Best regards,<br/>The MonoSend Team</p>
-</body>
-</html>`,
-  },
-  "2": {
-    id: "4eab5275-cf87-5666-0cc5-9b3g2d4e6f7b",
-    to: "sarah@startup.io",
-    from: "billing@monosend.io",
-    subject: "Your invoice is ready",
-    status: "opened" as const,
-    events: [
-      { type: "sent", label: "Sent", date: "Dec 21, 8:45 PM", completed: true },
-      { type: "delivered", label: "Delivered", date: "Dec 21, 8:45 PM", completed: true },
-      { type: "opened", label: "Opened", date: "Dec 21, 8:52 PM", completed: true },
-    ],
-    preview: `Hi Sarah,
-
-Your invoice #INV-2024-001 for $99.00 is ready.
-
-View your invoice: https://billing.monosend.io/invoices/INV-2024-001
-
-Thanks for your business!`,
-    plainText: `Hi Sarah,
-
-Your invoice #INV-2024-001 for $99.00 is ready.
-
-View your invoice: https://billing.monosend.io/invoices/INV-2024-001
-
-Thanks for your business!`,
-    html: `<!DOCTYPE html>
-<html>
-<body>
-  <h1>Hi Sarah,</h1>
-  <p>Your invoice #INV-2024-001 for $99.00 is ready.</p>
-  <a href="https://billing.monosend.io/invoices/INV-2024-001">View your invoice</a>
-  <p>Thanks for your business!</p>
-</body>
-</html>`,
-  },
-};
+interface EmailDetails {
+  id: string;
+  to_email: string;
+  from_email: string;
+  subject: string;
+  body: string;
+  status: string;
+  created_at: string;
+  sent_at: string | null;
+  contact_id: string | null;
+  domain_id: string | null;
+  template_id: string | null;
+  broadcast_id: string | null;
+  api_key_id: string | null;
+  events: EmailEvent[];
+}
 
 export default function EmailDetailsPage() {
   const { id } = useParams();
@@ -101,11 +48,38 @@ export default function EmailDetailsPage() {
   const [showResendDialog, setShowResendDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showApiSection, setShowApiSection] = useState(false);
+  const [email, setEmail] = useState<EmailDetails | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const email = mockEmailDetails[id as keyof typeof mockEmailDetails] || mockEmailDetails["1"];
+  useEffect(() => {
+    const fetchEmailDetails = async () => {
+      if (!id) return;
+      
+      setIsLoading(true);
+      try {
+        const response = await api(`/emails/${id}`);
+        
+        if (!response.ok) {
+          throw new Error("Failed to fetch email details");
+        }
+        
+        const data: EmailDetails = await response.json();
+        setEmail(data);
+      } catch (error) {
+        console.error("Failed to fetch email details:", error);
+        toast.error("Failed to load email details");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchEmailDetails();
+  }, [id]);
 
   const handleResend = () => {
-    toast.success(`Email to "${email.to}" queued for resend`);
+    if (email) {
+      toast.success(`Email to "${email.to_email}" queued for resend`);
+    }
     setShowResendDialog(false);
   };
 
@@ -131,6 +105,92 @@ export default function EmailDetailsPage() {
     return id.substring(0, 20) + "...";
   };
 
+  const formatEventDate = (dateString: string) => {
+    try {
+      return format(new Date(dateString), "MMM d, h:mm a");
+    } catch {
+      return dateString;
+    }
+  };
+
+  const getEventLabel = (status: string) => {
+    const labels: Record<string, string> = {
+      queued: "Queued",
+      sent: "Sent",
+      delivered: "Delivered",
+      opened: "Opened",
+      clicked: "Clicked",
+      bounced: "Bounced",
+      failed: "Failed",
+    };
+    return labels[status] || status.charAt(0).toUpperCase() + status.slice(1);
+  };
+
+  const isSuccessEvent = (status: string) => {
+    return ["delivered", "opened", "clicked"].includes(status);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="p-6">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => navigate("/emails")}
+          className="mb-4 -ml-2 text-muted-foreground hover:text-foreground"
+        >
+          <ChevronLeft className="mr-1 h-4 w-4" />
+          Back to Emails
+        </Button>
+
+        <div className="mb-8 flex items-start justify-between">
+          <div className="flex items-center gap-4">
+            <Skeleton className="h-16 w-16 rounded-xl" />
+            <div>
+              <Skeleton className="h-4 w-16 mb-2" />
+              <Skeleton className="h-7 w-48" />
+            </div>
+          </div>
+        </div>
+
+        <div className="mb-8 grid grid-cols-4 gap-6">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i}>
+              <Skeleton className="h-3 w-12 mb-2" />
+              <Skeleton className="h-5 w-32" />
+            </div>
+          ))}
+        </div>
+
+        <div className="mb-8">
+          <Skeleton className="h-3 w-24 mb-4" />
+          <Skeleton className="h-24 w-full rounded-lg" />
+        </div>
+
+        <Skeleton className="h-64 w-full rounded-lg" />
+      </div>
+    );
+  }
+
+  if (!email) {
+    return (
+      <div className="p-6">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => navigate("/emails")}
+          className="mb-4 -ml-2 text-muted-foreground hover:text-foreground"
+        >
+          <ChevronLeft className="mr-1 h-4 w-4" />
+          Back to Emails
+        </Button>
+        <div className="text-center text-muted-foreground py-12">
+          Email not found
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-6">
         {/* Back button */}
@@ -152,7 +212,7 @@ export default function EmailDetailsPage() {
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Email</p>
-              <h1 className="text-2xl font-semibold">{email.to}</h1>
+              <h1 className="text-2xl font-semibold">{email.to_email}</h1>
             </div>
           </div>
           
@@ -190,7 +250,7 @@ export default function EmailDetailsPage() {
         <div className="mb-8 grid grid-cols-4 gap-6">
           <div>
             <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">From</p>
-            <p className="mt-1 text-sm">{email.from}</p>
+            <p className="mt-1 text-sm">{email.from_email}</p>
           </div>
           <div>
             <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Subject</p>
@@ -198,7 +258,7 @@ export default function EmailDetailsPage() {
           </div>
           <div>
             <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">To</p>
-            <p className="mt-1 text-sm">{email.to}</p>
+            <p className="mt-1 text-sm">{email.to_email}</p>
           </div>
           <div>
             <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">ID</p>
@@ -228,40 +288,46 @@ export default function EmailDetailsPage() {
             Email Events
           </p>
           <div className="rounded-lg border border-border bg-card p-6">
-            <div className="flex items-center gap-8">
-              {email.events.map((event, index) => (
-                <div key={event.type} className="flex items-center">
-                  <div className="flex flex-col items-center">
-                    <div
-                      className={`flex h-10 w-10 items-center justify-center rounded-full border-2 ${
-                        event.completed
-                          ? event.type === "delivered" || event.type === "opened" || event.type === "clicked"
+            {email.events.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No events recorded</p>
+            ) : (
+              <div className="flex items-center gap-8">
+                {email.events.map((event, index) => (
+                  <div key={`${event.status}-${index}`} className="flex items-center">
+                    <div className="flex flex-col items-center">
+                      <div
+                        className={`flex h-10 w-10 items-center justify-center rounded-full border-2 ${
+                          isSuccessEvent(event.status)
                             ? "border-success bg-success/10 text-success"
+                            : event.status === "bounced" || event.status === "failed"
+                            ? "border-destructive bg-destructive/10 text-destructive"
                             : "border-border bg-muted text-muted-foreground"
-                          : "border-border bg-muted text-muted-foreground"
-                      }`}
-                    >
-                      {event.type === "sent" ? (
-                        <Send className="h-4 w-4" />
-                      ) : (
-                        <CheckCircle className="h-4 w-4" />
-                      )}
+                        }`}
+                      >
+                        {event.status === "sent" || event.status === "queued" ? (
+                          <Send className="h-4 w-4" />
+                        ) : (
+                          <CheckCircle className="h-4 w-4" />
+                        )}
+                      </div>
+                      <p className={`mt-2 text-sm font-medium ${
+                        isSuccessEvent(event.status)
+                          ? "text-success"
+                          : event.status === "bounced" || event.status === "failed"
+                          ? "text-destructive"
+                          : ""
+                      }`}>
+                        {getEventLabel(event.status)}
+                      </p>
+                      <p className="text-xs text-muted-foreground">{formatEventDate(event.created_at)}</p>
                     </div>
-                    <p className={`mt-2 text-sm font-medium ${
-                      event.type === "delivered" || event.type === "opened" || event.type === "clicked"
-                        ? "text-success"
-                        : ""
-                    }`}>
-                      {event.label}
-                    </p>
-                    <p className="text-xs text-muted-foreground">{event.date}</p>
+                    {index < email.events.length - 1 && (
+                      <div className="mx-4 h-0.5 w-16 bg-border" />
+                    )}
                   </div>
-                  {index < email.events.length - 1 && (
-                    <div className="mx-4 h-0.5 w-16 bg-border" />
-                  )}
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
@@ -287,7 +353,7 @@ export default function EmailDetailsPage() {
                 variant="ghost"
                 size="icon"
                 className="h-8 w-8"
-                onClick={() => copyToClipboard(email.preview, "content")}
+                onClick={() => copyToClipboard(email.body, "content")}
               >
                 {copiedContent ? (
                   <Check className="h-4 w-4 text-success" />
@@ -298,18 +364,18 @@ export default function EmailDetailsPage() {
             </div>
 
             <TabsContent value="preview" className="p-6">
-              <div className="whitespace-pre-wrap text-sm">{email.preview}</div>
+              <div className="whitespace-pre-wrap text-sm">{email.body}</div>
             </TabsContent>
 
             <TabsContent value="plain-text" className="p-6">
               <pre className="whitespace-pre-wrap font-mono text-sm text-muted-foreground">
-                {email.plainText}
+                {email.body}
               </pre>
             </TabsContent>
 
             <TabsContent value="html" className="p-6">
               <pre className="overflow-x-auto rounded-lg bg-muted p-4 font-mono text-xs text-muted-foreground">
-                {email.html}
+                {email.body}
               </pre>
             </TabsContent>
 
@@ -353,7 +419,7 @@ export default function EmailDetailsPage() {
         onOpenChange={setShowResendDialog}
         onConfirm={handleResend}
         title="Resend Email"
-        description={`Are you sure you want to resend this email to "${email.to}"? A new copy of this email will be sent.`}
+        description={`Are you sure you want to resend this email to "${email.to_email}"? A new copy of this email will be sent.`}
         confirmLabel="Resend"
       />
 
@@ -362,7 +428,7 @@ export default function EmailDetailsPage() {
         onOpenChange={setShowDeleteDialog}
         onConfirm={handleDelete}
         title="Delete Email"
-        description={`Are you sure you want to delete the email to "${email.to}"? This action cannot be undone.`}
+        description={`Are you sure you want to delete the email to "${email.to_email}"? This action cannot be undone.`}
       />
 
       <APISection isOpen={showApiSection} onClose={() => setShowApiSection(false)} />
