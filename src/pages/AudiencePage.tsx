@@ -658,11 +658,11 @@ export default function AudiencePage() {
             <div className="rounded-lg border border-border bg-card">
               <Table>
                 <TableHeader>
-                  <TableRow>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Segment</TableHead>
-                    <TableHead>Added</TableHead>
+                  <TableRow className="uppercase text-xs">
+                    <TableHead className="h-10">Email</TableHead>
+                    <TableHead className="h-10">Status</TableHead>
+                    <TableHead className="h-10">Segment</TableHead>
+                    <TableHead className="h-10">Added</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -683,12 +683,12 @@ export default function AudiencePage() {
                   ) : (
                     contacts.map((contact) => (
                       <TableRow key={contact.id} className="cursor-pointer hover:bg-muted/50">
-                        <TableCell className="font-medium">{contact.email}</TableCell>
-                        <TableCell>
+                        <TableCell className="px-4 py-2 font-medium">{contact.email}</TableCell>
+                        <TableCell className="px-4 py-2">
                           <StatusBadge status={contact.status} />
                         </TableCell>
-                        <TableCell className="text-muted-foreground">{contact.segment?.name ?? "-"}</TableCell>
-                        <TableCell className="text-muted-foreground">{formatDate(contact.created_at)}</TableCell>
+                        <TableCell className="px-4 py-2 text-muted-foreground">{contact.segment?.name ?? "-"}</TableCell>
+                        <TableCell className="px-4 py-2 text-muted-foreground">{formatDate(contact.created_at)}</TableCell>
                       </TableRow>
                     ))
                   )}
