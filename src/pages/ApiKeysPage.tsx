@@ -235,7 +235,7 @@ export default function ApiKeysPage() {
           ) : (
             <Table>
               <TableHeader>
-                <TableRow class="uppercase">
+                <TableRow class="uppercase text-xs h-10">
                   <TableHead>Name</TableHead>
                   <TableHead>Token</TableHead>
                   <TableHead>Permission</TableHead>
