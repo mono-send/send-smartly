@@ -319,10 +319,10 @@ export default function TemplatesPage() {
             </div>
           </div>
           <DialogFooter>
-            <Button className="h-9" variant="outline" onClick={() => setIsDialogOpen(false)} disabled={isCreating}>
+            <Button size="sm" variant="outline" onClick={() => setIsDialogOpen(false)} disabled={isCreating}>
               Cancel
             </Button>
-            <Button className="h-9" onClick={handleCreateTemplate} disabled={isCreating}>
+            <Button size="sm" onClick={handleCreateTemplate} disabled={isCreating}>
               {isCreating ? "Creating..." : "Create"}
             </Button>
           </DialogFooter>
