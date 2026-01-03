@@ -237,8 +237,9 @@ export default function EmailsPage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All statuses</SelectItem>
-              <SelectItem value="delivered">Delivered</SelectItem>
+              <SelectItem value="queued">Queued</SelectItem>
               <SelectItem value="sent">Sent</SelectItem>
+              <SelectItem value="delivered">Delivered</SelectItem>
               <SelectItem value="opened">Opened</SelectItem>
               <SelectItem value="clicked">Clicked</SelectItem>
               <SelectItem value="bounced">Bounced</SelectItem>
