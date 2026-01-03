@@ -880,14 +880,14 @@ export default function AudiencePage() {
           </div>
 
           <DialogFooter>
-            <Button className="h-9" variant="outline" onClick={() => {
+            <Button size="sm" variant="outline" onClick={() => {
               setIsAddDialogOpen(false);
               setNewEmails("");
               setSelectedSegmentId("");
             }}>
               Cancel
             </Button>
-            <Button className="h-9" onClick={handleAddContacts} disabled={!newEmails.trim() || isAddingContacts}>
+            <Button size="sm" onClick={handleAddContacts} disabled={!newEmails.trim() || isAddingContacts}>
               {isAddingContacts && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Add contacts
             </Button>
@@ -916,10 +916,10 @@ export default function AudiencePage() {
             </div>
           </div>
           <DialogFooter>
-            <Button className="h-9" variant="outline" onClick={() => { setIsAddSegmentOpen(false); setSegmentName(""); }}>
+            <Button size="sm" variant="outline" onClick={() => { setIsAddSegmentOpen(false); setSegmentName(""); }}>
               Cancel
             </Button>
-            <Button className="h-9" onClick={handleAddSegment} disabled={!segmentName.trim() || isSubmitting}>
+            <Button size="sm" onClick={handleAddSegment} disabled={!segmentName.trim() || isSubmitting}>
               {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Add segment
             </Button>
@@ -954,10 +954,10 @@ export default function AudiencePage() {
             )}
           </div>
           <DialogFooter>
-            <Button className="h-9" variant="outline" onClick={() => { setIsEditSegmentOpen(false); setSegmentName(""); setSegmentDescription(""); setSelectedSegment(null); }}>
+            <Button size="sm" variant="outline" onClick={() => { setIsEditSegmentOpen(false); setSegmentName(""); setSegmentDescription(""); setSelectedSegment(null); }}>
               Cancel
             </Button>
-            <Button className="h-9" onClick={handleEditSegment} disabled={!segmentName.trim() || isSubmitting || isLoadingSegment}>
+            <Button size="sm" onClick={handleEditSegment} disabled={!segmentName.trim() || isSubmitting || isLoadingSegment}>
               {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Save changes
             </Button>
@@ -1027,11 +1027,11 @@ export default function AudiencePage() {
           </div>
           
           <DialogFooter>
-            <Button className="h-9" variant="outline" onClick={() => setIsAddCategoryOpen(false)}>
+            <Button size="sm" variant="outline" onClick={() => setIsAddCategoryOpen(false)}>
               Cancel
             </Button>
             <Button 
-              className="h-9"
+              size="sm"
               onClick={handleAddCategory}
               disabled={!categoryName.trim() || isCategorySubmitting}
             >
@@ -1084,10 +1084,10 @@ export default function AudiencePage() {
             )}
           </div>
           <DialogFooter>
-            <Button className="h-9" variant="outline" onClick={() => { setIsEditCategoryOpen(false); resetCategoryForm(); }}>
+            <Button size="sm" variant="outline" onClick={() => { setIsEditCategoryOpen(false); resetCategoryForm(); }}>
               Cancel
             </Button>
-            <Button className="h-9" onClick={handleEditCategory} disabled={!categoryName.trim() || isCategorySubmitting || isLoadingCategory}>
+            <Button size="sm" onClick={handleEditCategory} disabled={!categoryName.trim() || isCategorySubmitting || isLoadingCategory}>
               {isCategorySubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Save changes
             </Button>
