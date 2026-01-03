@@ -586,7 +586,7 @@ export default function SettingsPage() {
                     ))}
                   </div>
                 )}
-                <Button variant="outline" className="mt-4" onClick={() => setIsInviteDialogOpen(true)}>
+                <Button variant="outline" className="mt-4 h-9" onClick={() => setIsInviteDialogOpen(true)}>
                   Invite team member
                 </Button>
               </CardContent>
