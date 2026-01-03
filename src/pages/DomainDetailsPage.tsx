@@ -1,6 +1,6 @@
 import { TopBar } from "@/components/layout/TopBar";
 import { Button } from "@/components/ui/button";
-import { Globe, Code, MoreHorizontal, ExternalLink, AlertTriangle, Mail, Loader2, Copy, Check } from "lucide-react";
+import { Globe, Code, MoreVertical, ExternalLink, AlertTriangle, Mail, Loader2, Copy, Check } from "lucide-react";
 import { useParams, useNavigate } from "react-router-dom";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Switch } from "@/components/ui/switch";
@@ -326,7 +326,7 @@ export default function DomainDetailsPage() {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="icon" className="h-9 w-9">
-                  <MoreHorizontal className="h-4 w-4" />
+                  <MoreVertical className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
