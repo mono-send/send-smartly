@@ -20,7 +20,7 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Search, MoreVertical, Calendar, Trash2, X, RefreshCw, Loader2 } from "lucide-react";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   DropdownMenu,
@@ -85,11 +85,15 @@ export default function EmailsPage() {
   const [dateRange, setDateRange] = useState("7");
   const [emails, setEmails] = useState<Email[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [emailToDelete, setEmailToDelete] = useState<Email | null>(null);
   const [emailToResend, setEmailToResend] = useState<Email | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false);
   const [showBulkResendDialog, setShowBulkResendDialog] = useState(false);
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
+  const isFetchingRef = useRef(false);
   const navigate = useNavigate();
 
   // Debounce search input
@@ -100,8 +104,17 @@ export default function EmailsPage() {
     return () => clearTimeout(timer);
   }, [search]);
 
-  const fetchEmails = useCallback(async () => {
-    setIsLoading(true);
+  const fetchEmails = useCallback(async (cursor?: string, replace = false) => {
+    if (isFetchingRef.current) return;
+
+    isFetchingRef.current = true;
+    if (replace) {
+      setIsLoading(true);
+      setNextCursor(null);
+    } else if (cursor) {
+      setIsLoadingMore(true);
+    }
+
     try {
       const params = new URLSearchParams();
       
@@ -116,6 +129,10 @@ export default function EmailsPage() {
       const { start_at, end_at } = getDateRange(dateRange);
       params.append("start_at", start_at);
       params.append("end_at", end_at);
+
+      if (cursor) {
+        params.append("cursor", cursor);
+      }
       
       const queryString = params.toString();
       const endpoint = queryString ? `/emails?${queryString}` : "/emails";
@@ -136,19 +153,53 @@ export default function EmailsPage() {
         status: item.status as Email["status"],
         created_at: item.created_at,
       }));
-      
-      setEmails(mappedEmails);
+
+      setEmails((prev) => {
+        if (replace || !cursor) {
+          return mappedEmails;
+        }
+
+        const existingIds = new Set(prev.map((email) => email.id));
+        const uniqueNewEmails = mappedEmails.filter((email) => !existingIds.has(email.id));
+        return [...prev, ...uniqueNewEmails];
+      });
+
+      setNextCursor(data.next_cursor);
     } catch (error) {
       console.error("Failed to fetch emails:", error);
       toast.error("Failed to load emails");
     } finally {
+      isFetchingRef.current = false;
       setIsLoading(false);
+      setIsLoadingMore(false);
     }
   }, [debouncedSearch, statusFilter, dateRange]);
 
   useEffect(() => {
-    fetchEmails();
+    setSelectedIds(new Set());
+    fetchEmails(undefined, true);
   }, [fetchEmails]);
+
+  useEffect(() => {
+    const loadMoreElement = loadMoreRef.current;
+    if (!loadMoreElement) return;
+
+    const observer = new IntersectionObserver((entries) => {
+      const [entry] = entries;
+      if (entry.isIntersecting && nextCursor && !isLoading && !isLoadingMore) {
+        fetchEmails(nextCursor);
+      }
+    }, {
+      rootMargin: "200px",
+      threshold: 0.1,
+    });
+
+    observer.observe(loadMoreElement);
+
+    return () => {
+      observer.unobserve(loadMoreElement);
+    };
+  }, [fetchEmails, isLoading, isLoadingMore, nextCursor]);
 
   const handleDeleteEmail = () => {
     if (emailToDelete) {
@@ -341,51 +392,67 @@ export default function EmailsPage() {
                   </TableCell>
                 </TableRow>
               ) : (
-                emails.map((email) => (
-                  <TableRow 
-                    key={email.id} 
-                    className="cursor-pointer hover:bg-muted/50"
-                    onClick={() => navigate(`/emails/${email.id}`)}
-                    data-selected={selectedIds.has(email.id)}
-                  >
-                    {/* <TableCell onClick={(e) => e.stopPropagation()}>
-                      <Checkbox
-                        checked={selectedIds.has(email.id)}
-                        onCheckedChange={() => toggleSelect(email.id)}
-                        aria-label={`Select email to ${email.to_email}`}
-                      />
-                    </TableCell> */}
-                    <TableCell className="font-medium px-4 py-2">{email.to_email}</TableCell>
-                    <TableCell className="px-4 py-2">
-                      <StatusBadge status={email.status} />
-                    </TableCell>
-                    <TableCell className="text-muted-foreground px-4 py-2">{email.subject}</TableCell>
-                    <TableCell className="text-muted-foreground px-4 py-2">{formatSentTime(email.created_at)}</TableCell>
-                    <TableCell className="px-4 py-2" onClick={(e) => e.stopPropagation()}>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => navigate(`/emails/${email.id}`)}>
-                            View details
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => setEmailToResend(email)}>
-                            Resend
-                          </DropdownMenuItem>
-                          <DropdownMenuItem 
-                            className="text-destructive focus:text-destructive"
-                            onClick={() => setEmailToDelete(email)}
-                          >
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                <>
+                  {emails.map((email) => (
+                    <TableRow 
+                      key={email.id} 
+                      className="cursor-pointer hover:bg-muted/50"
+                      onClick={() => navigate(`/emails/${email.id}`)}
+                      data-selected={selectedIds.has(email.id)}
+                    >
+                      {/* <TableCell onClick={(e) => e.stopPropagation()}>
+                        <Checkbox
+                          checked={selectedIds.has(email.id)}
+                          onCheckedChange={() => toggleSelect(email.id)}
+                          aria-label={`Select email to ${email.to_email}`}
+                        />
+                      </TableCell> */}
+                      <TableCell className="font-medium px-4 py-2">{email.to_email}</TableCell>
+                      <TableCell className="px-4 py-2">
+                        <StatusBadge status={email.status} />
+                      </TableCell>
+                      <TableCell className="text-muted-foreground px-4 py-2">{email.subject}</TableCell>
+                      <TableCell className="text-muted-foreground px-4 py-2">{formatSentTime(email.created_at)}</TableCell>
+                      <TableCell className="px-4 py-2" onClick={(e) => e.stopPropagation()}>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => navigate(`/emails/${email.id}`)}>
+                              View details
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => setEmailToResend(email)}>
+                              Resend
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              className="text-destructive focus:text-destructive"
+                              onClick={() => setEmailToDelete(email)}
+                            >
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  <TableRow>
+                    <TableCell colSpan={5} className="h-14 text-center text-muted-foreground">
+                      {isLoadingMore ? (
+                        <div className="flex items-center justify-center gap-2">
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          Loading more emails
+                        </div>
+                      ) : nextCursor ? (
+                        <div ref={loadMoreRef}>Load more</div>
+                      ) : (
+                        <span>No more emails</span>
+                      )}
                     </TableCell>
                   </TableRow>
-                ))
+                </>
               )}
             </TableBody>
           </Table>
