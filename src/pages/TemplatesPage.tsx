@@ -189,7 +189,7 @@ export default function TemplatesPage() {
   return (
     <>
       <TopBar 
-        title="Templates" 
+        title="Dynamic Templates" 
         subtitle="Create and manage email templates"
         action={{
           label: "Create template",
