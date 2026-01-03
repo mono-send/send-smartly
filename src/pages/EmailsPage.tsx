@@ -305,8 +305,8 @@ export default function EmailsPage() {
         <div className="rounded-lg border border-border bg-card">
           <Table>
             <TableHeader>
-              <TableRow>
-                <TableHead className="w-[50px]">
+              <TableRow className="uppercase text-xs">
+                {/* <TableHead className="w-[50px]">
                   <Checkbox
                     checked={isAllSelected}
                     onCheckedChange={toggleSelectAll}
@@ -314,19 +314,19 @@ export default function EmailsPage() {
                     className={isSomeSelected ? "data-[state=checked]:bg-primary data-[state=unchecked]:bg-primary/50" : ""}
                     disabled={isLoading || emails.length === 0}
                   />
-                </TableHead>
-                <TableHead>To</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Subject</TableHead>
-                <TableHead>Sent</TableHead>
-                <TableHead className="w-[50px]"></TableHead>
+                </TableHead> */}
+                <TableHead className="h-10">To</TableHead>
+                <TableHead className="h-10">Status</TableHead>
+                <TableHead className="h-10">Subject</TableHead>
+                <TableHead className="h-10">Sent</TableHead>
+                <TableHead className="w-[50px] h-10"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
                 Array.from({ length: 5 }).map((_, i) => (
                   <TableRow key={i}>
-                    <TableCell><Skeleton className="h-4 w-4" /></TableCell>
+                    {/* <TableCell><Skeleton className="h-4 w-4" /></TableCell> */}
                     <TableCell><Skeleton className="h-4 w-32" /></TableCell>
                     <TableCell><Skeleton className="h-5 w-20" /></TableCell>
                     <TableCell><Skeleton className="h-4 w-48" /></TableCell>
@@ -336,7 +336,7 @@ export default function EmailsPage() {
                 ))
               ) : emails.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
+                  <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
                     No emails found
                   </TableCell>
                 </TableRow>
@@ -348,20 +348,20 @@ export default function EmailsPage() {
                     onClick={() => navigate(`/emails/${email.id}`)}
                     data-selected={selectedIds.has(email.id)}
                   >
-                    <TableCell onClick={(e) => e.stopPropagation()}>
+                    {/* <TableCell onClick={(e) => e.stopPropagation()}>
                       <Checkbox
                         checked={selectedIds.has(email.id)}
                         onCheckedChange={() => toggleSelect(email.id)}
                         aria-label={`Select email to ${email.to_email}`}
                       />
-                    </TableCell>
-                    <TableCell className="font-medium">{email.to_email}</TableCell>
-                    <TableCell>
+                    </TableCell> */}
+                    <TableCell className="font-medium px-4 py-2">{email.to_email}</TableCell>
+                    <TableCell className="px-4 py-2">
                       <StatusBadge status={email.status} />
                     </TableCell>
-                    <TableCell className="text-muted-foreground">{email.subject}</TableCell>
-                    <TableCell className="text-muted-foreground">{formatSentTime(email.created_at)}</TableCell>
-                    <TableCell onClick={(e) => e.stopPropagation()}>
+                    <TableCell className="text-muted-foreground px-4 py-2">{email.subject}</TableCell>
+                    <TableCell className="text-muted-foreground px-4 py-2">{formatSentTime(email.created_at)}</TableCell>
+                    <TableCell className="px-4 py-2" onClick={(e) => e.stopPropagation()}>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="icon" className="h-8 w-8">
