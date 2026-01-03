@@ -186,12 +186,12 @@ export default function DomainsPage() {
         <div className="rounded-lg border border-border bg-card">
           <Table>
             <TableHeader>
-              <TableRow>
-                <TableHead>Domain</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Region</TableHead>
-                <TableHead>Created</TableHead>
-                <TableHead className="w-[50px]"></TableHead>
+              <TableRow className="uppercase text-xs">
+                <TableHead className="h-10">Domain</TableHead>
+                <TableHead className="h-10">Status</TableHead>
+                <TableHead className="h-10">Region</TableHead>
+                <TableHead className="h-10">Created</TableHead>
+                <TableHead className="w-[50px] h-10"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -214,22 +214,22 @@ export default function DomainsPage() {
                     className="cursor-pointer hover:bg-muted/50"
                     onClick={() => navigate(`/domains/${domain.id}`)}
                   >
-                    <TableCell className="font-medium">
+                    <TableCell className="px-4 py-2font-medium">
                       <div className="flex items-center gap-2">
                         {domain.domain}
                         <ExternalLink className="h-3.5 w-3.5 text-muted-foreground" />
                       </div>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="px-4 py-2">
                       <StatusBadge status={domain.status} />
                     </TableCell>
-                    <TableCell className="font-mono text-sm text-muted-foreground">
+                    <TableCell className="px-4 py-2 font-mono text-sm text-muted-foreground">
                       {domain.region}
                     </TableCell>
-                    <TableCell className="text-muted-foreground">
+                    <TableCell className="px-4 py-2 text-muted-foreground">
                       {formatDistanceToNow(new Date(domain.created_at), { addSuffix: true })}
                     </TableCell>
-                    <TableCell onClick={(e) => e.stopPropagation()}>
+                    <TableCell className="px-4 py-2" onClick={(e) => e.stopPropagation()}>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="icon" className="h-8 w-8">
