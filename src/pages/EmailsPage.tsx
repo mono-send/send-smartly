@@ -267,7 +267,7 @@ export default function EmailsPage() {
 
   return (
     <>
-      <TopBar title="Emails" subtitle="View and manage your sent emails" />
+      <TopBar title="Email Activity" subtitle="View and manage your sent emails" />
       
       <div className="p-6">
         {/* Filters */}
