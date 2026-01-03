@@ -215,11 +215,11 @@ export default function TemplatesPage() {
         <div className="rounded-lg border border-border bg-card">
           <Table>
             <TableHeader>
-              <TableRow>
-                <TableHead>Email template</TableHead>
-                <TableHead>Created</TableHead>
-                <TableHead>Updated</TableHead>
-                <TableHead className="w-[50px]"></TableHead>
+              <TableRow className="uppercase text-xs">
+                <TableHead className="h-10">Email template</TableHead>
+                <TableHead className="h-10">Created</TableHead>
+                <TableHead className="h-10">Updated</TableHead>
+                <TableHead className="w-[50px] h-10"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -238,19 +238,19 @@ export default function TemplatesPage() {
               ) : (
                 templates.map((template) => (
                   <TableRow key={template.id}>
-                    <TableCell>
+                    <TableCell className="px-4 py-2">
                       <div className="space-y-1">
                         <div className="font-medium">{template.name}</div>
                         <div className="text-sm text-muted-foreground">Subject: {template.subject}</div>
                       </div>
                     </TableCell>
-                    <TableCell className="text-muted-foreground">
+                    <TableCell className="px-4 py-2 text-muted-foreground">
                       {formatDistanceToNow(new Date(template.created_at), { addSuffix: true })}
                     </TableCell>
-                    <TableCell className="text-muted-foreground">
+                    <TableCell className="px-4 py-2 text-muted-foreground">
                       {formatDistanceToNow(new Date(template.updated_at), { addSuffix: true })}
                     </TableCell>
-                    <TableCell onClick={(e) => e.stopPropagation()}>
+                    <TableCell className="px-4 py-2" onClick={(e) => e.stopPropagation()}>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="icon" className="h-8 w-8">
