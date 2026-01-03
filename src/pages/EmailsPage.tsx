@@ -18,8 +18,9 @@ import {
 } from "@/components/ui/table";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Search, MoreVertical, Calendar, Trash2, X, RefreshCw } from "lucide-react";
-import { useState } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Search, MoreVertical, Calendar, Trash2, X, RefreshCw, Loader2 } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   DropdownMenu,
@@ -30,69 +31,117 @@ import {
 import { ConfirmDeleteDialog } from "@/components/dialogs/ConfirmDeleteDialog";
 import { ConfirmActionDialog } from "@/components/dialogs/ConfirmActionDialog";
 import { toast } from "sonner";
-
-const mockEmails = [
-  {
-    id: "1",
-    to: "john@example.com",
-    subject: "Welcome to MonoSend",
-    status: "delivered" as const,
-    sent: "2 minutes ago",
-  },
-  {
-    id: "2",
-    to: "sarah@startup.io",
-    subject: "Your invoice is ready",
-    status: "opened" as const,
-    sent: "15 minutes ago",
-  },
-  {
-    id: "3",
-    to: "dev@company.com",
-    subject: "Password reset request",
-    status: "sent" as const,
-    sent: "1 hour ago",
-  },
-  {
-    id: "4",
-    to: "marketing@brand.co",
-    subject: "Weekly newsletter",
-    status: "clicked" as const,
-    sent: "2 hours ago",
-  },
-  {
-    id: "5",
-    to: "invalid@bounce.test",
-    subject: "Account verification",
-    status: "bounced" as const,
-    sent: "3 hours ago",
-  },
-  {
-    id: "6",
-    to: "queue@example.com",
-    subject: "Scheduled report",
-    status: "queued" as const,
-    sent: "5 hours ago",
-  },
-];
+import { api } from "@/lib/api";
+import { formatDistanceToNow } from "date-fns";
 
 interface Email {
   id: string;
   to: string;
   subject: string;
-  status: "delivered" | "opened" | "sent" | "clicked" | "bounced" | "queued";
-  sent: string;
+  status: "delivered" | "opened" | "sent" | "clicked" | "bounced" | "queued" | "failed";
+  created_at: string;
+}
+
+interface EmailsResponse {
+  items: Array<{
+    id: string;
+    to: string[];
+    subject: string;
+    status: string;
+    created_at: string;
+  }>;
+  next_cursor: string | null;
+}
+
+function getDateRange(days: string): { start_at: string; end_at: string } {
+  const now = new Date();
+  const end = new Date(now);
+  end.setHours(23, 59, 59, 999);
+  
+  const start = new Date(now);
+  if (days === "1") {
+    start.setHours(0, 0, 0, 0);
+  } else {
+    start.setDate(start.getDate() - parseInt(days));
+    start.setHours(0, 0, 0, 0);
+  }
+  
+  return {
+    start_at: start.toISOString(),
+    end_at: end.toISOString(),
+  };
 }
 
 export default function EmailsPage() {
   const [search, setSearch] = useState("");
-  const [emails, setEmails] = useState<Email[]>(mockEmails);
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [dateRange, setDateRange] = useState("7");
+  const [emails, setEmails] = useState<Email[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [emailToDelete, setEmailToDelete] = useState<Email | null>(null);
   const [emailToResend, setEmailToResend] = useState<Email | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false);
   const [showBulkResendDialog, setShowBulkResendDialog] = useState(false);
   const navigate = useNavigate();
+
+  // Debounce search input
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  const fetchEmails = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const params = new URLSearchParams();
+      
+      if (debouncedSearch) {
+        params.append("search", debouncedSearch);
+      }
+      
+      if (statusFilter !== "all") {
+        params.append("status_filter", statusFilter);
+      }
+      
+      const { start_at, end_at } = getDateRange(dateRange);
+      params.append("start_at", start_at);
+      params.append("end_at", end_at);
+      
+      const queryString = params.toString();
+      const endpoint = queryString ? `/emails?${queryString}` : "/emails";
+      
+      const response = await api(endpoint);
+      
+      if (!response.ok) {
+        throw new Error("Failed to fetch emails");
+      }
+      
+      const data: EmailsResponse = await response.json();
+      
+      const mappedEmails: Email[] = data.items.map((item) => ({
+        id: item.id,
+        to: item.to.join(", "),
+        subject: item.subject,
+        status: item.status as Email["status"],
+        created_at: item.created_at,
+      }));
+      
+      setEmails(mappedEmails);
+    } catch (error) {
+      console.error("Failed to fetch emails:", error);
+      toast.error("Failed to load emails");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [debouncedSearch, statusFilter, dateRange]);
+
+  useEffect(() => {
+    fetchEmails();
+  }, [fetchEmails]);
 
   const handleDeleteEmail = () => {
     if (emailToDelete) {
@@ -116,14 +165,12 @@ export default function EmailsPage() {
 
   const handleResendEmail = () => {
     if (emailToResend) {
-      // In a real app, this would trigger the resend API
       toast.success(`Email to "${emailToResend.to}" queued for resend`);
       setEmailToResend(null);
     }
   };
 
   const handleBulkResend = () => {
-    // In a real app, this would trigger the bulk resend API
     toast.success(`${selectedIds.size} email${selectedIds.size > 1 ? 's' : ''} queued for resend`);
     setSelectedIds(new Set());
     setShowBulkResendDialog(false);
@@ -152,6 +199,14 @@ export default function EmailsPage() {
   const isAllSelected = emails.length > 0 && selectedIds.size === emails.length;
   const isSomeSelected = selectedIds.size > 0 && selectedIds.size < emails.length;
 
+  const formatSentTime = (dateString: string) => {
+    try {
+      return formatDistanceToNow(new Date(dateString), { addSuffix: true });
+    } catch {
+      return dateString;
+    }
+  };
+
   return (
     <>
       <TopBar title="Emails" subtitle="View and manage your sent emails" />
@@ -169,7 +224,7 @@ export default function EmailsPage() {
             />
           </div>
           
-          <Select defaultValue="all">
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-[160px]">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
@@ -184,7 +239,7 @@ export default function EmailsPage() {
             </SelectContent>
           </Select>
 
-          <Select defaultValue="7">
+          <Select value={dateRange} onValueChange={setDateRange}>
             <SelectTrigger className="w-[160px]">
               <Calendar className="mr-2 h-4 w-4" />
               <SelectValue placeholder="Date range" />
@@ -215,24 +270,26 @@ export default function EmailsPage() {
                 Clear
               </Button>
             </div>
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={() => setShowBulkDeleteDialog(true)}
-              className="gap-2"
-            >
-              <Trash2 className="h-4 w-4" />
-              Delete Selected
-            </Button>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => setShowBulkResendDialog(true)}
-              className="gap-2"
-            >
-              <RefreshCw className="h-4 w-4" />
-              Resend Selected
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setShowBulkResendDialog(true)}
+                className="gap-2"
+              >
+                <RefreshCw className="h-4 w-4" />
+                Resend Selected
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => setShowBulkDeleteDialog(true)}
+                className="gap-2"
+              >
+                <Trash2 className="h-4 w-4" />
+                Delete Selected
+              </Button>
+            </div>
           </div>
         )}
 
@@ -247,6 +304,7 @@ export default function EmailsPage() {
                     onCheckedChange={toggleSelectAll}
                     aria-label="Select all"
                     className={isSomeSelected ? "data-[state=checked]:bg-primary data-[state=unchecked]:bg-primary/50" : ""}
+                    disabled={isLoading || emails.length === 0}
                   />
                 </TableHead>
                 <TableHead>To</TableHead>
@@ -257,58 +315,77 @@ export default function EmailsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {emails.map((email) => (
-                <TableRow 
-                  key={email.id} 
-                  className="cursor-pointer hover:bg-muted/50"
-                  onClick={() => navigate(`/emails/${email.id}`)}
-                  data-selected={selectedIds.has(email.id)}
-                >
-                  <TableCell onClick={(e) => e.stopPropagation()}>
-                    <Checkbox
-                      checked={selectedIds.has(email.id)}
-                      onCheckedChange={() => toggleSelect(email.id)}
-                      aria-label={`Select email to ${email.to}`}
-                    />
-                  </TableCell>
-                  <TableCell className="font-medium">{email.to}</TableCell>
-                  <TableCell>
-                    <StatusBadge status={email.status} />
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">{email.subject}</TableCell>
-                  <TableCell className="text-muted-foreground">{email.sent}</TableCell>
-                  <TableCell onClick={(e) => e.stopPropagation()}>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => navigate(`/emails/${email.id}`)}>
-                          View details
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => setEmailToResend(email)}>
-                          Resend
-                        </DropdownMenuItem>
-                        <DropdownMenuItem 
-                          className="text-destructive focus:text-destructive"
-                          onClick={() => setEmailToDelete(email)}
-                        >
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+              {isLoading ? (
+                Array.from({ length: 5 }).map((_, i) => (
+                  <TableRow key={i}>
+                    <TableCell><Skeleton className="h-4 w-4" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-48" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                    <TableCell><Skeleton className="h-8 w-8" /></TableCell>
+                  </TableRow>
+                ))
+              ) : emails.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
+                    No emails found
                   </TableCell>
                 </TableRow>
-              ))}
+              ) : (
+                emails.map((email) => (
+                  <TableRow 
+                    key={email.id} 
+                    className="cursor-pointer hover:bg-muted/50"
+                    onClick={() => navigate(`/emails/${email.id}`)}
+                    data-selected={selectedIds.has(email.id)}
+                  >
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      <Checkbox
+                        checked={selectedIds.has(email.id)}
+                        onCheckedChange={() => toggleSelect(email.id)}
+                        aria-label={`Select email to ${email.to}`}
+                      />
+                    </TableCell>
+                    <TableCell className="font-medium">{email.to}</TableCell>
+                    <TableCell>
+                      <StatusBadge status={email.status} />
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">{email.subject}</TableCell>
+                    <TableCell className="text-muted-foreground">{formatSentTime(email.created_at)}</TableCell>
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => navigate(`/emails/${email.id}`)}>
+                            View details
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => setEmailToResend(email)}>
+                            Resend
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            className="text-destructive focus:text-destructive"
+                            onClick={() => setEmailToDelete(email)}
+                          >
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </div>
 
         {/* Pagination hint */}
         <div className="mt-4 flex items-center justify-between text-sm text-muted-foreground">
-          <span>Showing {emails.length} of {emails.length} emails</span>
+          <span>Showing {emails.length} email{emails.length !== 1 ? 's' : ''}</span>
         </div>
       </div>
 
