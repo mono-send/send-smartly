@@ -117,7 +117,7 @@ export default function MetricsPage() {
         </div>
 
         {/* Charts */}
-        <div className="grid gap-6 lg:grid-cols-2">
+        <div className="grid gap-4 lg:grid-cols-2">
           {/* Delivery Chart */}
           <Card>
             <CardHeader>
