@@ -897,10 +897,10 @@ export default function SettingsPage() {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsInviteDialogOpen(false)} disabled={isInviting}>
+            <Button className="h-9" variant="outline" onClick={() => setIsInviteDialogOpen(false)} disabled={isInviting}>
               Cancel
             </Button>
-            <Button onClick={handleInvite} disabled={isInviting}>
+            <Button className="h-9" onClick={handleInvite} disabled={isInviting}>
               {isInviting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Send invitation
             </Button>
