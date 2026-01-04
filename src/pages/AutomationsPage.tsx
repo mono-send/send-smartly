@@ -31,15 +31,15 @@ export default function AutomationsPage() {
           <span className="font-medium text-foreground">Untitled Automation</span>
         </div>
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 text-muted-foreground text-sm">
+          <div className="flex items-center gap-2 text-muted-foreground text-xs">
             <div className="h-2 w-2 rounded-full bg-muted-foreground" />
             DRAFT
           </div>
           <Button variant="secondary" className="h-9">
-            SAVE
+            Save
           </Button>
           <Button className="h-9">
-            ACTIVATE
+            Activate
           </Button>
         </div>
       </div>
