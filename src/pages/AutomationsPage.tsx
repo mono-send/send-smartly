@@ -99,7 +99,7 @@ export default function AutomationsPage() {
                     <Input 
                       type="number" 
                       value={waitTime}
-                      onChange={(e) => setWaitTime(parseInt(e.target.value) || 0)}
+                      onChange={(e) => setWaitTime(parseInt(e.target.value) || 1)}
                       className="h-full w-16 border-0 rounded-none text-center focus-visible:ring-0 focus-visible:ring-offset-0"
                     />
                     <Button 
