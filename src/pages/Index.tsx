@@ -206,7 +206,6 @@ const Index = () => {
                 </CardContent>
                 <div className="border-t border-border p-4">
                   <Button 
-                    variant="secondary" 
                     className="gap-2"
                     onClick={handleSendEmail}
                   >
