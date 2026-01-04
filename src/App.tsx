@@ -12,6 +12,7 @@ import MagicLinkConfirmPage from "./pages/MagicLinkConfirmPage";
 import EmailsPage from "./pages/EmailsPage";
 import EmailDetailsPage from "./pages/EmailDetailsPage";
 import DomainsPage from "./pages/DomainsPage";
+import AddDomainPage from "./pages/AddDomainPage";
 import DomainDetailsPage from "./pages/DomainDetailsPage";
 import ApiKeysPage from "./pages/ApiKeysPage";
 import ApiKeyDetailsPage from "./pages/ApiKeyDetailsPage";
@@ -51,6 +52,7 @@ const App = () => (
             <Route path="/audience/import" element={<ImportContactsPage />} />
             <Route path="/metrics" element={<MetricsPage />} />
             <Route path="/domains" element={<DomainsPage />} />
+            <Route path="/domains/new" element={<AddDomainPage />} />
             <Route path="/domains/:id" element={<DomainDetailsPage />} />
             <Route path="/logs" element={<LogsPage />} />
             <Route path="/logs/:id" element={<LogDetailsPage />} />

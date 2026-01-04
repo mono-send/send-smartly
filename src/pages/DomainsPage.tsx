@@ -22,15 +22,6 @@ import { Search, MoreVertical, ExternalLink, Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -51,12 +42,8 @@ interface Domain {
 export default function DomainsPage() {
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [newDomain, setNewDomain] = useState("");
-  const [selectedRegion, setSelectedRegion] = useState("us-east-1");
   const [statusFilter, setStatusFilter] = useState("all");
   const [regionFilter, setRegionFilter] = useState("all");
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [domainToRemove, setDomainToRemove] = useState<{ id: string; domain: string } | null>(null);
   const [domains, setDomains] = useState<Domain[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -102,37 +89,6 @@ export default function DomainsPage() {
     return () => clearTimeout(timeout);
   }, [search, statusFilter, regionFilter]);
 
-  const handleAddDomain = async () => {
-    if (!newDomain.trim()) {
-      toast.error("Please enter a domain name");
-      return;
-    }
-
-    setIsSubmitting(true);
-    try {
-      const response = await api("/domains", {
-        method: "POST",
-        body: { domain: newDomain, region: selectedRegion },
-      });
-
-      if (response.ok) {
-        toast.success("Domain added successfully");
-        setIsAddDialogOpen(false);
-        setNewDomain("");
-        setSelectedRegion("us-east-1");
-        fetchDomains(); // Refresh the list
-      } else {
-        const data = await response.json();
-        toast.error(data.detail || "Failed to add domain");
-      }
-    } catch (error: any) {
-      if (error.message !== "Unauthorized") {
-        toast.error("An error occurred. Please try again.");
-      }
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
   return (
     <>
       <TopBar 
@@ -140,7 +96,7 @@ export default function DomainsPage() {
         subtitle="Manage your sending domains"
         action={{
           label: "Add domain",
-          onClick: () => setIsAddDialogOpen(true),
+          onClick: () => navigate("/domains/new"),
         }}
       />
       
@@ -256,52 +212,6 @@ export default function DomainsPage() {
         </div>
       </div>
 
-      {/* Add Domain Dialog */}
-      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add domain</DialogTitle>
-            <DialogDescription>
-              Add a new domain to start sending emails. You'll need to configure DNS records to verify ownership.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="domain">Domain name</Label>
-              <Input
-                id="domain"
-                placeholder="mail.example.com"
-                value={newDomain}
-                onChange={(e) => setNewDomain(e.target.value)}
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="region">Region</Label>
-              <Select value={selectedRegion} onValueChange={setSelectedRegion}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="us-east-1">US East (N. Virginia)</SelectItem>
-                  <SelectItem value="eu-west-1">EU (Ireland)</SelectItem>
-                  <SelectItem value="ap-south-1">Asia Pacific (Mumbai)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsAddDialogOpen(false)} disabled={isSubmitting}>
-              Cancel
-            </Button>
-            <Button onClick={handleAddDomain} disabled={isSubmitting}>
-              {isSubmitting ? "Adding..." : "Add domain"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       {/* Remove Domain Confirmation Dialog */}
       <ConfirmDeleteDialog
