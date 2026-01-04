@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -6,6 +6,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { X, ArrowRight, Clock, Mail, LogOut, Plus, Minus, Info } from "lucide-react";
+import { api } from "@/lib/api";
+import { toast } from "sonner";
+
+interface Segment {
+  id: string;
+  name: string;
+}
 
 export default function AutomationsPage() {
   const navigate = useNavigate();
@@ -14,6 +21,31 @@ export default function AutomationsPage() {
   const [exitCondition, setExitCondition] = useState("completed");
   const [trackOpens, setTrackOpens] = useState(true);
   const [trackClicks, setTrackClicks] = useState(true);
+  const [segments, setSegments] = useState<Segment[]>([]);
+  const [isLoadingSegments, setIsLoadingSegments] = useState(false);
+  const [selectedSegment, setSelectedSegment] = useState("");
+
+  useEffect(() => {
+    const fetchSegments = async () => {
+      setIsLoadingSegments(true);
+      try {
+        const response = await api("/segments");
+        if (!response.ok) {
+          toast.error("Failed to load segments");
+          return;
+        }
+
+        const data = await response.json();
+        setSegments(data.items || []);
+      } catch (error) {
+        toast.error("Failed to load segments");
+      } finally {
+        setIsLoadingSegments(false);
+      }
+    };
+
+    fetchSegments();
+  }, []);
 
   return (
     <div className="min-h-screen bg-muted/30 flex flex-col">
@@ -58,14 +90,30 @@ export default function AutomationsPage() {
               <p className="text-sm text-foreground mb-2">
                 When the contact enters <span className="text-destructive">*</span>
               </p>
-              <Select>
+              <Select
+                value={selectedSegment}
+                onValueChange={setSelectedSegment}
+                disabled={isLoadingSegments}
+              >
                 <SelectTrigger className="bg-background">
-                  <SelectValue placeholder="Select a List or Segment" />
+                  <SelectValue placeholder={isLoadingSegments ? "Loading segments..." : "Select a List or Segment"} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Contacts</SelectItem>
-                  <SelectItem value="subscribers">Subscribers</SelectItem>
-                  <SelectItem value="leads">Leads</SelectItem>
+                  {isLoadingSegments ? (
+                    <SelectItem value="loading" disabled>
+                      Loading...
+                    </SelectItem>
+                  ) : segments.length ? (
+                    segments.map((segment) => (
+                      <SelectItem key={segment.id} value={segment.id}>
+                        {segment.name}
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <SelectItem value="no-segments" disabled>
+                      No segments available
+                    </SelectItem>
+                  )}
                 </SelectContent>
               </Select>
             </Card>
