@@ -80,7 +80,7 @@ export default function AutomationsPage() {
             </div>
 
             {/* Wait For Block */}
-            <Card className="p-4">
+            <Card className="px-4 py-2 max-w-[400px] mx-auto">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-sm font-medium text-foreground">
                   <Clock className="h-4 w-4" />
@@ -126,9 +126,9 @@ export default function AutomationsPage() {
             {/* Connector */}
             <div className="flex justify-center py-2">
               <div className="flex flex-col items-center">
-                <div className="w-px h-4 bg-border" />
+                {/* <div className="w-px h-4 bg-border" /> */}
                 <div className="h-1.5 w-1.5 rounded-full bg-border" />
-                <div className="w-px h-4 bg-border" />
+                {/* <div className="w-px h-4 bg-border" /> */}
               </div>
             </div>
 
