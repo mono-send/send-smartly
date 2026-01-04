@@ -109,7 +109,7 @@ export default function DomainsPage() {
               placeholder="Search domains..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pr-9"
+              className="pr-9 bg-white"
             />
           </div>
           
