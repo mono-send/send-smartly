@@ -12,13 +12,15 @@ import {
   Webhook,
   Settings,
   Send,
+  Workflow,
 } from "lucide-react";
 import logo from '/favicon-48x48.png';
 import logo2 from '/logo.png';
 
 const navigation = [
   { name: "Emails", href: "/emails", icon: Mail },
-  { name: "Broadcasts", href: "/broadcasts", icon: Megaphone },
+  { name: "Automations", href: "/automations", icon: Workflow },
+  // { name: "Broadcasts", href: "/broadcasts", icon: Megaphone },
   { name: "Templates", href: "/templates", icon: FileText },
   { name: "Audience", href: "/audience", icon: Users },
   { name: "Metrics", href: "/metrics", icon: BarChart3 },
