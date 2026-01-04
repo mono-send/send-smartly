@@ -9,7 +9,7 @@ import { X, ArrowRight, Clock, Mail, LogOut, Plus, Minus, Info } from "lucide-re
 
 export default function AutomationsPage() {
   const navigate = useNavigate();
-  const [waitTime, setWaitTime] = useState(0);
+  const [waitTime, setWaitTime] = useState(1);
   const [waitUnit, setWaitUnit] = useState("min");
   const [exitCondition, setExitCondition] = useState("completed");
   const [trackOpens, setTrackOpens] = useState(true);
