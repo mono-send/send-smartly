@@ -35,10 +35,10 @@ export default function AutomationsPage() {
             <div className="h-2 w-2 rounded-full bg-muted-foreground" />
             DRAFT
           </div>
-          <Button variant="secondary" className="h-9">
+          <Button variant="secondary" className="h-9 text-xs">
             Save
           </Button>
-          <Button className="h-9">
+          <Button className="h-9 text-xs">
             Activate
           </Button>
         </div>
