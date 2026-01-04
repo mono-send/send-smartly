@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CodeBlock } from "@/components/ui/code-block";
 import { Key, Send, Globe, FlaskConical, Navigation } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 
 const languages = ["Node.js", "PHP", "Python", "Ruby", "Go", "Rust", "Elixir", "Java", ".NET", "cURL"] as const;
@@ -168,8 +169,9 @@ const Index = () => {
               <div className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-muted-foreground">
                 <div className="h-2 w-2 rounded-full bg-muted-foreground" />
               </div>
+              <div className="flex-1 w-px bg-border mt-2" />
             </div>
-            <div className="flex-1">
+            <div className="flex-1 pb-8">
               <h2 className="text-lg font-semibold text-foreground mb-1">Send an email</h2>
               <p className="text-muted-foreground text-sm mb-4">Implement or run the code below to send your first email</p>
               
@@ -216,6 +218,29 @@ const Index = () => {
               </Card>
             </div>
           </div>
+
+          {/* Step 3: Add Domain */}
+          <div className="flex gap-4">
+            <div className="flex flex-col items-center">
+              <div className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-muted-foreground">
+                <div className="h-2 w-2 rounded-full bg-muted-foreground" />
+              </div>
+            </div>
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-1">
+                <h2 className="text-lg font-semibold text-foreground">Add a domain</h2>
+                <Badge variant="secondary">Recommended</Badge>
+              </div>
+              <p className="text-muted-foreground text-sm mb-4">Improve deliverability by proving to inbox providers that you own the domain you're sending from.</p>
+              <Button 
+                className="gap-2 h-9"
+                onClick={() => navigate("/domains/new")}
+              >
+                <Globe className="h-4 w-4" />
+                Add domain
+              </Button>
+            </div>
+          </div>
         </div>
 
         {/* Explore More */}
@@ -223,27 +248,7 @@ const Index = () => {
           <h2 className="text-xl font-semibold text-foreground mb-2">Explore more</h2>
           <p className="text-muted-foreground text-sm mb-6">Continue unlocking MonoSend's full capabilities and setup</p>
           
-          <div className="grid gap-4 md:grid-cols-3">
-            <Card className="flex flex-col">
-              <CardContent className="flex-1 p-4">
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-medium text-foreground">Add a domain</h3>
-                    <span className="text-xs text-primary font-medium">Recommended</span>
-                  </div>
-                  <Globe className="h-5 w-5 text-muted-foreground" />
-                </div>
-                <p className="text-sm text-muted-foreground mb-4">Verify and send emails from your own custom domains.</p>
-                <Button 
-                  variant="secondary" 
-                  size="sm"
-                  onClick={() => navigate("/domains")}
-                >
-                  Add domain
-                </Button>
-              </CardContent>
-            </Card>
-
+          <div className="grid gap-4 md:grid-cols-2">
             <Card className="flex flex-col">
               <CardContent className="flex-1 p-4">
                 <div className="flex items-start justify-between mb-3">
