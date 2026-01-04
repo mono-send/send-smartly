@@ -238,7 +238,7 @@ export default function LogsPage() {
               placeholder="Search endpoints..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pr-9"
+              className="pr-9 bg-white"
             />
           </div>
           
