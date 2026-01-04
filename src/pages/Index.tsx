@@ -153,7 +153,7 @@ const Index = () => {
               <h2 className="text-lg font-semibold text-foreground mb-1">Add an API Key</h2>
               <p className="text-muted-foreground text-sm mb-4">Use the following generated key to authenticate requests</p>
               <Button 
-                variant="secondary" 
+                variant="primary" 
                 className="gap-2 h-9"
                 onClick={() => navigate("/api-keys")}
               >
