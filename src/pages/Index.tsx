@@ -132,11 +132,12 @@ const Index = () => {
 
   return (
     <>
-      <TopBar title="Get Started" subtitle="Follow the steps to send your first email" />
+      {/* <TopBar title="Get Started" subtitle="Follow the steps to send your first email" /> */}
+      <TopBar title="Get Started" subtitle="" />
       
       <div className="p-6 max-w-4xl">
-        <h1 className="text-2xl font-semibold text-foreground mb-2">Send your first email</h1>
-        <p className="text-muted-foreground mb-8">Follow the steps to send an email using the MonoSend API.</p>
+        <h1 className="text-xl font-semibold text-foreground mb-2">Hey Cooper, let's get started</h1>
+        <p className="text-muted-foreground mb-8">Follow these steps to set up your project and start sending emails with the MonoSend API.</p>
 
         {/* Steps */}
         <div className="space-y-8">
