@@ -198,7 +198,11 @@ const Index = () => {
                   </Button>
                 </div>
                 <CardContent className="p-0">
-                  <CodeBlock code={sendEmailExamples[activeLanguage]} className="rounded-none" />
+                  <CodeBlock 
+                    code={sendEmailExamples[activeLanguage]} 
+                    className="rounded-none" 
+                    showHeader={false} 
+                  />
                 </CardContent>
                 <div className="border-t border-border p-4">
                   <Button 
