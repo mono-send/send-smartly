@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Search, Calendar, Loader2 } from "lucide-react";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -132,6 +132,8 @@ export default function LogsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [hasError, setHasError] = useState(false);
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
+  const isFetchingRef = useRef(false);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -140,9 +142,14 @@ export default function LogsPage() {
     return () => clearTimeout(timer);
   }, [search]);
 
-  const fetchLogs = useCallback(async (cursor?: string) => {
-    const isLoadMore = Boolean(cursor);
-    if (isLoadMore) {
+  const fetchLogs = useCallback(async (cursor?: string, replace = false) => {
+    if (isFetchingRef.current) return;
+
+    isFetchingRef.current = true;
+    if (replace) {
+      setIsLoading(true);
+      setNextCursor(null);
+    } else if (cursor) {
       setIsLoadingMore(true);
     } else {
       setIsLoading(true);
@@ -196,7 +203,15 @@ export default function LogsPage() {
         user_agent: item.user_agent,
       }));
 
-      setLogs((prev) => (isLoadMore ? [...prev, ...mappedLogs] : mappedLogs));
+      setLogs((prev) => {
+        if (replace || !cursor) {
+          return mappedLogs;
+        }
+
+        const existingIds = new Set(prev.map((log) => log.id));
+        const uniqueNewLogs = mappedLogs.filter((log) => !existingIds.has(log.id));
+        return [...prev, ...uniqueNewLogs];
+      });
       setNextCursor(data.next_cursor);
     } catch (error) {
       console.error("Failed to fetch logs:", error);
@@ -206,16 +221,42 @@ export default function LogsPage() {
       }
       setHasError(true);
     } finally {
+      isFetchingRef.current = false;
       setIsLoading(false);
       setIsLoadingMore(false);
     }
   }, [debouncedSearch, sourceFilter, statusFilter, dateRange]);
 
   useEffect(() => {
-    setLogs([]);
-    setNextCursor(null);
-    fetchLogs();
+    fetchLogs(undefined, true);
   }, [fetchLogs]);
+
+  useEffect(() => {
+    const loadMoreElement = loadMoreRef.current;
+    if (!loadMoreElement) return;
+
+    const observer = new IntersectionObserver((entries) => {
+      const [entry] = entries;
+      if (
+        entry.isIntersecting &&
+        nextCursor &&
+        !isLoading &&
+        !isLoadingMore &&
+        !hasError
+      ) {
+        fetchLogs(nextCursor);
+      }
+    }, {
+      rootMargin: "200px",
+      threshold: 0.1,
+    });
+
+    observer.observe(loadMoreElement);
+
+    return () => {
+      observer.unobserve(loadMoreElement);
+    };
+  }, [fetchLogs, hasError, isLoading, isLoadingMore, nextCursor]);
 
   const formatCreatedTime = (dateString: string) => {
     try {
@@ -316,32 +357,48 @@ export default function LogsPage() {
                   </TableCell>
                 </TableRow>
               ) : (
-                logs.map((log) => (
-                  <TableRow 
-                    key={log.id} 
-                    className="cursor-pointer hover:bg-muted/50"
-                    onClick={() => navigate(`/logs/${log.id}`)}
-                  >
-                    <TableCell className="px-4 py-2">
-                      <code className="font-mono text-sm">{log.endpoint}</code>
+                <>
+                  {logs.map((log) => (
+                    <TableRow 
+                      key={log.id} 
+                      className="cursor-pointer hover:bg-muted/50"
+                      onClick={() => navigate(`/logs/${log.id}`)}
+                    >
+                      <TableCell className="px-4 py-2">
+                        <code className="font-mono text-sm">{log.endpoint}</code>
+                      </TableCell>
+                      <TableCell className="px-4 py-2">
+                        <span className={cn(
+                          "inline-flex items-center rounded px-2 py-0.5 text-xs font-medium uppercase",
+                          log.source === "api" ? "bg-primary/10 text-primary" : "bg-accent text-accent-foreground"
+                        )}>
+                          {log.source}
+                        </span>
+                      </TableCell>
+                      <TableCell className="px-4 py-2">
+                        <StatusCode code={log.status} />
+                      </TableCell>
+                      <TableCell className="px-4 py-2">
+                        <MethodBadge method={log.method} />
+                      </TableCell>
+                      <TableCell className="px-4 py-2 text-muted-foreground">{formatCreatedTime(log.created_at)}</TableCell>
+                    </TableRow>
+                  ))}
+                  <TableRow>
+                    <TableCell colSpan={5} className="h-14 text-center text-muted-foreground">
+                      {isLoadingMore ? (
+                        <div className="flex items-center justify-center gap-2">
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          Loading more logs
+                        </div>
+                      ) : nextCursor ? (
+                        <div ref={loadMoreRef}>Load more</div>
+                      ) : (
+                        <span>No more logs</span>
+                      )}
                     </TableCell>
-                    <TableCell className="px-4 py-2">
-                      <span className={cn(
-                        "inline-flex items-center rounded px-2 py-0.5 text-xs font-medium uppercase",
-                        log.source === "api" ? "bg-primary/10 text-primary" : "bg-accent text-accent-foreground"
-                      )}>
-                        {log.source}
-                      </span>
-                    </TableCell>
-                    <TableCell className="px-4 py-2">
-                      <StatusCode code={log.status} />
-                    </TableCell>
-                    <TableCell className="px-4 py-2">
-                      <MethodBadge method={log.method} />
-                    </TableCell>
-                    <TableCell className="px-4 py-2 text-muted-foreground">{formatCreatedTime(log.created_at)}</TableCell>
                   </TableRow>
-                ))
+                </>
               )}
             </TableBody>
           </Table>
@@ -350,18 +407,6 @@ export default function LogsPage() {
         {/* Pagination hint */}
         <div className="mt-4 flex flex-wrap items-center justify-between gap-2 text-sm text-muted-foreground">
           <span>Showing {logs.length} log{logs.length === 1 ? "" : "s"}</span>
-          {nextCursor && (
-            <Button 
-              variant="outline"
-              size="sm"
-              onClick={() => fetchLogs(nextCursor)}
-              disabled={isLoadingMore}
-              className="gap-2"
-            >
-              {isLoadingMore && <Loader2 className="h-4 w-4 animate-spin" />}
-              {isLoadingMore ? "Loading" : "Load more"}
-            </Button>
-          )}
         </div>
       </div>
     </>
