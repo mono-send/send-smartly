@@ -153,7 +153,7 @@ const Index = () => {
               <p className="text-muted-foreground text-sm mb-4">Use the following generated key to authenticate requests</p>
               <Button 
                 variant="secondary" 
-                className="gap-2"
+                className="gap-2 h-9"
                 onClick={() => navigate("/api-keys")}
               >
                 <Key className="h-4 w-4" />
