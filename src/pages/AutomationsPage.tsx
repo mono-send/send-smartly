@@ -14,6 +14,11 @@ interface Segment {
   name: string;
 }
 
+interface ContactCategory {
+  id: string;
+  name: string;
+}
+
 export default function AutomationsPage() {
   const navigate = useNavigate();
   const [waitTime, setWaitTime] = useState(1);
@@ -24,6 +29,9 @@ export default function AutomationsPage() {
   const [segments, setSegments] = useState<Segment[]>([]);
   const [isLoadingSegments, setIsLoadingSegments] = useState(false);
   const [selectedSegment, setSelectedSegment] = useState("");
+  const [contactCategories, setContactCategories] = useState<ContactCategory[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState("");
+  const [isLoadingCategories, setIsLoadingCategories] = useState(false);
 
   useEffect(() => {
     const fetchSegments = async () => {
@@ -44,7 +52,26 @@ export default function AutomationsPage() {
       }
     };
 
+    const fetchContactCategories = async () => {
+      setIsLoadingCategories(true);
+      try {
+        const response = await api("/contact-categories");
+        if (!response.ok) {
+          toast.error("Failed to load unsubscribe groups");
+          return;
+        }
+
+        const data = await response.json();
+        setContactCategories(data.items || []);
+      } catch (error) {
+        toast.error("Failed to load unsubscribe groups");
+      } finally {
+        setIsLoadingCategories(false);
+      }
+    };
+
     fetchSegments();
+    fetchContactCategories();
   }, []);
 
   return (
@@ -256,14 +283,30 @@ export default function AutomationsPage() {
               </label>
               <Info className="h-4 w-4 text-muted-foreground" />
             </div>
-            <Select>
+            <Select
+              value={selectedCategory}
+              onValueChange={setSelectedCategory}
+              disabled={isLoadingCategories}
+            >
               <SelectTrigger className="bg-white">
-                <SelectValue placeholder="Select a group" />
+                <SelectValue placeholder={isLoadingCategories ? "Loading unsubscribe groups..." : "Select a group"} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="marketing">Marketing</SelectItem>
-                <SelectItem value="product">Product Updates</SelectItem>
-                <SelectItem value="newsletter">Newsletter</SelectItem>
+                {isLoadingCategories ? (
+                  <SelectItem value="loading" disabled>
+                    Loading...
+                  </SelectItem>
+                ) : contactCategories.length ? (
+                  contactCategories.map((category) => (
+                    <SelectItem key={category.id} value={category.id}>
+                      {category.name}
+                    </SelectItem>
+                  ))
+                ) : (
+                  <SelectItem value="no-categories" disabled>
+                    No unsubscribe groups available
+                  </SelectItem>
+                )}
               </SelectContent>
             </Select>
           </div>
