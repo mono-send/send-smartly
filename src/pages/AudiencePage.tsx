@@ -619,7 +619,7 @@ export default function AudiencePage() {
                   placeholder="Search contacts..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="pl-9"
+                  className="pl-9 bg-white"
                 />
               </div>
               
