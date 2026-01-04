@@ -251,7 +251,7 @@ export default function AutomationsPage() {
           {/* Unsubscribe Group */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className="text-sm font-medium text-foreground">
+              <label className="text-sm font-medium text-foreground bg-white">
                 Unsubscribe Group <span className="text-destructive">*</span>
               </label>
               <Info className="h-4 w-4 text-muted-foreground" />
