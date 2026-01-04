@@ -87,30 +87,32 @@ export default function AutomationsPage() {
                   WAIT FOR
                 </div>
                 <div className="flex items-center gap-2">
-                  <Button 
-                    variant="outline" 
-                    size="icon" 
-                    className="h-8 w-8"
-                    onClick={() => setWaitTime(Math.max(0, waitTime - 1))}
-                  >
-                    <Minus className="h-3 w-3" />
-                  </Button>
-                  <Input 
-                    type="number" 
-                    value={waitTime}
-                    onChange={(e) => setWaitTime(parseInt(e.target.value) || 0)}
-                    className="w-16 h-8 text-center"
-                  />
-                  <Button 
-                    variant="outline" 
-                    size="icon" 
-                    className="h-8 w-8"
-                    onClick={() => setWaitTime(waitTime + 1)}
-                  >
-                    <Plus className="h-3 w-3" />
-                  </Button>
+                  <div className="flex h-9 items-stretch rounded-md border bg-background overflow-hidden divide-x divide-border">
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-full w-10 rounded-none"
+                      onClick={() => setWaitTime(Math.max(0, waitTime - 1))}
+                    >
+                      <Minus className="h-3 w-3" />
+                    </Button>
+                    <Input 
+                      type="number" 
+                      value={waitTime}
+                      onChange={(e) => setWaitTime(parseInt(e.target.value) || 0)}
+                      className="h-full w-16 border-0 rounded-none text-center focus-visible:ring-0 focus-visible:ring-offset-0"
+                    />
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-full w-10 rounded-none"
+                      onClick={() => setWaitTime(waitTime + 1)}
+                    >
+                      <Plus className="h-3 w-3" />
+                    </Button>
+                  </div>
                   <Select value={waitUnit} onValueChange={setWaitUnit}>
-                    <SelectTrigger className="w-24 h-8">
+                    <SelectTrigger className="w-24 h-9">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
