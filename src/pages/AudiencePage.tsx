@@ -528,7 +528,7 @@ export default function AudiencePage() {
             <TabsTrigger value="contacts">Contacts</TabsTrigger>
             <TabsTrigger value="properties">Properties</TabsTrigger>
             <TabsTrigger value="segments">Segments</TabsTrigger>
-            <TabsTrigger value="categories">Categories</TabsTrigger>
+            <TabsTrigger value="categories">Unsubscribe Groups</TabsTrigger>
           </TabsList>
 
           <TabsContent value="contacts" className="space-y-6">
