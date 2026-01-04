@@ -251,13 +251,13 @@ export default function AutomationsPage() {
           {/* Unsubscribe Group */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className="text-sm font-medium text-foreground bg-white">
+              <label className="text-sm font-medium text-foreground">
                 Unsubscribe Group <span className="text-destructive">*</span>
               </label>
               <Info className="h-4 w-4 text-muted-foreground" />
             </div>
             <Select>
-              <SelectTrigger className="bg-background">
+              <SelectTrigger className="bg-white">
                 <SelectValue placeholder="Select a group" />
               </SelectTrigger>
               <SelectContent>
