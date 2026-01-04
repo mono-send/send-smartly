@@ -53,7 +53,7 @@ export default function AutomationsPage() {
             <Card className="p-4">
               <div className="flex items-center gap-2 text-sm font-medium text-foreground mb-3">
                 <ArrowRight className="h-4 w-4" />
-                ENTRY
+                TRIGGER
               </div>
               <p className="text-sm text-foreground mb-2">
                 When the contact enters <span className="text-destructive">*</span>
