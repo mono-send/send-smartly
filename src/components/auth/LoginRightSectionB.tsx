@@ -3,10 +3,10 @@ import { ArrowUp } from "lucide-react";
 
 const PREFIX = "Ask Monosend to ";
 const COMPLETIONS = [
-    "build magic-link auth...",
-    "design a landing page...",
-    "create a dashboard...",
-    "automate workflows...",
+    "build welcome email...",
+    "replace SendGrid in my app...",
+    "build email workflows...",
+    "run marketing campaign...",
 ];
 
 export const LoginRightSectionB = () => {
