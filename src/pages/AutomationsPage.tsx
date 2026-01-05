@@ -1,11 +1,20 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
-import { X, ArrowRight, Clock, Mail, LogOut, Plus, Minus, Info } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { X, ArrowRight, Clock, Mail, LogOut, Plus, Minus, Info, Pencil } from "lucide-react";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
 
@@ -32,6 +41,45 @@ export default function AutomationsPage() {
   const [contactCategories, setContactCategories] = useState<ContactCategory[]>([]);
   const [selectedCategory, setSelectedCategory] = useState("");
   const [isLoadingCategories, setIsLoadingCategories] = useState(false);
+
+  // Inline title editing
+  const [automationTitle, setAutomationTitle] = useState("Untitled Automation");
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const titleInputRef = useRef<HTMLInputElement>(null);
+
+  // Email dialog
+  const [emailDialogOpen, setEmailDialogOpen] = useState(false);
+  const [emailSubject, setEmailSubject] = useState("");
+  const [emailContent, setEmailContent] = useState("");
+  const [emailSender, setEmailSender] = useState("");
+
+  useEffect(() => {
+    if (isEditingTitle && titleInputRef.current) {
+      titleInputRef.current.focus();
+      titleInputRef.current.select();
+    }
+  }, [isEditingTitle]);
+
+  const handleTitleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      setIsEditingTitle(false);
+    } else if (e.key === "Escape") {
+      setIsEditingTitle(false);
+    }
+  };
+
+  const handleAddEmail = () => {
+    setEmailDialogOpen(true);
+  };
+
+  const handleSaveEmail = () => {
+    if (!emailSubject.trim()) {
+      toast.error("Email subject is required");
+      return;
+    }
+    toast.success("Email step added");
+    setEmailDialogOpen(false);
+  };
 
   useEffect(() => {
     const fetchSegments = async () => {
@@ -87,7 +135,24 @@ export default function AutomationsPage() {
           >
             <X className="h-4 w-4" />
           </Button>
-          <span className="font-medium text-foreground">Untitled Automation</span>
+          {isEditingTitle ? (
+            <Input
+              ref={titleInputRef}
+              value={automationTitle}
+              onChange={(e) => setAutomationTitle(e.target.value)}
+              onBlur={() => setIsEditingTitle(false)}
+              onKeyDown={handleTitleKeyDown}
+              className="h-8 w-64 font-medium"
+            />
+          ) : (
+            <button
+              onClick={() => setIsEditingTitle(true)}
+              className="flex items-center gap-2 font-medium text-foreground hover:text-primary transition-colors group"
+            >
+              {automationTitle}
+              <Pencil className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+            </button>
+          )}
         </div>
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2 text-muted-foreground text-xs">
@@ -216,11 +281,58 @@ export default function AutomationsPage() {
                   <Mail className="h-4 w-4" />
                   ADD EMAIL
                 </div>
-                <Button variant="ghost" size="icon" className="h-8 w-8">
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleAddEmail}>
                   <Plus className="h-4 w-4" />
                 </Button>
               </div>
             </Card>
+
+            {/* Email Configuration Dialog */}
+            <Dialog open={emailDialogOpen} onOpenChange={setEmailDialogOpen}>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Configure Email Step</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="email-sender">Sender</Label>
+                    <Input
+                      id="email-sender"
+                      placeholder="noreply@yourdomain.com"
+                      value={emailSender}
+                      onChange={(e) => setEmailSender(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="email-subject">Subject <span className="text-destructive">*</span></Label>
+                    <Input
+                      id="email-subject"
+                      placeholder="Welcome to our newsletter!"
+                      value={emailSubject}
+                      onChange={(e) => setEmailSubject(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="email-content">Content</Label>
+                    <Textarea
+                      id="email-content"
+                      placeholder="Write your email content here..."
+                      value={emailContent}
+                      onChange={(e) => setEmailContent(e.target.value)}
+                      rows={6}
+                    />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setEmailDialogOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button onClick={handleSaveEmail}>
+                    Add Email
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
 
             {/* Connector */}
             <div className="flex justify-center py-2">
