@@ -211,7 +211,7 @@ export const LoginForm = () => {
                 <img src="/logo.png" alt="Logo" className="h-12" />
             </div>
 
-            <h1 className="text-2xl font-bold text-foreground mb-8">Log in</h1>
+            <h1 className="text-xl font-bold text-foreground mb-8">Log in</h1>
 
             {/* Google Login Button */}
             <Button
