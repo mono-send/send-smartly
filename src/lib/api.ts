@@ -1,4 +1,4 @@
-const API_BASE_URL = "https://api-z6l7.onrender.com/v1.0";
+const API_BASE_URL = "https://api.monosend.io/v1.0";
 
 type RequestOptions = {
   method?: string;
