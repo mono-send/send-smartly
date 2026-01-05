@@ -37,7 +37,7 @@ export const LoginRightSectionB = () => {
                     setCurrentIndex((prev) => (prev + 1) % COMPLETIONS.length);
                 }
             }
-        }, isDeleting ? 50 : 100); // Faster when deleting
+        }, isDeleting ? 25 : 50); // Faster when deleting
 
         return () => clearTimeout(timeout);
     }, [displayText, currentIndex, isDeleting]);
