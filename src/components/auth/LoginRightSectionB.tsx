@@ -1,23 +1,46 @@
 import { useState, useEffect } from "react";
 import { ArrowUp } from "lucide-react";
 
-const PROMPTS = [
-    "Ask Lovable to build internal tools...",
-    "Ask Lovable to design a landing page...",
-    "Ask Lovable to create a dashboard...",
-    "Ask Lovable to automate workflows...",
+const PREFIX = "Ask Monosend to ";
+const COMPLETIONS = [
+    "build magic-link auth...",
+    "design a landing page...",
+    "create a dashboard...",
+    "automate workflows...",
 ];
 
 export const LoginRightSectionB = () => {
-    const [currentPromptIndex, setCurrentPromptIndex] = useState(0);
+    const [displayText, setDisplayText] = useState(PREFIX + COMPLETIONS[0]);
+    const [currentIndex, setCurrentIndex] = useState(0);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     useEffect(() => {
-        const interval = setInterval(() => {
-            setCurrentPromptIndex((prev) => (prev + 1) % PROMPTS.length);
-        }, 3000);
+        const currentCompletion = COMPLETIONS[currentIndex];
+        const targetText = PREFIX + currentCompletion;
 
-        return () => clearInterval(interval);
-    }, []);
+        const timeout = setTimeout(() => {
+            if (!isDeleting) {
+                // Typing forward
+                if (displayText.length < targetText.length) {
+                    setDisplayText(targetText.slice(0, displayText.length + 1));
+                } else {
+                    // Finished typing, wait then start deleting
+                    setTimeout(() => setIsDeleting(true), 2000);
+                }
+            } else {
+                // Deleting back to prefix
+                if (displayText.length > PREFIX.length) {
+                    setDisplayText(displayText.slice(0, -1));
+                } else {
+                    // Finished deleting, move to next completion
+                    setIsDeleting(false);
+                    setCurrentIndex((prev) => (prev + 1) % COMPLETIONS.length);
+                }
+            }
+        }, isDeleting ? 50 : 100); // Faster when deleting
+
+        return () => clearTimeout(timeout);
+    }, [displayText, currentIndex, isDeleting]);
 
     return (
         <div className="hidden lg:flex flex-1 items-center justify-center p-4">
@@ -55,12 +78,9 @@ export const LoginRightSectionB = () => {
                 {/* Central Element mimicking the prompt bar */}
                 <div className="relative z-10 w-full max-w-md">
                     <div className="bg-white/80 backdrop-blur-md rounded-2xl p-4 shadow-xl border border-white/50 flex items-center justify-between gap-4">
-                        <div className="text-gray-800 text-lg font-medium truncate w-full pl-2 animated-text">
-                            {/* We can animate this text or just swap it */}
-                            <span className="animate-fade-in key-{currentPromptIndex}">
-                                {PROMPTS[currentPromptIndex]}
-                            </span>
-                            <span className="w-0.5 h-5 bg-blue-500 inline-block ml-1 animate-pulse align-middle"></span>
+                        <div className="text-gray-800 text-base font-medium w-full pl-2">
+                            {displayText}
+                            <span className="w-0.5 h-4 bg-blue-500 inline-block ml-1 animate-pulse align-middle"></span>
                         </div>
                         <div className="bg-[#1a1f2c] rounded-full p-2 flex-shrink-0 text-white cursor-pointer hover:bg-black transition-colors">
                             <ArrowUp size={20} />
@@ -68,15 +88,6 @@ export const LoginRightSectionB = () => {
                     </div>
                 </div>
             </div>
-            <style>{`
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(5px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        .animate-fade-in {
-          animation: fadeIn 0.5s ease-out forwards;
-        }
-      `}</style>
         </div>
     );
 };
