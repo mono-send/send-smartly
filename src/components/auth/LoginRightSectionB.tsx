@@ -2,10 +2,10 @@ import { useState, useEffect } from "react";
 import { ArrowUp } from "lucide-react";
 
 const PROMPTS = [
-    "Ask Lovable to build internal tools...",
-    "Ask Lovable to design a landing page...",
-    "Ask Lovable to create a dashboard...",
-    "Ask Lovable to automate workflows...",
+    "Ask Monosend to build magic-link auth emails...",
+    "Ask Monosend to replace SendGrid in my app...",
+    "Ask Monosend to build email workflows...",
+    "Ask Monosend to configure email infrastructure for my app...",
 ];
 
 export const LoginRightSectionB = () => {
