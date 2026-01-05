@@ -23,6 +23,7 @@ import OnboardingPage from "./pages/OnboardingPage";
 import BroadcastsPage from "./pages/BroadcastsPage";
 import TemplatesPage from "./pages/TemplatesPage";
 import AudiencePage from "./pages/AudiencePage";
+import ContactDetailsPage from "./pages/ContactDetailsPage";
 import ImportContactsPage from "./pages/ImportContactsPage";
 import WebhooksPage from "./pages/WebhooksPage";
 import SettingsPage from "./pages/SettingsPage";
@@ -50,6 +51,7 @@ const App = () => (
             <Route path="/broadcasts" element={<BroadcastsPage />} />
             <Route path="/templates" element={<TemplatesPage />} />
             <Route path="/audience" element={<AudiencePage />} />
+            <Route path="/audience/contacts/:id" element={<ContactDetailsPage />} />
             <Route path="/audience/import" element={<ImportContactsPage />} />
             <Route path="/metrics" element={<MetricsPage />} />
             <Route path="/domains" element={<DomainsPage />} />

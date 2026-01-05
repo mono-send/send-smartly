@@ -682,7 +682,11 @@ export default function AudiencePage() {
                     </TableRow>
                   ) : (
                     contacts.map((contact) => (
-                      <TableRow key={contact.id} className="cursor-pointer hover:bg-muted/50">
+                      <TableRow 
+                        key={contact.id} 
+                        className="cursor-pointer hover:bg-muted/50"
+                        onClick={() => navigate(`/audience/contacts/${contact.id}`)}
+                      >
                         <TableCell className="px-4 py-2 font-medium">{contact.email}</TableCell>
                         <TableCell className="px-4 py-2">
                           <StatusBadge status={contact.status} />
