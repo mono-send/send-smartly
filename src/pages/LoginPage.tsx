@@ -10,6 +10,7 @@ import { useNavigate } from "react-router-dom";
 
 type GoogleCodeResponse = {
   code?: string;
+  credential?: string;
   error?: string;
   error_description?: string;
 };
@@ -54,9 +55,11 @@ const LoginPage = () => {
         return;
       }
 
-      if (!response.code) {
+      const credential = response.code ?? response.credential;
+
+      if (!credential) {
         setIsGoogleLoading(false);
-        toast.error("No authorization code received from Google.");
+        toast.error("No authorization credential received from Google.");
         return;
       }
 
@@ -66,7 +69,7 @@ const LoginPage = () => {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ code: response.code }),
+          body: JSON.stringify({ credential }),
         });
 
         if (!apiResponse.ok) {
