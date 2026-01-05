@@ -79,7 +79,6 @@ const LoginPage = () => {
           },
           body: JSON.stringify({
             credential,
-            id_token: credential,
           }),
         });
 
