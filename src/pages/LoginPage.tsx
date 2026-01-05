@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,28 +8,37 @@ import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 
-type GoogleCodeResponse = {
-  code?: string;
+type GoogleCredentialResponse = {
   credential?: string;
+  clientId?: string;
+  select_by?: string;
   error?: string;
   error_description?: string;
 };
 
-type GoogleCodeClient = {
-  requestCode: () => void;
+type GooglePromptNotification = {
+  isNotDisplayed: () => boolean;
+  getNotDisplayedReason: () => string;
+  isSkippedMoment: () => boolean;
+  getSkippedReason: () => string;
+  isDismissedMoment: () => boolean;
+  getDismissedReason: () => string;
 };
 
 declare global {
   interface Window {
     google?: {
       accounts?: {
-        oauth2?: {
-          initCodeClient: (options: {
+        id?: {
+          initialize: (options: {
             client_id: string;
-            scope: string;
+            callback: (response: GoogleCredentialResponse) => void;
             ux_mode?: "popup" | "redirect";
-            callback: (response: GoogleCodeResponse) => void;
-          }) => GoogleCodeClient;
+            auto_select?: boolean;
+            cancel_on_tap_outside?: boolean;
+          }) => void;
+          prompt: (momentListener?: (notification: GooglePromptNotification) => void) => void;
+          cancel: () => void;
         };
       };
     };
@@ -43,19 +52,18 @@ const LoginPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [isGoogleReady, setIsGoogleReady] = useState(false);
-  const googleClient = useRef<GoogleCodeClient | null>(null);
   const { setAuth } = useAuth();
   const navigate = useNavigate();
 
   const handleGoogleCallback = useCallback(
-    async (response: GoogleCodeResponse) => {
+    async (response: GoogleCredentialResponse) => {
       if (response.error) {
         setIsGoogleLoading(false);
         toast.error(response.error_description || "Google authentication failed");
         return;
       }
 
-      const credential = response.code ?? response.credential;
+      const credential = response.credential;
 
       if (!credential) {
         setIsGoogleLoading(false);
@@ -69,7 +77,10 @@ const LoginPage = () => {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ credential }),
+          body: JSON.stringify({
+            credential,
+            id_token: credential,
+          }),
         });
 
         if (!apiResponse.ok) {
@@ -91,23 +102,24 @@ const LoginPage = () => {
   );
 
   const initializeGoogleClient = useCallback(() => {
-    if (googleClient.current || !window.google?.accounts?.oauth2) return;
+    if (isGoogleReady || !window.google?.accounts?.id) return;
 
-    googleClient.current = window.google.accounts.oauth2.initCodeClient({
+    window.google.accounts.id.initialize({
       client_id: GOOGLE_CLIENT_ID,
-      scope: "email profile",
-      ux_mode: "popup",
       callback: handleGoogleCallback,
+      ux_mode: "popup",
+      auto_select: false,
+      cancel_on_tap_outside: true,
     });
     setIsGoogleReady(true);
-  }, [handleGoogleCallback]);
+  }, [handleGoogleCallback, isGoogleReady]);
 
   useEffect(() => {
     const scriptId = "google-identity-services";
     const existingScript = document.getElementById(scriptId) as HTMLScriptElement | null;
 
     if (existingScript) {
-      if (window.google?.accounts?.oauth2 || existingScript.dataset.loaded === "true") {
+      if (window.google?.accounts?.id || existingScript.dataset.loaded === "true") {
         initializeGoogleClient();
       } else {
         existingScript.addEventListener("load", initializeGoogleClient);
@@ -165,13 +177,27 @@ const LoginPage = () => {
   };
 
   const handleGoogleLogin = () => {
-    if (!googleClient.current) {
+    if (!window.google?.accounts?.id) {
       toast.error("Google authentication is not ready. Please try again.");
       return;
     }
 
     setIsGoogleLoading(true);
-    googleClient.current.requestCode();
+    window.google.accounts.id.prompt((notification) => {
+      if (
+        notification.isNotDisplayed() ||
+        notification.isSkippedMoment() ||
+        notification.isDismissedMoment()
+      ) {
+        setIsGoogleLoading(false);
+        const reason =
+          notification.getNotDisplayedReason?.() ||
+          notification.getSkippedReason?.() ||
+          notification.getDismissedReason?.() ||
+          "Google authentication was cancelled. Please try again.";
+        toast.error(reason);
+      }
+    });
   };
 
   const handleGithubLogin = () => {
