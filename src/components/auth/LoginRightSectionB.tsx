@@ -4,7 +4,7 @@ import { ArrowUp } from "lucide-react";
 const PREFIX = "Ask Monosend to ";
 const COMPLETIONS = [
     "build welcome email...",
-    "replace SendGrid in my app...",
+    "replace SendGrid...",
     "build email workflows...",
     "run marketing campaign...",
 ];
