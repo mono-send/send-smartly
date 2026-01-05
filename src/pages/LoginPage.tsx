@@ -18,7 +18,7 @@ const LoginPage = () => {
     }
     setIsLoading(true);
     try {
-      const response = await fetch("https://api-z6l7.onrender.com/v1.0/signin", {
+      const response = await fetch("https://api.monosend.io/v1.0/signin", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
