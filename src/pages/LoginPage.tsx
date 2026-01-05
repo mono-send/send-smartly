@@ -1,14 +1,136 @@
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Mail, ArrowRight, Zap, Shield, Globe } from "lucide-react";
+import { Mail, Zap, Shield, Globe } from "lucide-react";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
+
+type GoogleCodeResponse = {
+  code?: string;
+  error?: string;
+  error_description?: string;
+};
+
+type GoogleCodeClient = {
+  requestCode: () => void;
+};
+
+declare global {
+  interface Window {
+    google?: {
+      accounts?: {
+        oauth2?: {
+          initCodeClient: (options: {
+            client_id: string;
+            scope: string;
+            ux_mode?: "popup" | "redirect";
+            callback: (response: GoogleCodeResponse) => void;
+          }) => GoogleCodeClient;
+        };
+      };
+    };
+  }
+}
+
+const GOOGLE_CLIENT_ID = "435311949966-8tqfu9fr1uubrm96fhgm6fge254ed6j1.apps.googleusercontent.com";
 
 const LoginPage = () => {
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [isGoogleReady, setIsGoogleReady] = useState(false);
+  const googleClient = useRef<GoogleCodeClient | null>(null);
+  const { setAuth } = useAuth();
+  const navigate = useNavigate();
+
+  const handleGoogleCallback = useCallback(
+    async (response: GoogleCodeResponse) => {
+      if (response.error) {
+        setIsGoogleLoading(false);
+        toast.error(response.error_description || "Google authentication failed");
+        return;
+      }
+
+      if (!response.code) {
+        setIsGoogleLoading(false);
+        toast.error("No authorization code received from Google.");
+        return;
+      }
+
+      try {
+        const apiResponse = await fetch("https://internal-api.monosend.io/v1.0/auth/google", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ code: response.code }),
+        });
+
+        if (!apiResponse.ok) {
+          const errorData = await apiResponse.json().catch(() => ({}));
+          throw new Error(errorData.message || "Failed to authenticate with Google");
+        }
+
+        const data = await apiResponse.json();
+        setAuth(data.access_token, data.user);
+        toast.success("Signed in with Google");
+        navigate("/");
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "Google login failed");
+      } finally {
+        setIsGoogleLoading(false);
+      }
+    },
+    [navigate, setAuth]
+  );
+
+  const initializeGoogleClient = useCallback(() => {
+    if (googleClient.current || !window.google?.accounts?.oauth2) return;
+
+    googleClient.current = window.google.accounts.oauth2.initCodeClient({
+      client_id: GOOGLE_CLIENT_ID,
+      scope: "email profile",
+      ux_mode: "popup",
+      callback: handleGoogleCallback,
+    });
+    setIsGoogleReady(true);
+  }, [handleGoogleCallback]);
+
+  useEffect(() => {
+    const scriptId = "google-identity-services";
+    const existingScript = document.getElementById(scriptId) as HTMLScriptElement | null;
+
+    if (existingScript) {
+      if (window.google?.accounts?.oauth2 || existingScript.dataset.loaded === "true") {
+        initializeGoogleClient();
+      } else {
+        existingScript.addEventListener("load", initializeGoogleClient);
+      }
+
+      return () => {
+        existingScript.removeEventListener("load", initializeGoogleClient);
+      };
+    }
+
+    const script = document.createElement("script");
+    script.id = scriptId;
+    script.src = "https://accounts.google.com/gsi/client";
+    script.async = true;
+    script.defer = true;
+    script.onload = () => {
+      script.dataset.loaded = "true";
+      initializeGoogleClient();
+    };
+
+    document.body.appendChild(script);
+
+    return () => {
+      script.onload = null;
+    };
+  }, [initializeGoogleClient]);
 
   const handleMagicLinkLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,7 +162,13 @@ const LoginPage = () => {
   };
 
   const handleGoogleLogin = () => {
-    toast.info("Google authentication requires backend integration");
+    if (!googleClient.current) {
+      toast.error("Google authentication is not ready. Please try again.");
+      return;
+    }
+
+    setIsGoogleLoading(true);
+    googleClient.current.requestCode();
   };
 
   const handleGithubLogin = () => {
@@ -69,6 +197,7 @@ const LoginPage = () => {
             variant="outline"
             className="w-full mb-3"
             onClick={handleGoogleLogin}
+            disabled={!isGoogleReady || isGoogleLoading}
           >
             <svg className="mr-2 h-5 w-5" viewBox="0 0 24 24">
               <path
@@ -88,7 +217,7 @@ const LoginPage = () => {
                 d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
               />
             </svg>
-            Continue with Google
+            {isGoogleLoading ? "Connecting to Google..." : "Continue with Google"}
           </Button>
           <Button
             variant="outline"
