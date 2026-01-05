@@ -14,7 +14,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { X, ArrowRight, Clock, Mail, LogOut, Plus, Minus, Info, Pencil } from "lucide-react";
+import { X, ArrowRight, Clock, Mail, LogOut, Plus, Minus, Info, Pencil, Trash2 } from "lucide-react";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
 
@@ -26,6 +26,13 @@ interface Segment {
 interface ContactCategory {
   id: string;
   name: string;
+}
+
+interface EmailStep {
+  id: string;
+  sender: string;
+  subject: string;
+  content: string;
 }
 
 export default function AutomationsPage() {
@@ -47,8 +54,10 @@ export default function AutomationsPage() {
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const titleInputRef = useRef<HTMLInputElement>(null);
 
-  // Email dialog
+  // Email steps
+  const [emailSteps, setEmailSteps] = useState<EmailStep[]>([]);
   const [emailDialogOpen, setEmailDialogOpen] = useState(false);
+  const [editingEmailId, setEditingEmailId] = useState<string | null>(null);
   const [emailSubject, setEmailSubject] = useState("");
   const [emailContent, setEmailContent] = useState("");
   const [emailSender, setEmailSender] = useState("");
@@ -69,7 +78,24 @@ export default function AutomationsPage() {
   };
 
   const handleAddEmail = () => {
+    setEditingEmailId(null);
+    setEmailSender("");
+    setEmailSubject("");
+    setEmailContent("");
     setEmailDialogOpen(true);
+  };
+
+  const handleEditEmail = (email: EmailStep) => {
+    setEditingEmailId(email.id);
+    setEmailSender(email.sender);
+    setEmailSubject(email.subject);
+    setEmailContent(email.content);
+    setEmailDialogOpen(true);
+  };
+
+  const handleDeleteEmail = (id: string) => {
+    setEmailSteps(emailSteps.filter(e => e.id !== id));
+    toast.success("Email step removed");
   };
 
   const handleSaveEmail = () => {
@@ -77,7 +103,26 @@ export default function AutomationsPage() {
       toast.error("Email subject is required");
       return;
     }
-    toast.success("Email step added");
+
+    if (editingEmailId) {
+      // Update existing
+      setEmailSteps(emailSteps.map(e => 
+        e.id === editingEmailId 
+          ? { ...e, sender: emailSender, subject: emailSubject, content: emailContent }
+          : e
+      ));
+      toast.success("Email step updated");
+    } else {
+      // Add new
+      const newEmail: EmailStep = {
+        id: crypto.randomUUID(),
+        sender: emailSender,
+        subject: emailSubject,
+        content: emailContent,
+      };
+      setEmailSteps([...emailSteps, newEmail]);
+      toast.success("Email step added");
+    }
     setEmailDialogOpen(false);
   };
 
@@ -274,6 +319,50 @@ export default function AutomationsPage() {
               </div>
             </div>
 
+            {/* Email Steps */}
+            {emailSteps.map((email, index) => (
+              <div key={email.id}>
+                <Card className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                      <Mail className="h-4 w-4" />
+                      EMAIL {index + 1}
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-8 w-8"
+                        onClick={() => handleEditEmail(email)}
+                      >
+                        <Pencil className="h-3 w-3" />
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-8 w-8 text-destructive hover:text-destructive"
+                        onClick={() => handleDeleteEmail(email.id)}
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="mt-2 text-sm text-muted-foreground truncate">
+                    {email.subject}
+                  </div>
+                </Card>
+
+                {/* Connector after each email */}
+                <div className="flex justify-center py-2">
+                  <div className="flex flex-col items-center">
+                    <div className="w-px h-4 bg-border" />
+                    <div className="h-1.5 w-1.5 rounded-full bg-border" />
+                    <div className="w-px h-4 bg-border" />
+                  </div>
+                </div>
+              </div>
+            ))}
+
             {/* Add Email Block */}
             <Card className="p-4">
               <div className="flex items-center justify-between">
@@ -291,7 +380,7 @@ export default function AutomationsPage() {
             <Dialog open={emailDialogOpen} onOpenChange={setEmailDialogOpen}>
               <DialogContent className="sm:max-w-md">
                 <DialogHeader>
-                  <DialogTitle>Configure Email Step</DialogTitle>
+                  <DialogTitle>{editingEmailId ? "Edit Email Step" : "Add Email Step"}</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
                   <div className="space-y-2">
@@ -328,7 +417,7 @@ export default function AutomationsPage() {
                     Cancel
                   </Button>
                   <Button onClick={handleSaveEmail}>
-                    Add Email
+                    {editingEmailId ? "Save Changes" : "Add Email"}
                   </Button>
                 </DialogFooter>
               </DialogContent>
