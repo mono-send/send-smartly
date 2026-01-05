@@ -73,7 +73,7 @@ export const LoginForm = () => {
             }
 
             try {
-                const apiResponse = await fetch("https://internal-api.monosend.io/auth/google", {
+                const apiResponse = await fetch("https://internal-api.monosend.io/v1.0/auth/google", {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",
