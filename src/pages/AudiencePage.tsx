@@ -47,14 +47,13 @@ import { toast } from "sonner";
 interface Contact {
   id: string;
   email: string;
+  first_name: string | null;
+  last_name: string | null;
   status: "subscribed" | "unsubscribed" | "bounced" | "complained";
-  category_id: string | null;
   metadata: unknown;
   created_at: string;
-  segment: {
-    id: string;
-    name: string;
-  } | null;
+  categories: Array<{ id: string; name: string }>;
+  segments: Array<{ id: string; name: string }>;
 }
 
 interface ContactStats {
@@ -691,7 +690,9 @@ export default function AudiencePage() {
                         <TableCell className="px-4 py-2">
                           <StatusBadge status={contact.status} />
                         </TableCell>
-                        <TableCell className="px-4 py-2 text-muted-foreground">{contact.segment?.name ?? "-"}</TableCell>
+                        <TableCell className="px-4 py-2 text-muted-foreground">
+                          {contact.segments.length > 0 ? contact.segments.map(s => s.name).join(", ") : "-"}
+                        </TableCell>
                         <TableCell className="px-4 py-2 text-muted-foreground">{formatDate(contact.created_at)}</TableCell>
                       </TableRow>
                     ))
