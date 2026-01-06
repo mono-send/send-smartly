@@ -318,20 +318,20 @@ export default function ImportContactsPage() {
             <CardContent className="p-0">
               <Table>
                 <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[200px]">Your File Column</TableHead>
-                    <TableHead className="w-[300px]">Your Sample Data</TableHead>
-                    <TableHead className="w-[200px]">Destination Column</TableHead>
-                    <TableHead className="w-[80px] text-center">Include</TableHead>
+                  <TableRow className="uppercase text-xs">
+                    <TableHead className="w-[200px] h-10">Your File Column</TableHead>
+                    <TableHead className="w-[300px] h-10">Your Sample Data</TableHead>
+                    <TableHead className="w-[200px] h-10">Destination Column</TableHead>
+                    <TableHead className="w-[80px] h-10 text-center">Include</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {columnMappings.map((mapping, index) => (
                     <TableRow key={mapping.sourceColumn}>
-                      <TableCell className="font-medium">
+                      <TableCell className="font-medium px-4 py-2">
                         {mapping.sourceColumn}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="px-4 py-2">
                         <div className="flex gap-2">
                           {mapping.sampleData.map((sample, i) => (
                             <span
@@ -343,7 +343,7 @@ export default function ImportContactsPage() {
                           ))}
                         </div>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="px-4 py-2">
                         <Select
                           value={mapping.destinationColumn}
                           onValueChange={(value) => updateMapping(index, "destinationColumn", value)}
@@ -360,7 +360,7 @@ export default function ImportContactsPage() {
                           </SelectContent>
                         </Select>
                       </TableCell>
-                      <TableCell className="text-center">
+                      <TableCell className="text-center px-4 py-2">
                         <Checkbox
                           checked={mapping.include}
                           onCheckedChange={(checked) =>
