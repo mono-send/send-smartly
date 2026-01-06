@@ -30,6 +30,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ConfirmDeleteDialog } from "@/components/dialogs/ConfirmDeleteDialog";
+import { Skeleton } from "@/components/ui/skeleton";
 import { formatDistanceToNow } from "date-fns";
 
 interface Template {
@@ -202,13 +203,13 @@ export default function TemplatesPage() {
         {/* Search */}
         <div className="mb-6 flex flex-wrap items-center gap-3">
           <div className="relative flex-1 min-w-[150px] max-w-xs">
+            <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               placeholder="Search by ID, Name or Subject"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pr-9 bg-white"
+              className="pr-9 bg-white hover:border-stone-300 focus-within:border-stone-300 focus-within:shadow-input hover:shadow-input-hover focus-within:shadow-input focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0"
             />
-            <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           </div>
         </div>
 
