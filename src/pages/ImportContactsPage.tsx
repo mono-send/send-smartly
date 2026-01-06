@@ -46,9 +46,9 @@ const destinationColumns = [
   { value: "email", label: "email" },
   { value: "first_name", label: "first_name" },
   { value: "last_name", label: "last_name" },
-  { value: "phone", label: "phone" },
-  { value: "company", label: "company" },
-  { value: "skip", label: "Don't import" },
+  // { value: "phone", label: "phone" },
+  // { value: "company", label: "company" },
+  // { value: "skip", label: "Don't import" },
 ];
 
 export default function ImportContactsPage() {
