@@ -132,8 +132,8 @@ export default function ImportContactsPage() {
       else if (lowerHeader.includes("last") && lowerHeader.includes("name")) destinationColumn = "last_name";
       else if (lowerHeader === "first_name" || lowerHeader === "firstname") destinationColumn = "first_name";
       else if (lowerHeader === "last_name" || lowerHeader === "lastname") destinationColumn = "last_name";
-      else if (lowerHeader.includes("phone")) destinationColumn = "phone";
-      else if (lowerHeader.includes("company")) destinationColumn = "company";
+      // else if (lowerHeader.includes("phone")) destinationColumn = "phone";
+      // else if (lowerHeader.includes("company")) destinationColumn = "company";
 
       return {
         sourceColumn: header,
