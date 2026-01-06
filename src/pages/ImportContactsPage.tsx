@@ -537,7 +537,7 @@ export default function ImportContactsPage() {
         >
           {currentStep === "upload" ? "Cancel" : "Back"}
         </Button>
-        <Button
+        <Button className="h-9"
           onClick={() => {
             if (currentStep === "upload") {
               handleFileUpload();
