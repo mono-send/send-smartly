@@ -514,7 +514,7 @@ export default function SettingsPage() {
                     <li>• 1,000 contacts</li>
                   </ul>
                 </div>
-                <Button>
+                <Button className="h-9">
                   Upgrade to Pro
                   <ArrowUpRight className="ml-2 h-4 w-4" />
                 </Button>
