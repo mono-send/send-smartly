@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -22,12 +22,12 @@ import { ChevronLeft, Upload, Check, Users } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Label } from "@/components/ui/label";
+import { api } from "@/lib/api";
 
-const segments = [
-  { value: "general", label: "General" },
-  { value: "vip", label: "VIP" },
-  { value: "newsletter", label: "Newsletter" },
-];
+interface Segment {
+  id: string;
+  name: string;
+}
 
 type Step = "upload" | "map" | "review";
 
@@ -46,9 +46,9 @@ const destinationColumns = [
   { value: "email", label: "email" },
   { value: "first_name", label: "first_name" },
   { value: "last_name", label: "last_name" },
-  { value: "phone", label: "phone" },
-  { value: "company", label: "company" },
-  { value: "skip", label: "Don't import" },
+  // { value: "phone", label: "phone" },
+  // { value: "company", label: "company" },
+  // { value: "skip", label: "Don't import" },
 ];
 
 export default function ImportContactsPage() {
@@ -59,7 +59,24 @@ export default function ImportContactsPage() {
   const [columnMappings, setColumnMappings] = useState<ColumnMapping[]>([]);
   const [parsedData, setParsedData] = useState<ParsedContact[]>([]);
   const [selectedSegment, setSelectedSegment] = useState<string>("");
+  const [segments, setSegments] = useState<Segment[]>([]);
+  const [isImporting, setIsImporting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const fetchSegments = async () => {
+      try {
+        const response = await api("/segments");
+        if (response.ok) {
+          const data = await response.json();
+          setSegments(data.items || []);
+        }
+      } catch (error) {
+        console.error("Failed to fetch segments:", error);
+      }
+    };
+    fetchSegments();
+  }, []);
 
   const steps: { key: Step; label: string; number: number }[] = [
     { key: "upload", label: "Upload", number: 1 },
@@ -132,8 +149,8 @@ export default function ImportContactsPage() {
       else if (lowerHeader.includes("last") && lowerHeader.includes("name")) destinationColumn = "last_name";
       else if (lowerHeader === "first_name" || lowerHeader === "firstname") destinationColumn = "first_name";
       else if (lowerHeader === "last_name" || lowerHeader === "lastname") destinationColumn = "last_name";
-      else if (lowerHeader.includes("phone")) destinationColumn = "phone";
-      else if (lowerHeader.includes("company")) destinationColumn = "company";
+      // else if (lowerHeader.includes("phone")) destinationColumn = "phone";
+      // else if (lowerHeader.includes("company")) destinationColumn = "company";
 
       return {
         sourceColumn: header,
@@ -177,18 +194,60 @@ export default function ImportContactsPage() {
     setCurrentStep("review");
   };
 
-  const handleImport = () => {
-    const contactCount = parsedData.length;
-    const segmentLabel = selectedSegment && selectedSegment !== "none" 
-      ? segments.find(s => s.value === selectedSegment)?.label 
-      : null;
+  const handleImport = async () => {
+    const reviewData = getReviewData();
     
-    const message = segmentLabel
-      ? `Successfully imported ${contactCount} contacts to ${segmentLabel}`
-      : `Successfully imported ${contactCount} contacts`;
-    
-    toast.success(message);
-    navigate("/audience");
+    // Build rows for the API
+    const rows = reviewData.map(contact => ({
+      email: contact.email,
+      first_name: contact.first_name || undefined,
+      last_name: contact.last_name || undefined,
+      status: "subscribed",
+    }));
+
+    const requestBody: {
+      rows: typeof rows;
+      segment_ids?: string[];
+      default_status: string;
+    } = {
+      rows,
+      default_status: "subscribed",
+    };
+
+    if (selectedSegment && selectedSegment !== "none") {
+      requestBody.segment_ids = [selectedSegment];
+    }
+
+    setIsImporting(true);
+    try {
+      const response = await api("/contacts/import", {
+        method: "POST",
+        body: requestBody,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        toast.error(errorData.detail || "Failed to import contacts");
+        return;
+      }
+
+      const contactCount = parsedData.length;
+      const segmentLabel = selectedSegment && selectedSegment !== "none" 
+        ? segments.find(s => s.id === selectedSegment)?.name 
+        : null;
+      
+      const message = segmentLabel
+        ? `Successfully imported ${contactCount} contacts to ${segmentLabel}`
+        : `Successfully imported ${contactCount} contacts`;
+      
+      toast.success(message);
+      navigate("/audience");
+    } catch (error) {
+      console.error("Import error:", error);
+      toast.error("Failed to import contacts");
+    } finally {
+      setIsImporting(false);
+    }
   };
 
   const getReviewData = () => {
@@ -318,20 +377,20 @@ export default function ImportContactsPage() {
             <CardContent className="p-0">
               <Table>
                 <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[200px]">Your File Column</TableHead>
-                    <TableHead className="w-[300px]">Your Sample Data</TableHead>
-                    <TableHead className="w-[200px]">Destination Column</TableHead>
-                    <TableHead className="w-[80px] text-center">Include</TableHead>
+                  <TableRow className="uppercase text-xs">
+                    <TableHead className="w-[200px] h-10">Your File Column</TableHead>
+                    <TableHead className="w-[300px] h-10">Your Sample Data</TableHead>
+                    <TableHead className="w-[200px] h-10">Destination Column</TableHead>
+                    <TableHead className="w-[80px] h-10 text-center">Include</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {columnMappings.map((mapping, index) => (
                     <TableRow key={mapping.sourceColumn}>
-                      <TableCell className="font-medium">
+                      <TableCell className="font-medium px-4 py-2">
                         {mapping.sourceColumn}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="px-4 py-2">
                         <div className="flex gap-2">
                           {mapping.sampleData.map((sample, i) => (
                             <span
@@ -343,7 +402,7 @@ export default function ImportContactsPage() {
                           ))}
                         </div>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="px-4 py-2">
                         <Select
                           value={mapping.destinationColumn}
                           onValueChange={(value) => updateMapping(index, "destinationColumn", value)}
@@ -360,7 +419,7 @@ export default function ImportContactsPage() {
                           </SelectContent>
                         </Select>
                       </TableCell>
-                      <TableCell className="text-center">
+                      <TableCell className="text-center px-4 py-2">
                         <Checkbox
                           checked={mapping.include}
                           onCheckedChange={(checked) =>
@@ -400,8 +459,8 @@ export default function ImportContactsPage() {
                     <SelectContent>
                       <SelectItem value="none">No segment</SelectItem>
                       {segments.map((segment) => (
-                        <SelectItem key={segment.value} value={segment.value}>
-                          {segment.label}
+                        <SelectItem key={segment.id} value={segment.id}>
+                          {segment.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -417,7 +476,7 @@ export default function ImportContactsPage() {
                   <p className="text-sm text-muted-foreground">
                     <span className="font-medium text-foreground">{parsedData.length}</span> contacts will be imported
                     {selectedSegment && selectedSegment !== "none" && (
-                      <span> to <span className="font-medium text-foreground">{segments.find(s => s.value === selectedSegment)?.label}</span></span>
+                      <span> to <span className="font-medium text-foreground">{segments.find(s => s.id === selectedSegment)?.name}</span></span>
                     )}
                   </p>
                 </div>
@@ -478,7 +537,7 @@ export default function ImportContactsPage() {
         >
           {currentStep === "upload" ? "Cancel" : "Back"}
         </Button>
-        <Button
+        <Button className="h-9"
           onClick={() => {
             if (currentStep === "upload") {
               handleFileUpload();
@@ -488,9 +547,9 @@ export default function ImportContactsPage() {
               handleImport();
             }
           }}
-          disabled={currentStep === "upload" && !file}
+          disabled={(currentStep === "upload" && !file) || isImporting}
         >
-          {currentStep === "review" ? "Import contacts" : "Continue"}
+          {isImporting ? "Importing..." : currentStep === "review" ? "Import contacts" : "Continue"}
         </Button>
       </footer>
     </div>

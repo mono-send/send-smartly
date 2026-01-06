@@ -43,18 +43,20 @@ import { ContactsAPISection } from "@/components/ContactsAPISection";
 import { ConfirmDeleteDialog } from "@/components/dialogs/ConfirmDeleteDialog";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
+import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
+import { X } from "lucide-react";
 
 interface Contact {
   id: string;
   email: string;
+  first_name: string | null;
+  last_name: string | null;
   status: "subscribed" | "unsubscribed" | "bounced" | "complained";
-  category_id: string | null;
   metadata: unknown;
   created_at: string;
-  segment: {
-    id: string;
-    name: string;
-  } | null;
+  categories: Array<{ id: string; name: string }>;
+  segments: Array<{ id: string; name: string }>;
 }
 
 interface ContactStats {
@@ -122,6 +124,19 @@ export default function AudiencePage() {
   const [isLoadingCategory, setIsLoadingCategory] = useState(false);
   const [isCategorySubmitting, setIsCategorySubmitting] = useState(false);
 
+  // Contact edit/delete state
+  const [isEditContactOpen, setIsEditContactOpen] = useState(false);
+  const [isDeleteContactOpen, setIsDeleteContactOpen] = useState(false);
+  const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
+  const [isLoadingContact, setIsLoadingContact] = useState(false);
+  const [isContactSubmitting, setIsContactSubmitting] = useState(false);
+  const [editContactEmail, setEditContactEmail] = useState("");
+  const [editContactFirstName, setEditContactFirstName] = useState("");
+  const [editContactLastName, setEditContactLastName] = useState("");
+  const [editContactStatus, setEditContactStatus] = useState<"subscribed" | "unsubscribed" | "bounced" | "complained">("subscribed");
+  const [editContactSegmentIds, setEditContactSegmentIds] = useState<string[]>([]);
+  const [editContactCategoryIds, setEditContactCategoryIds] = useState<string[]>([]);
+
   // Fetch data on mount
   useEffect(() => {
     fetchSegments();
@@ -185,7 +200,7 @@ export default function AudiencePage() {
 
       const body: { emails: string[]; segment_id?: string } = { emails: emailList };
       if (selectedSegmentId) {
-        body.segment_id = selectedSegmentId;
+        body.segment_ids = [selectedSegmentId];
       }
 
       const response = await api("/contacts", {
@@ -472,6 +487,131 @@ export default function AudiencePage() {
     setSelectedCategory(null);
   };
 
+  // Contact edit/delete functions
+  const openEditContactDialog = async (contact: Contact) => {
+    setSelectedContact(contact);
+    setIsEditContactOpen(true);
+    setIsLoadingContact(true);
+    try {
+      const response = await api(`/contacts/${contact.id}`);
+      if (response.ok) {
+        const data = await response.json();
+        setEditContactEmail(data.email);
+        setEditContactFirstName(data.first_name || "");
+        setEditContactLastName(data.last_name || "");
+        setEditContactStatus(data.status);
+        setEditContactSegmentIds(data.segments?.map((s: { id: string }) => s.id) || []);
+        setEditContactCategoryIds(data.categories?.map((c: { id: string }) => c.id) || []);
+      } else {
+        // Fallback to contact from list
+        setEditContactEmail(contact.email);
+        setEditContactFirstName(contact.first_name || "");
+        setEditContactLastName(contact.last_name || "");
+        setEditContactStatus(contact.status);
+        setEditContactSegmentIds(contact.segments?.map(s => s.id) || []);
+        setEditContactCategoryIds(contact.categories?.map(c => c.id) || []);
+        toast.error("Failed to load contact details");
+      }
+    } catch (error) {
+      setEditContactEmail(contact.email);
+      setEditContactFirstName(contact.first_name || "");
+      setEditContactLastName(contact.last_name || "");
+      setEditContactStatus(contact.status);
+      setEditContactSegmentIds(contact.segments?.map(s => s.id) || []);
+      setEditContactCategoryIds(contact.categories?.map(c => c.id) || []);
+      toast.error("Failed to load contact details");
+    } finally {
+      setIsLoadingContact(false);
+    }
+  };
+
+  const openDeleteContactDialog = (contact: Contact) => {
+    setSelectedContact(contact);
+    setIsDeleteContactOpen(true);
+  };
+
+  const handleEditContact = async () => {
+    if (!selectedContact || !editContactEmail.trim()) return;
+    setIsContactSubmitting(true);
+    try {
+      const response = await api(`/contacts/${selectedContact.id}`, {
+        method: "PUT",
+        body: {
+          email: editContactEmail.trim(),
+          first_name: editContactFirstName.trim() || null,
+          last_name: editContactLastName.trim() || null,
+          status: editContactStatus,
+          segment_ids: editContactSegmentIds,
+          category_ids: editContactCategoryIds,
+        },
+      });
+      if (response.ok) {
+        toast.success("Contact updated successfully");
+        setIsEditContactOpen(false);
+        resetContactForm();
+        fetchContacts();
+        fetchContactStats();
+      } else {
+        const error = await response.json();
+        toast.error(error.detail || "Failed to update contact");
+      }
+    } catch (error) {
+      toast.error("Failed to update contact");
+    } finally {
+      setIsContactSubmitting(false);
+    }
+  };
+
+  const handleDeleteContact = async () => {
+    if (!selectedContact) return;
+    setIsContactSubmitting(true);
+    try {
+      const response = await api(`/contacts/${selectedContact.id}`, {
+        method: "DELETE",
+      });
+      if (response.ok) {
+        toast.success("Contact deleted successfully");
+        setIsDeleteContactOpen(false);
+        setSelectedContact(null);
+        fetchContacts();
+        fetchContactStats();
+      } else {
+        const error = await response.json();
+        toast.error(error.detail || "Failed to delete contact");
+      }
+    } catch (error) {
+      toast.error("Failed to delete contact");
+    } finally {
+      setIsContactSubmitting(false);
+    }
+  };
+
+  const resetContactForm = () => {
+    setSelectedContact(null);
+    setEditContactEmail("");
+    setEditContactFirstName("");
+    setEditContactLastName("");
+    setEditContactStatus("subscribed");
+    setEditContactSegmentIds([]);
+    setEditContactCategoryIds([]);
+  };
+
+  const toggleSegmentSelection = (segmentId: string) => {
+    setEditContactSegmentIds(prev => 
+      prev.includes(segmentId) 
+        ? prev.filter(id => id !== segmentId)
+        : [...prev, segmentId]
+    );
+  };
+
+  const toggleCategorySelection = (categoryId: string) => {
+    setEditContactCategoryIds(prev => 
+      prev.includes(categoryId) 
+        ? prev.filter(id => id !== categoryId)
+        : [...prev, categoryId]
+    );
+  };
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
@@ -663,6 +803,7 @@ export default function AudiencePage() {
                     <TableHead className="h-10">Status</TableHead>
                     <TableHead className="h-10">Segment</TableHead>
                     <TableHead className="h-10">Added</TableHead>
+                    <TableHead className="w-[50px] h-10"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -677,7 +818,7 @@ export default function AudiencePage() {
                     ))
                   ) : contacts.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
+                      <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
                         No contacts found
                       </TableCell>
                     </TableRow>
@@ -692,8 +833,43 @@ export default function AudiencePage() {
                         <TableCell className="px-4 py-2">
                           <StatusBadge status={contact.status} />
                         </TableCell>
-                        <TableCell className="px-4 py-2 text-muted-foreground">{contact.segment?.name ?? "-"}</TableCell>
+                        <TableCell className="px-4 py-2 text-muted-foreground">
+                          {contact.segments.length > 0 ? contact.segments.map(s => s.name).join(", ") : "-"}
+                        </TableCell>
                         <TableCell className="px-4 py-2 text-muted-foreground">{formatDate(contact.created_at)}</TableCell>
+                        <TableCell className="px-4 py-2">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-8 w-8"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={(e) => {
+                                e.stopPropagation();
+                                openEditContactDialog(contact);
+                              }}>
+                                <Pencil className="h-4 w-4 mr-2" />
+                                Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuItem 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openDeleteContactDialog(contact);
+                                }}
+                                className="text-destructive focus:text-destructive"
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
                       </TableRow>
                     ))
                   )}
@@ -1108,6 +1284,182 @@ export default function AudiencePage() {
         description={`Are you sure you want to delete "${selectedCategory?.name}"? This action cannot be undone.`}
         confirmLabel="Delete"
         onConfirm={handleDeleteCategory}
+      />
+
+      {/* Edit Contact Dialog */}
+      <Dialog open={isEditContactOpen} onOpenChange={(open) => {
+        setIsEditContactOpen(open);
+        if (!open) resetContactForm();
+      }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit contact</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            {isLoadingContact ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : (
+              <>
+                <div className="space-y-2">
+                  <Label>Email</Label>
+                  <Input
+                    value={editContactEmail}
+                    onChange={(e) => setEditContactEmail(e.target.value)}
+                    className="bg-muted"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Segments</Label>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <div className="min-h-10 rounded-md border border-input bg-background px-3 py-2 text-sm cursor-pointer">
+                        {editContactSegmentIds.length > 0 ? (
+                          <div className="flex flex-wrap gap-1">
+                            {editContactSegmentIds.map(id => {
+                              const segment = segments.find(s => s.id === id);
+                              return segment ? (
+                                <Badge key={id} variant="secondary" className="gap-1">
+                                  {segment.name}
+                                  <X 
+                                    className="h-3 w-3 cursor-pointer" 
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      toggleSegmentSelection(id);
+                                    }}
+                                  />
+                                </Badge>
+                              ) : null;
+                            })}
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground">Optionally add to existing segments...</span>
+                        )}
+                      </div>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="w-56">
+                      {segments.map((segment) => (
+                        <DropdownMenuItem
+                          key={segment.id}
+                          onClick={() => toggleSegmentSelection(segment.id)}
+                          className="flex items-center gap-2"
+                        >
+                          <div className={`w-4 h-4 rounded border flex items-center justify-center ${editContactSegmentIds.includes(segment.id) ? 'bg-primary border-primary' : 'border-input'}`}>
+                            {editContactSegmentIds.includes(segment.id) && (
+                              <svg className="w-3 h-3 text-primary-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                                <polyline points="20 6 9 17 4 12" />
+                              </svg>
+                            )}
+                          </div>
+                          {segment.name}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Categories</Label>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <div className="min-h-10 rounded-md border border-input bg-background px-3 py-2 text-sm cursor-pointer">
+                        {editContactCategoryIds.length > 0 ? (
+                          <div className="flex flex-wrap gap-1">
+                            {editContactCategoryIds.map(id => {
+                              const category = categories.find(c => c.id === id);
+                              return category ? (
+                                <Badge key={id} variant="secondary" className="gap-1">
+                                  {category.name}
+                                  <X 
+                                    className="h-3 w-3 cursor-pointer" 
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      toggleCategorySelection(id);
+                                    }}
+                                  />
+                                </Badge>
+                              ) : null;
+                            })}
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground">Optionally add to categories...</span>
+                        )}
+                      </div>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="w-56">
+                      {categories.map((category) => (
+                        <DropdownMenuItem
+                          key={category.id}
+                          onClick={() => toggleCategorySelection(category.id)}
+                          className="flex items-center gap-2"
+                        >
+                          <div className={`w-4 h-4 rounded border flex items-center justify-center ${editContactCategoryIds.includes(category.id) ? 'bg-primary border-primary' : 'border-input'}`}>
+                            {editContactCategoryIds.includes(category.id) && (
+                              <svg className="w-3 h-3 text-primary-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                                <polyline points="20 6 9 17 4 12" />
+                              </svg>
+                            )}
+                          </div>
+                          {category.name}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <Label>Subscribed</Label>
+                  <Switch
+                    checked={editContactStatus === "subscribed"}
+                    onCheckedChange={(checked) => setEditContactStatus(checked ? "subscribed" : "unsubscribed")}
+                  />
+                </div>
+
+                <div className="border-t pt-4 space-y-4">
+                  <div className="space-y-2">
+                    <Label>First name</Label>
+                    <Input
+                      value={editContactFirstName}
+                      onChange={(e) => setEditContactFirstName(e.target.value)}
+                      className="bg-muted"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Last name</Label>
+                    <Input
+                      value={editContactLastName}
+                      onChange={(e) => setEditContactLastName(e.target.value)}
+                      className="bg-muted"
+                    />
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+          <DialogFooter>
+            <Button size="sm" variant="outline" onClick={() => { setIsEditContactOpen(false); resetContactForm(); }}>
+              Cancel
+            </Button>
+            <Button size="sm" onClick={handleEditContact} disabled={!editContactEmail.trim() || isContactSubmitting || isLoadingContact}>
+              {isContactSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Contact Dialog */}
+      <ConfirmDeleteDialog
+        open={isDeleteContactOpen}
+        onOpenChange={setIsDeleteContactOpen}
+        title="Delete contact"
+        description={`Are you sure you want to delete "${selectedContact?.email}"? This action cannot be undone.`}
+        confirmLabel="Delete"
+        onConfirm={handleDeleteContact}
+        isLoading={isContactSubmitting}
       />
 
       <ContactsAPISection isOpen={isAPIOpen} onClose={() => setIsAPIOpen(false)} />

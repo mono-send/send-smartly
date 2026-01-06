@@ -446,7 +446,7 @@ export default function SettingsPage() {
                   </div>
                   <Progress value={1} className="h-2" />
                 </div>
-                <Button variant="outline">
+                <Button variant="outline" className="h-9">
                   Upgrade plan
                   <ArrowUpRight className="ml-2 h-4 w-4" />
                 </Button>
@@ -514,7 +514,7 @@ export default function SettingsPage() {
                     <li>• 1,000 contacts</li>
                   </ul>
                 </div>
-                <Button>
+                <Button className="h-9">
                   Upgrade to Pro
                   <ArrowUpRight className="ml-2 h-4 w-4" />
                 </Button>
@@ -845,7 +845,7 @@ export default function SettingsPage() {
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground">No integrations configured yet.</p>
-                <Button variant="outline" className="mt-4">
+                <Button variant="outline" className="mt-4 h-9">
                   Browse integrations
                 </Button>
               </CardContent>
