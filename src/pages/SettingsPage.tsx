@@ -350,7 +350,7 @@ export default function SettingsPage() {
     setIsUpdatingRole(true);
     try {
       const response = await api(`/team_members/${memberToEdit.id}`, {
-        method: "PUT",
+        method: "PATCH",
         body: { role: editRole },
       });
       if (response.ok) {
