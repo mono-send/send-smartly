@@ -22,6 +22,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -62,7 +63,7 @@ export default function TemplatesPage() {
       const params = new URLSearchParams();
       params.append("sort_by", "created_at");
       params.append("sort_dir", "desc");
-      
+
       if (search.trim()) {
         params.append("search", search.trim());
       }
@@ -160,7 +161,7 @@ export default function TemplatesPage() {
 
   const handleDelete = async () => {
     if (!templateToDelete) return;
-    
+
     setIsDeleting(true);
     try {
       const response = await api(`/templates/${templateToDelete.id}`, {
@@ -188,15 +189,15 @@ export default function TemplatesPage() {
 
   return (
     <>
-      <TopBar 
-        title="Dynamic Templates" 
+      <TopBar
+        title="Dynamic Templates"
         subtitle="Create and manage email templates"
         action={{
           label: "Create template",
           onClick: handleOpenDialog,
         }}
       />
-      
+
       <div className="p-6">
         {/* Search */}
         <div className="mb-6 flex flex-wrap items-center gap-3">
@@ -224,11 +225,14 @@ export default function TemplatesPage() {
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableRow>
-                  <TableCell colSpan={4} className="h-24 text-center">
-                    <Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" />
-                  </TableCell>
-                </TableRow>
+                Array.from({ length: 5 }).map((_, i) => (
+                  <TableRow key={i}>
+                    <TableCell><Skeleton className="h-10 w-48" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                    <TableCell><Skeleton className="h-8 w-8" /></TableCell>
+                  </TableRow>
+                ))
               ) : templates.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">

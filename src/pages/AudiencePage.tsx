@@ -727,13 +727,13 @@ export default function AudiencePage() {
                 </TableHeader>
                 <TableBody>
                   {isLoadingSegments ? (
-                    <TableRow>
-                      <TableCell colSpan={3} className="h-24">
-                        <div className="flex items-center justify-center">
-                          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                        </div>
-                      </TableCell>
-                    </TableRow>
+                    Array.from({ length: 3 }).map((_, i) => (
+                      <TableRow key={i}>
+                        <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                        <TableCell><Skeleton className="h-8 w-8" /></TableCell>
+                      </TableRow>
+                    ))
                   ) : segments.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={3} className="h-24 text-center text-muted-foreground">
@@ -795,13 +795,15 @@ export default function AudiencePage() {
                 </TableHeader>
                 <TableBody>
                   {isLoadingCategories ? (
-                    <TableRow>
-                      <TableCell colSpan={5} className="h-24">
-                        <div className="flex items-center justify-center">
-                          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                        </div>
-                      </TableCell>
-                    </TableRow>
+                    Array.from({ length: 3 }).map((_, i) => (
+                      <TableRow key={i}>
+                        <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                        <TableCell><Skeleton className="h-8 w-8" /></TableCell>
+                      </TableRow>
+                    ))
                   ) : categories.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
