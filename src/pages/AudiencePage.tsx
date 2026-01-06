@@ -141,10 +141,10 @@ export default function AudiencePage() {
       if (statusFilter !== "all") params.append("status", statusFilter);
       if (segmentFilter !== "all") params.append("segment_id", segmentFilter);
       if (search.trim()) params.append("search", search.trim());
-      
+
       const queryString = params.toString();
       const endpoint = queryString ? `/contacts?${queryString}` : "/contacts";
-      
+
       const response = await api(endpoint);
       if (response.ok) {
         const data = await response.json();
@@ -182,12 +182,12 @@ export default function AudiencePage() {
         .split(/[,\n]/)
         .map(e => e.trim())
         .filter(e => e);
-      
+
       const body: { emails: string[]; segment_id?: string } = { emails: emailList };
       if (selectedSegmentId) {
         body.segment_id = selectedSegmentId;
       }
-      
+
       const response = await api("/contacts", {
         method: "POST",
         body,
@@ -262,7 +262,7 @@ export default function AudiencePage() {
       });
       if (response.ok) {
         const updatedSegment = await response.json();
-        setSegments(segments.map(s => 
+        setSegments(segments.map(s =>
           s.id === selectedSegment.id ? updatedSegment : s
         ));
         setSegmentName("");
@@ -355,7 +355,7 @@ export default function AudiencePage() {
     try {
       const response = await api("/contact-categories", {
         method: "POST",
-        body: { 
+        body: {
           name: categoryName.trim(),
           type: categoryType,
           visibility: categoryVisibility
@@ -386,14 +386,14 @@ export default function AudiencePage() {
     try {
       const response = await api(`/contact-categories/${selectedCategory.id}`, {
         method: "PUT",
-        body: { 
+        body: {
           name: categoryName.trim(),
           visibility: categoryVisibility
         },
       });
       if (response.ok) {
         const updatedCategory = await response.json();
-        setCategories(categories.map(c => 
+        setCategories(categories.map(c =>
           c.id === selectedCategory.id ? updatedCategory : c
         ));
         resetCategoryForm();
@@ -477,7 +477,7 @@ export default function AudiencePage() {
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
     const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-    
+
     if (diffDays === 0) return "Today";
     if (diffDays === 1) return "Yesterday";
     if (diffDays < 7) return `${diffDays} days ago`;
@@ -487,8 +487,8 @@ export default function AudiencePage() {
 
   return (
     <>
-      <TopBar 
-        title="Audience" 
+      <TopBar
+        title="Audience"
         subtitle="Manage contacts, segments, and subscriptions"
       >
         <div className="flex items-center gap-2">
@@ -521,7 +521,7 @@ export default function AudiencePage() {
           </DropdownMenu>
         </div>
       </TopBar>
-      
+
       <div className="p-6">
         <Tabs defaultValue="contacts" className="space-y-6">
           <TabsList>
@@ -619,10 +619,10 @@ export default function AudiencePage() {
                   placeholder="Search contacts..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="pl-9 bg-white"
+                  className="pl-9 bg-white hover:border-stone-300 focus-within:border-stone-300 focus-within:shadow-input hover:shadow-input-hover focus-within:shadow-input focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0"
                 />
               </div>
-              
+
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="w-[150px]">
                   <SelectValue placeholder="Status" />
@@ -667,13 +667,14 @@ export default function AudiencePage() {
                 </TableHeader>
                 <TableBody>
                   {isLoadingContacts ? (
-                    <TableRow>
-                      <TableCell colSpan={4} className="h-24">
-                        <div className="flex items-center justify-center">
-                          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                        </div>
-                      </TableCell>
-                    </TableRow>
+                    Array.from({ length: 5 }).map((_, i) => (
+                      <TableRow key={i}>
+                        <TableCell className="px-4 py-2"><Skeleton className="h-4 w-48" /></TableCell>
+                        <TableCell className="px-4 py-2"><Skeleton className="h-5 w-24" /></TableCell>
+                        <TableCell className="px-4 py-2"><Skeleton className="h-4 w-32" /></TableCell>
+                        <TableCell className="px-4 py-2"><Skeleton className="h-4 w-24" /></TableCell>
+                      </TableRow>
+                    ))
                   ) : contacts.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
@@ -682,8 +683,8 @@ export default function AudiencePage() {
                     </TableRow>
                   ) : (
                     contacts.map((contact) => (
-                      <TableRow 
-                        key={contact.id} 
+                      <TableRow
+                        key={contact.id}
                         className="cursor-pointer hover:bg-muted/50"
                         onClick={() => navigate(`/audience/contacts/${contact.id}`)}
                       >
@@ -756,7 +757,7 @@ export default function AudiencePage() {
                                 <Pencil className="h-4 w-4 mr-2" />
                                 Edit
                               </DropdownMenuItem>
-                              <DropdownMenuItem 
+                              <DropdownMenuItem
                                 onClick={() => openDeleteDialog(segment)}
                                 className="text-destructive focus:text-destructive"
                               >
@@ -826,7 +827,7 @@ export default function AudiencePage() {
                                 <Pencil className="h-4 w-4 mr-2" />
                                 Edit
                               </DropdownMenuItem>
-                              <DropdownMenuItem 
+                              <DropdownMenuItem
                                 onClick={() => openDeleteCategoryDialog(category)}
                                 className="text-destructive focus:text-destructive"
                               >
@@ -855,7 +856,7 @@ export default function AudiencePage() {
               Add email addresses separated by commas or new lines.
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label htmlFor="emails">Email addresses</Label>
@@ -867,7 +868,7 @@ export default function AudiencePage() {
                 rows={4}
               />
             </div>
-            
+
             <div className="space-y-2">
               <Label>Segment (optional)</Label>
               <Select value={selectedSegmentId} onValueChange={setSelectedSegmentId}>
@@ -991,7 +992,7 @@ export default function AudiencePage() {
               Create a new category for organizing your contacts.
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label htmlFor="category-name">Name <span className="text-destructive">*</span></Label>
@@ -1002,7 +1003,7 @@ export default function AudiencePage() {
                 onChange={(e) => setCategoryName(e.target.value)}
               />
             </div>
-            
+
             <div className="space-y-2">
               <Label>Visibility</Label>
               <Select value={categoryVisibility} onValueChange={setCategoryVisibility}>
@@ -1015,7 +1016,7 @@ export default function AudiencePage() {
                 </SelectContent>
               </Select>
             </div>
-            
+
             <div className="space-y-2">
               <Label>Type</Label>
               <Select value={categoryType} onValueChange={setCategoryType}>
@@ -1029,12 +1030,12 @@ export default function AudiencePage() {
               </Select>
             </div>
           </div>
-          
+
           <DialogFooter>
             <Button size="sm" variant="outline" onClick={() => setIsAddCategoryOpen(false)}>
               Cancel
             </Button>
-            <Button 
+            <Button
               size="sm"
               onClick={handleAddCategory}
               disabled={!categoryName.trim() || isCategorySubmitting}
@@ -1071,7 +1072,7 @@ export default function AudiencePage() {
                     onChange={(e) => setCategoryName(e.target.value)}
                   />
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label>Visibility</Label>
                   <Select value={categoryVisibility} onValueChange={setCategoryVisibility}>
@@ -1082,7 +1083,7 @@ export default function AudiencePage() {
                       <SelectItem value="private">Private</SelectItem>
                       <SelectItem value="public">Public</SelectItem>
                     </SelectContent>
-                </Select>
+                  </Select>
                 </div>
               </>
             )}
