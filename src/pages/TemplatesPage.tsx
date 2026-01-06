@@ -22,6 +22,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -227,15 +228,10 @@ export default function TemplatesPage() {
               {isLoading ? (
                 Array.from({ length: 5 }).map((_, i) => (
                   <TableRow key={i}>
-                    <TableCell className="px-4 py-2">
-                      <div className="space-y-1">
-                        <Skeleton className="h-4 w-32" />
-                        <Skeleton className="h-3 w-48" />
-                      </div>
-                    </TableCell>
-                    <TableCell className="px-4 py-2"><Skeleton className="h-4 w-24" /></TableCell>
-                    <TableCell className="px-4 py-2"><Skeleton className="h-4 w-24" /></TableCell>
-                    <TableCell className="px-4 py-2"><Skeleton className="h-8 w-8" /></TableCell>
+                    <TableCell><Skeleton className="h-10 w-48" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                    <TableCell><Skeleton className="h-8 w-8" /></TableCell>
                   </TableRow>
                 ))
               ) : templates.length === 0 ? (

@@ -18,6 +18,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Search, MoreVertical, ExternalLink, Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
@@ -91,15 +92,15 @@ export default function DomainsPage() {
 
   return (
     <>
-      <TopBar 
-        title="Domains" 
+      <TopBar
+        title="Domains"
         subtitle="Manage your sending domains"
         action={{
           label: "Add domain",
           onClick: () => navigate("/domains/new"),
         }}
       />
-      
+
       <div className="p-6">
         {/* Filters */}
         <div className="mb-6 flex flex-wrap items-center gap-3">
@@ -112,7 +113,7 @@ export default function DomainsPage() {
               className="pr-9 bg-white"
             />
           </div>
-          
+
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-[140px]">
               <SelectValue placeholder="Status" />
@@ -152,11 +153,15 @@ export default function DomainsPage() {
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableRow>
-                  <TableCell colSpan={5} className="h-24 text-center">
-                    <Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" />
-                  </TableCell>
-                </TableRow>
+                Array.from({ length: 5 }).map((_, i) => (
+                  <TableRow key={i}>
+                    <TableCell><Skeleton className="h-4 w-48" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                    <TableCell><Skeleton className="h-8 w-8" /></TableCell>
+                  </TableRow>
+                ))
               ) : domains.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
@@ -165,8 +170,8 @@ export default function DomainsPage() {
                 </TableRow>
               ) : (
                 domains.map((domain) => (
-                  <TableRow 
-                    key={domain.id} 
+                  <TableRow
+                    key={domain.id}
                     className="cursor-pointer hover:bg-muted/50"
                     onClick={() => navigate(`/domains/${domain.id}`)}
                   >
@@ -195,7 +200,7 @@ export default function DomainsPage() {
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem>View DNS records</DropdownMenuItem>
                           <DropdownMenuItem>Configure</DropdownMenuItem>
-                          <DropdownMenuItem 
+                          <DropdownMenuItem
                             className="text-destructive"
                             onClick={() => setDomainToRemove({ id: domain.id, domain: domain.domain })}
                           >

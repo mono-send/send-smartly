@@ -9,6 +9,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Copy, Check, MoreVertical, Key, Loader2 } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -88,11 +89,11 @@ export default function ApiKeysPage() {
 
   const handleConfirmRevoke = async () => {
     if (!keyToRevoke) return;
-    
+
     try {
       setIsRevoking(true);
       const response = await api(`/api_keys/${keyToRevoke.id}`, { method: "DELETE" });
-      
+
       if (response.ok) {
         toast.success("API key revoked successfully");
         setApiKeys((prev) => prev.filter((k) => k.id !== keyToRevoke.id));
@@ -126,7 +127,7 @@ export default function ApiKeysPage() {
   const handleSubmit = async (data: ApiKeyData) => {
     try {
       setIsSubmitting(true);
-      
+
       if (dialogMode === "create") {
         const response = await api("/api_keys", {
           method: "POST",
@@ -195,15 +196,15 @@ export default function ApiKeysPage() {
 
   return (
     <>
-      <TopBar 
-        title="API Keys" 
+      <TopBar
+        title="API Keys"
         subtitle="Manage your API keys for authentication"
         action={{
           label: "Create API key",
           onClick: handleOpenCreate,
         }}
       />
-      
+
       <div className="p-6">
         {/* Info card */}
         <div className="mb-6 rounded-lg border border-border bg-card p-4">
@@ -222,32 +223,43 @@ export default function ApiKeysPage() {
 
         {/* Table */}
         <div className="rounded-lg border border-border bg-card">
-          {isLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-            </div>
-          ) : apiKeys.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <Key className="h-10 w-10 text-muted-foreground/50 mb-3" />
-              <p className="text-muted-foreground">No API keys yet</p>
-              <p className="text-sm text-muted-foreground/70">Create your first API key to get started</p>
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow className="uppercase text-xs">
-                  <TableHead className="h-10">Name</TableHead>
-                  <TableHead className="h-10">Token</TableHead>
-                  <TableHead className="h-10">Permission</TableHead>
-                  <TableHead className="h-10">Last used</TableHead>
-                  <TableHead className="h-10">Created</TableHead>
-                  <TableHead className="w-[50px] h-10"></TableHead>
+          <Table>
+            <TableHeader>
+              <TableRow className="uppercase text-xs">
+                <TableHead className="h-10">Name</TableHead>
+                <TableHead className="h-10">Token</TableHead>
+                <TableHead className="h-10">Permission</TableHead>
+                <TableHead className="h-10">Last used</TableHead>
+                <TableHead className="h-10">Created</TableHead>
+                <TableHead className="w-[50px] h-10"></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {isLoading ? (
+                Array.from({ length: 5 }).map((_, i) => (
+                  <TableRow key={i}>
+                    <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-48" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                    <TableCell><Skeleton className="h-8 w-8" /></TableCell>
+                  </TableRow>
+                ))
+              ) : apiKeys.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="h-24 text-center">
+                    <div className="flex flex-col items-center justify-center py-6 text-center">
+                      <Key className="h-10 w-10 text-muted-foreground/50 mb-3" />
+                      <p className="text-muted-foreground">No API keys yet</p>
+                      <p className="text-sm text-muted-foreground/70">Create your first API key to get started</p>
+                    </div>
+                  </TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {apiKeys.map((key) => (
-                  <TableRow 
-                    key={key.id} 
+              ) : (
+                apiKeys.map((key) => (
+                  <TableRow
+                    key={key.id}
                     className="cursor-pointer"
                     onClick={() => navigate(`/api-keys/${key.id}`)}
                   >
@@ -295,7 +307,7 @@ export default function ApiKeysPage() {
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem onClick={() => handleOpenEdit(key)}>Edit</DropdownMenuItem>
                           <DropdownMenuItem>Roll key</DropdownMenuItem>
-                          <DropdownMenuItem 
+                          <DropdownMenuItem
                             className="text-destructive"
                             onClick={() => handleOpenRevoke(key)}
                           >
@@ -305,10 +317,9 @@ export default function ApiKeysPage() {
                       </DropdownMenu>
                     </TableCell>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
+                )))}
+            </TableBody>
+          </Table>
         </div>
       </div>
 
@@ -330,8 +341,8 @@ export default function ApiKeysPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isRevoking} className="h-9">Cancel</AlertDialogCancel>
-            <AlertDialogAction 
+            <AlertDialogCancel disabled={isRevoking}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
               onClick={handleConfirmRevoke}
               disabled={isRevoking}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90 h-9"
