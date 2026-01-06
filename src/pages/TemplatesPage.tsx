@@ -29,6 +29,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ConfirmDeleteDialog } from "@/components/dialogs/ConfirmDeleteDialog";
+import { Skeleton } from "@/components/ui/skeleton";
 import { formatDistanceToNow } from "date-fns";
 
 interface Template {
@@ -62,7 +63,7 @@ export default function TemplatesPage() {
       const params = new URLSearchParams();
       params.append("sort_by", "created_at");
       params.append("sort_dir", "desc");
-      
+
       if (search.trim()) {
         params.append("search", search.trim());
       }
@@ -160,7 +161,7 @@ export default function TemplatesPage() {
 
   const handleDelete = async () => {
     if (!templateToDelete) return;
-    
+
     setIsDeleting(true);
     try {
       const response = await api(`/templates/${templateToDelete.id}`, {
@@ -188,26 +189,26 @@ export default function TemplatesPage() {
 
   return (
     <>
-      <TopBar 
-        title="Dynamic Templates" 
+      <TopBar
+        title="Dynamic Templates"
         subtitle="Create and manage email templates"
         action={{
           label: "Create template",
           onClick: handleOpenDialog,
         }}
       />
-      
+
       <div className="p-6">
         {/* Search */}
         <div className="mb-6 flex flex-wrap items-center gap-3">
           <div className="relative flex-1 min-w-[150px] max-w-xs">
+            <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               placeholder="Search by ID, Name or Subject"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pr-9 bg-white"
+              className="pr-9 bg-white hover:border-stone-300 focus-within:border-stone-300 focus-within:shadow-input hover:shadow-input-hover focus-within:shadow-input focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0"
             />
-            <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           </div>
         </div>
 
@@ -224,11 +225,19 @@ export default function TemplatesPage() {
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableRow>
-                  <TableCell colSpan={4} className="h-24 text-center">
-                    <Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" />
-                  </TableCell>
-                </TableRow>
+                Array.from({ length: 5 }).map((_, i) => (
+                  <TableRow key={i}>
+                    <TableCell className="px-4 py-2">
+                      <div className="space-y-1">
+                        <Skeleton className="h-4 w-32" />
+                        <Skeleton className="h-3 w-48" />
+                      </div>
+                    </TableCell>
+                    <TableCell className="px-4 py-2"><Skeleton className="h-4 w-24" /></TableCell>
+                    <TableCell className="px-4 py-2"><Skeleton className="h-4 w-24" /></TableCell>
+                    <TableCell className="px-4 py-2"><Skeleton className="h-8 w-8" /></TableCell>
+                  </TableRow>
+                ))
               ) : templates.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
