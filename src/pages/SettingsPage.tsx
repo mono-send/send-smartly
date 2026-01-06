@@ -845,7 +845,7 @@ export default function SettingsPage() {
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground">No integrations configured yet.</p>
-                <Button variant="outline" className="mt-4">
+                <Button variant="outline" className="mt-4 h-9">
                   Browse integrations
                 </Button>
               </CardContent>
