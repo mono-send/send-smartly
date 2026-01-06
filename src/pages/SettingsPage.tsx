@@ -446,7 +446,7 @@ export default function SettingsPage() {
                   </div>
                   <Progress value={1} className="h-2" />
                 </div>
-                <Button variant="outline">
+                <Button variant="outline" className="h-9">
                   Upgrade plan
                   <ArrowUpRight className="ml-2 h-4 w-4" />
                 </Button>
