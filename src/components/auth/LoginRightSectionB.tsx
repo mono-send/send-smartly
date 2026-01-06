@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { ArrowUp } from "lucide-react";
 
-const PREFIX = "Ask Monosend to ";
+const PREFIX = "Ask MonoSend to ";
 const COMPLETIONS = [
     "build welcome email...",
     "replace SendGrid...",
