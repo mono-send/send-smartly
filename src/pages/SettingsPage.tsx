@@ -55,7 +55,7 @@ interface TeamMember {
   id: string;
   name: string;
   email: string;
-  role: "owner" | "admin" | "developer" | "viewer";
+  role: "owner" | "admin" | "developer" | "marketer";
   avatar: string;
 }
 
@@ -63,7 +63,7 @@ interface PendingInvitation {
   id: string;
   email: string;
   name: string;
-  role: "owner" | "admin" | "developer" | "viewer";
+  role: "owner" | "admin" | "developer" | "marketer";
   sentAt: Date;
 }
 
@@ -142,7 +142,7 @@ const roleLabels: Record<string, string> = {
   owner: "Owner",
   admin: "Admin",
   developer: "Developer",
-  viewer: "Viewer",
+  marketer: "Marketer",
 };
 
 export default function SettingsPage() {
@@ -883,15 +883,18 @@ export default function SettingsPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="viewer">Viewer - Can view only</SelectItem>
-                  <SelectItem value="developer">Developer - Can edit projects</SelectItem>
-                  <SelectItem value="admin">Admin - Can manage settings</SelectItem>
+                  <SelectItem value="marketer">Marketer - Marketing emails & campaigns</SelectItem>
+                  <SelectItem value="developer">Developer - Transactional emails & API</SelectItem>
+                  <SelectItem value="admin">Admin - Full access</SelectItem>
                 </SelectContent>
               </Select>
-              <p className="text-xs text-muted-foreground">
-                {inviteRole === "viewer" && "Viewers can see all data but cannot make changes."}
-                {inviteRole === "developer" && "Developers can create and edit emails, domains, and campaigns."}
-                {inviteRole === "admin" && "Admins have full access including billing and team management."}
+              <p className="text-xs text-muted-foreground mt-2">
+                {inviteRole === "marketer" &&
+                  "Can manage marketing emails, campaigns, audiences, and view analytics. No access to domains, APIs, billing, or team settings."}
+                {inviteRole === "developer" &&
+                  "Can manage transactional emails, domains, API keys, and integrations. No access to billing or team management."}
+                {inviteRole === "admin" &&
+                  "Full access including billing, domains, API keys, and team management."}
               </p>
             </div>
           </div>
@@ -939,15 +942,15 @@ export default function SettingsPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="viewer">Viewer - Can view only</SelectItem>
-                  <SelectItem value="developer">Developer - Can edit projects</SelectItem>
-                  <SelectItem value="admin">Admin - Can manage settings</SelectItem>
+                  <SelectItem value="marketer">Marketer - Marketing emails & campaigns</SelectItem>
+                  <SelectItem value="developer">Developer - Transactional emails & API</SelectItem>
+                  <SelectItem value="admin">Admin - Full access</SelectItem>
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground">
-                {editRole === "viewer" && "Viewers can see all data but cannot make changes."}
-                {editRole === "developer" && "Developers can create and edit emails, domains, and campaigns."}
-                {editRole === "admin" && "Admins have full access including billing and team management."}
+                {editRole === "marketer" && "Can manage marketing emails, campaigns, audiences, and view analytics. No access to domains, APIs, billing, or team settings."}
+                {editRole === "developer" && "Can manage transactional emails, domains, API keys, and integrations. No access to billing or team management."}
+                {editRole === "admin" && "Full access including billing, domains, API keys, and team management."}
               </p>
             </div>
           </div>
