@@ -106,16 +106,15 @@ export default function TemplatesPage() {
         const newTemplate = await response.json();
         setTemplates((prev) => [newTemplate, ...prev]);
         setIsDialogOpen(false);
-        toast({
+        toast.success({
           title: "Template created",
           description: "Your template has been created successfully.",
         });
       } else if (response.status === 400) {
         const error = await response.json();
-        toast({
+        toast.error({
           title: "Error",
           description: error.detail || "Failed to create template",
-          variant: "destructive",
         });
       }
     } catch (error) {
@@ -144,7 +143,7 @@ export default function TemplatesPage() {
       if (response.ok) {
         const newTemplate = await response.json();
         setTemplates((prev) => [newTemplate, ...prev]);
-        toast({
+        toast.success({
           title: "Template duplicated",
           description: "Your template has been duplicated successfully.",
         });
@@ -171,7 +170,7 @@ export default function TemplatesPage() {
 
       if (response.ok) {
         setTemplates((prev) => prev.filter((t) => t.id !== templateToDelete.id));
-        toast({
+        toast.success({
           title: "Template deleted",
           description: "Your template has been deleted successfully.",
         });
