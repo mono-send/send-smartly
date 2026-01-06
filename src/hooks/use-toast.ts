@@ -30,21 +30,21 @@ type ActionType = typeof actionTypes;
 
 type Action =
   | {
-      type: ActionType["ADD_TOAST"];
-      toast: ToasterToast;
-    }
+    type: ActionType["ADD_TOAST"];
+    toast: ToasterToast;
+  }
   | {
-      type: ActionType["UPDATE_TOAST"];
-      toast: Partial<ToasterToast>;
-    }
+    type: ActionType["UPDATE_TOAST"];
+    toast: Partial<ToasterToast>;
+  }
   | {
-      type: ActionType["DISMISS_TOAST"];
-      toastId?: ToasterToast["id"];
-    }
+    type: ActionType["DISMISS_TOAST"];
+    toastId?: ToasterToast["id"];
+  }
   | {
-      type: ActionType["REMOVE_TOAST"];
-      toastId?: ToasterToast["id"];
-    };
+    type: ActionType["REMOVE_TOAST"];
+    toastId?: ToasterToast["id"];
+  };
 
 interface State {
   toasts: ToasterToast[];
@@ -100,9 +100,9 @@ export const reducer = (state: State, action: Action): State => {
         toasts: state.toasts.map((t) =>
           t.id === toastId || toastId === undefined
             ? {
-                ...t,
-                open: false,
-              }
+              ...t,
+              open: false,
+            }
             : t,
         ),
       };
@@ -134,6 +134,11 @@ function dispatch(action: Action) {
 
 type Toast = Omit<ToasterToast, "id">;
 
+interface ToastResponse {
+  ok: boolean;
+  status: number;
+}
+
 function toast({ ...props }: Toast) {
   const id = genId();
 
@@ -162,6 +167,22 @@ function toast({ ...props }: Toast) {
     update,
   };
 }
+
+// Helper methods
+toast.success = (props: Toast) => toast({ ...props, variant: "success" });
+toast.error = (props: Toast) => toast({ ...props, variant: "destructive" });
+toast.warning = (props: Toast) => toast({ ...props, variant: "warning" });
+toast.info = (props: Toast) => toast({ ...props, variant: "info" });
+
+toast.response = (response: ToastResponse, props: Toast) => {
+  if (response.ok) {
+    return toast.success(props);
+  } else if (response.status >= 500) {
+    return toast.error({ ...props, title: props.title || "Server Error" });
+  } else {
+    return toast.error({ ...props, title: props.title || "Error" });
+  }
+};
 
 function useToast() {
   const [state, setState] = React.useState<State>(memoryState);
