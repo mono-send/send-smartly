@@ -157,6 +157,7 @@ export default function SettingsPage() {
   const [isUpdatingRole, setIsUpdatingRole] = useState(false);
   const [isRemovingMember, setIsRemovingMember] = useState(false);
   const [isResendingInvitation, setIsResendingInvitation] = useState<string | null>(null);
+  const [isCancellingInvitation, setIsCancellingInvitation] = useState(false);
   const [memberToRemove, setMemberToRemove] = useState<TeamMember | null>(null);
   const [memberToEdit, setMemberToEdit] = useState<TeamMember | null>(null);
   const [invitationToCancel, setInvitationToCancel] = useState<PendingInvitation | null>(null);
@@ -320,7 +321,7 @@ export default function SettingsPage() {
 
   const handleRemoveMember = async () => {
     if (!memberToRemove) return;
-    
+
     setIsRemovingMember(true);
     try {
       const response = await api(`/team_members/${memberToRemove.id}`, {
@@ -344,7 +345,7 @@ export default function SettingsPage() {
 
   const handleUpdateRole = async () => {
     if (!memberToEdit || !editRole) return;
-    
+
     setIsUpdatingRole(true);
     try {
       const response = await api(`/team_members/${memberToEdit.id}`, {
@@ -395,18 +396,34 @@ export default function SettingsPage() {
     }
   };
 
-  const handleCancelInvitation = () => {
-    if (invitationToCancel) {
-      setPendingInvitations(prev => prev.filter(inv => inv.id !== invitationToCancel.id));
-      toast.success(`Invitation to ${invitationToCancel.email} cancelled`);
-      setInvitationToCancel(null);
+  const handleCancelInvitation = async () => {
+    if (!invitationToCancel) return;
+
+    setIsCancellingInvitation(true);
+    try {
+      const response = await api(`/team_members/${invitationToCancel.id}`, {
+        method: "DELETE",
+      });
+      if (response.ok) {
+        toast.success(`Invitation to ${invitationToCancel.email} cancelled`);
+        setInvitationToCancel(null);
+        fetchPendingInvitations();
+      } else {
+        const error = await response.json();
+        toast.error(error.message || "Failed to cancel invitation");
+      }
+    } catch (error) {
+      console.error("Error cancelling invitation:", error);
+      toast.error("Failed to cancel invitation");
+    } finally {
+      setIsCancellingInvitation(false);
     }
   };
 
   return (
     <>
       <TopBar title="Settings" subtitle="Manage your account and preferences" />
-      
+
       <div className="p-6">
         <Tabs defaultValue="usage" className="space-y-6">
           <TabsList>
@@ -572,7 +589,7 @@ export default function SettingsPage() {
                                 <DropdownMenuItem onClick={() => openEditDialog(member)}>
                                   Change role
                                 </DropdownMenuItem>
-                                <DropdownMenuItem 
+                                <DropdownMenuItem
                                   className="text-destructive"
                                   onClick={() => setMemberToRemove(member)}
                                 >
@@ -605,56 +622,56 @@ export default function SettingsPage() {
                       <CardDescription>{pendingInvitations.length} invitation{pendingInvitations.length !== 1 ? 's' : ''} waiting to be accepted</CardDescription>
                     </div>
                   </div>
-              </CardHeader>
-              <CardContent>
-                {isLoadingInvitations ? (
-                  <div className="flex justify-center py-8">
-                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                  </div>
-                ) : (
-                  <div className="divide-y divide-border">
-                    {pendingInvitations.map((invitation) => (
-                      <div key={invitation.id} className="flex items-center justify-between py-3">
-                        <div className="flex items-center gap-3">
-                          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted text-xs font-medium text-muted-foreground">
-                            {(invitation.name || invitation.email).charAt(0).toUpperCase()}
+                </CardHeader>
+                <CardContent>
+                  {isLoadingInvitations ? (
+                    <div className="flex justify-center py-8">
+                      <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                    </div>
+                  ) : (
+                    <div className="divide-y divide-border">
+                      {pendingInvitations.map((invitation) => (
+                        <div key={invitation.id} className="flex items-center justify-between py-3">
+                          <div className="flex items-center gap-3">
+                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted text-xs font-medium text-muted-foreground">
+                              {(invitation.name || invitation.email).charAt(0).toUpperCase()}
+                            </div>
+                            <div>
+                              <p className="font-medium">{invitation.name || invitation.email}</p>
+                              <p className="text-sm text-muted-foreground">
+                                Invited {formatTimeAgo(invitation.sentAt)}
+                              </p>
+                            </div>
                           </div>
-                          <div>
-                            <p className="font-medium">{invitation.name || invitation.email}</p>
-                            <p className="text-sm text-muted-foreground">
-                              Invited {formatTimeAgo(invitation.sentAt)}
-                            </p>
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline">{roleLabels[invitation.role]}</Badge>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleResendInvitation(invitation)}
+                              disabled={isResendingInvitation === invitation.id}
+                            >
+                              {isResendingInvitation === invitation.id ? (
+                                <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+                              ) : (
+                                <Send className="mr-1 h-3.5 w-3.5" />
+                              )}
+                              Resend
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-destructive hover:text-destructive"
+                              onClick={() => setInvitationToCancel(invitation)}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <Badge variant="outline">{roleLabels[invitation.role]}</Badge>
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            onClick={() => handleResendInvitation(invitation)}
-                            disabled={isResendingInvitation === invitation.id}
-                          >
-                            {isResendingInvitation === invitation.id ? (
-                              <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
-                            ) : (
-                              <Send className="mr-1 h-3.5 w-3.5" />
-                            )}
-                            Resend
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="h-8 w-8 text-destructive hover:text-destructive"
-                            onClick={() => setInvitationToCancel(invitation)}
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
               </Card>
             )}
 
@@ -675,8 +692,8 @@ export default function SettingsPage() {
                 <div className="flex flex-col gap-3 pt-2">
                   <div className="flex items-center gap-2">
                     <Filter className="h-4 w-4 text-muted-foreground" />
-                    <ToggleGroup 
-                      type="multiple" 
+                    <ToggleGroup
+                      type="multiple"
                       value={activityFilter}
                       onValueChange={setActivityFilter}
                       className="flex-wrap justify-start"
@@ -775,9 +792,9 @@ export default function SettingsPage() {
                 )}
                 {hasMoreActivity && (
                   <div className="mt-4 pt-4 border-t border-border">
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
+                    <Button
+                      variant="outline"
+                      size="sm"
                       className="w-full"
                       onClick={loadMoreActivity}
                     >
@@ -863,7 +880,7 @@ export default function SettingsPage() {
               Send an invitation to collaborate on your MonoSend account. They'll receive an email with instructions to join.
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email address</Label>
@@ -875,7 +892,7 @@ export default function SettingsPage() {
                 onChange={(e) => setInviteEmail(e.target.value)}
               />
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="role">Role</Label>
               <Select value={inviteRole} onValueChange={setInviteRole}>
@@ -920,7 +937,7 @@ export default function SettingsPage() {
               Update the role for {memberToEdit?.name}. This will change their permissions immediately.
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label>Current member</Label>
@@ -934,7 +951,7 @@ export default function SettingsPage() {
                 </div>
               </div>
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="editRole">New role</Label>
               <Select value={editRole} onValueChange={setEditRole}>
@@ -981,11 +998,12 @@ export default function SettingsPage() {
       {/* Cancel Invitation Confirmation Dialog */}
       <ConfirmDeleteDialog
         open={!!invitationToCancel}
-        onOpenChange={(open) => !open && setInvitationToCancel(null)}
+        onOpenChange={(open) => !open && !isCancellingInvitation && setInvitationToCancel(null)}
         title="Cancel invitation"
         description={`Are you sure you want to cancel the invitation to ${invitationToCancel?.email}? They will no longer be able to join your team using this invitation.`}
         confirmLabel="Cancel invitation"
         onConfirm={handleCancelInvitation}
+        isLoading={isCancellingInvitation}
       />
     </>
   );
