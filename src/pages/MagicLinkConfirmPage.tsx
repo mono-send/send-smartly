@@ -22,7 +22,7 @@ const MagicLinkConfirmPage = () => {
       }
 
       try {
-        const response = await fetch("https://api-z6l7.onrender.com/v1.0/signin/confirm", {
+        const response = await fetch("https://internal-api.monosend.io/v1.0/signin/confirm", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
