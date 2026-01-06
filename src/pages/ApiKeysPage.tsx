@@ -345,7 +345,7 @@ export default function ApiKeysPage() {
             <AlertDialogAction
               onClick={handleConfirmRevoke}
               disabled={isRevoking}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 h-9"
             >
               {isRevoking ? (
                 <>
