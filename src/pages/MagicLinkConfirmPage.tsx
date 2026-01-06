@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { Loader2, CheckCircle, XCircle } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { api } from "@/lib/api";
 
 const MagicLinkConfirmPage = () => {
   const [searchParams] = useSearchParams();
@@ -9,8 +10,12 @@ const MagicLinkConfirmPage = () => {
   const { setAuth } = useAuth();
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
   const [errorMessage, setErrorMessage] = useState("");
+  const initialCall = useRef(false);
 
   useEffect(() => {
+    if (initialCall.current) return;
+    initialCall.current = true;
+
     const confirmMagicLink = async () => {
       const token = searchParams.get("token");
       const email = searchParams.get("email");
@@ -22,12 +27,9 @@ const MagicLinkConfirmPage = () => {
       }
 
       try {
-        const response = await fetch("https://internal-api.monosend.io/v1.0/signin/confirm", {
+        const response = await api("/signin/confirm", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ email, token }),
+          body: { email, token },
         });
 
         if (response.ok) {
@@ -42,7 +44,7 @@ const MagicLinkConfirmPage = () => {
         } else {
           const data = await response.json();
           setStatus("error");
-          setErrorMessage(data.message || "Failed to verify magic link.");
+          setErrorMessage(data.detail || data.message || "Failed to verify magic link.");
         }
       } catch (error) {
         setStatus("error");
