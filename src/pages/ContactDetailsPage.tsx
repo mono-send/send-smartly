@@ -8,16 +8,26 @@ import { Copy, ArrowUpRight, Circle, User } from "lucide-react";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
 
+interface ContactSegment {
+  id: string;
+  name: string;
+}
+
+interface ContactCategory {
+  id: string;
+  name: string;
+}
+
 interface Contact {
   id: string;
   email: string;
+  first_name?: string;
+  last_name?: string;
   status: "subscribed" | "unsubscribed" | "bounced" | "complained";
-  category_id: string | null;
-  category_name: string | null;
-  metadata: Record<string, unknown> | null;
+  metadata?: Record<string, string>[];
   created_at: string;
-  segment: string | null;
-  segment_name: string | null;
+  categories: ContactCategory[];
+  segments: ContactSegment[];
 }
 
 interface ActivityItem {
@@ -149,9 +159,32 @@ export default function ContactDetailsPage() {
     return null;
   }
 
-  // Extract properties from metadata
-  const properties = contact.metadata || {};
+  // Extract properties: first_name, last_name, and metadata
+  const getProperties = () => {
+    const props: { key: string; value: string }[] = [];
+    
+    if (contact.first_name) {
+      props.push({ key: "first_name", value: contact.first_name });
+    }
+    if (contact.last_name) {
+      props.push({ key: "last_name", value: contact.last_name });
+    }
+    
+    // Handle metadata array
+    if (contact.metadata && Array.isArray(contact.metadata)) {
+      contact.metadata.forEach((item) => {
+        Object.entries(item).forEach(([key, value]) => {
+          if (value) {
+            props.push({ key, value: String(value) });
+          }
+        });
+      });
+    }
+    
+    return props;
+  };
 
+  const properties = getProperties();
   return (
     <>
       <TopBar title="Contact" />
@@ -210,37 +243,49 @@ export default function ContactDetailsPage() {
           </div>
         </div>
 
-        {/* Segments & Topics */}
+        {/* Segments & Categories */}
         <div className="grid grid-cols-4 gap-8 mb-8 pb-8 border-b">
           <div>
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Segments</p>
-            <p className="text-sm italic text-muted-foreground">
-              {contact.segment_name || "No segments"}
-            </p>
+            {contact.segments && contact.segments.length > 0 ? (
+              <div className="flex flex-wrap gap-1">
+                {contact.segments.map((segment) => (
+                  <span key={segment.id} className="text-sm border-b border-dashed border-foreground">
+                    {segment.name}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm italic text-muted-foreground">No segments</p>
+            )}
           </div>
           <div>
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Topics</p>
-            <p className="text-sm">
-              {contact.category_name ? (
-                <span className="border-b border-dashed border-foreground">{contact.category_name}</span>
-              ) : (
-                <span className="italic text-muted-foreground">No topics</span>
-              )}
-            </p>
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Categories</p>
+            {contact.categories && contact.categories.length > 0 ? (
+              <div className="flex flex-wrap gap-1">
+                {contact.categories.map((category) => (
+                  <span key={category.id} className="text-sm border-b border-dashed border-foreground">
+                    {category.name}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm italic text-muted-foreground">No categories</p>
+            )}
           </div>
         </div>
 
         {/* Properties */}
         <div className="mb-8">
           <h2 className="text-lg font-semibold mb-4">Properties</h2>
-          {Object.keys(properties).length > 0 ? (
+          {properties.length > 0 ? (
             <div className="grid grid-cols-3 gap-8">
-              {Object.entries(properties).map(([key, value]) => (
-                <div key={key}>
+              {properties.map((prop, index) => (
+                <div key={index}>
                   <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">
-                    {key.replace(/_/g, " ")}
+                    {prop.key.replace(/_/g, " ")}
                   </p>
-                  <p className="text-sm">{String(value) || "-"}</p>
+                  <p className="text-sm">{prop.value || "-"}</p>
                 </div>
               ))}
             </div>
