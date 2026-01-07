@@ -226,7 +226,9 @@ export default function AutomationsPage() {
       {/* Main Content */}
       <div className="flex-1 flex">
         {/* Flow Builder */}
-        <div className="flex-1 overflow-auto p-8 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] bg-size-[16px_16px]">
+        <div className="flex-1 overflow-auto p-8 -z-10 inset-0 h-full w-full 
+bg-[radial-gradient(circle,#73737350_1px,transparent_1px)] 
+bg-[size:10px_10px]">
           <div className="max-w-2xl mx-auto space-y-0">
             {/* Entry Block */}
             <Card className="p-4">
