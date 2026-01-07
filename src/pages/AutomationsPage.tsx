@@ -395,16 +395,16 @@ bg-[size:10px_10px]">
             ))}
 
             {/* Add Email Block */}
-            <Card className="p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-                  <Mail className="h-4 w-4" />
-                  ADD EMAIL
-                </div>
-                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleAddEmail}>
-                  <Plus className="h-4 w-4" />
-                </Button>
-              </div>
+            <Card className="p-4 flex justify-center">
+              <Button
+                variant="outline"
+                className="w-full max-w-xs justify-center gap-2 text-sm font-medium"
+                onClick={handleAddEmail}
+              >
+                <Mail className="h-4 w-4" />
+                ADD EMAIL
+                <Plus className="h-4 w-4" />
+              </Button>
             </Card>
 
             {/* Email Configuration Dialog */}
