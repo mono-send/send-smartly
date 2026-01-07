@@ -341,7 +341,7 @@ export default function ApiKeysPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isRevoking}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={isRevoking} className="h-9">Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleConfirmRevoke}
               disabled={isRevoking}
