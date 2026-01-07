@@ -1095,19 +1095,6 @@ export default function WebhooksPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="status">Status</Label>
-              <Select value={status} onValueChange={setStatus} disabled={isDialogLoading}>
-                <SelectTrigger id="status">
-                  <SelectValue placeholder="Select status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="disabled">Disabled</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
               <Label>Events types</Label>
               <Popover open={isEventsOpen} onOpenChange={setIsEventsOpen}>
                 <PopoverTrigger asChild>
