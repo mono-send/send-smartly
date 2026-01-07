@@ -67,6 +67,22 @@ interface ApiWebhookItem {
   retry_interval_seconds?: number;
   secret?: string;
   allowed_ips?: string[];
+  timeout_seconds?: number;
+}
+
+interface ApiWebhookDetail {
+  id: string;
+  endpoint_url: string;
+  status?: string;
+  event_types?: string[];
+  retry?: {
+    max_retries?: number;
+    interval_seconds?: number;
+  };
+  ip_allowlist?: string[];
+  timeout_seconds?: number;
+  signing_secret?: string;
+  signing_secret_last4?: string;
 }
 
 interface SavedWebhook {
@@ -80,6 +96,7 @@ interface SavedWebhook {
   retryIntervalSeconds: number;
   secret: string;
   allowedIps: string[];
+  timeoutSeconds: number;
 }
 
 interface DeliveryLogEntry {
@@ -163,15 +180,18 @@ export default function WebhooksPage() {
   const [showDeliveryLog, setShowDeliveryLog] = useState(false);
   const [maxRetries, setMaxRetries] = useState(3);
   const [retryInterval, setRetryInterval] = useState(5);
+  const [timeoutSeconds, setTimeoutSeconds] = useState(30);
   const [webhookSecret, setWebhookSecret] = useState("");
   const [showSecret, setShowSecret] = useState(false);
   const [generatedSignature, setGeneratedSignature] = useState("");
   const [allowedIps, setAllowedIps] = useState<string[]>([]);
   const [newIpInput, setNewIpInput] = useState("");
+  const [signingSecretLast4, setSigningSecretLast4] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isFetchingNext, setIsFetchingNext] = useState(false);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
+  const [isDialogLoading, setIsDialogLoading] = useState(false);
 
   const generateSecret = () => {
     const array = new Uint8Array(32);
@@ -232,6 +252,7 @@ export default function WebhooksPage() {
     retryIntervalSeconds: item.retry_interval_seconds ?? 5,
     secret: item.secret ?? "",
     allowedIps: item.allowed_ips ?? [],
+    timeoutSeconds: item.timeout_seconds ?? 30,
   });
 
   const fetchWebhooks = useCallback(async (cursor?: string) => {
@@ -261,27 +282,69 @@ export default function WebhooksPage() {
     setSelectedEvents([]);
     setMaxRetries(3);
     setRetryInterval(5);
+    setTimeoutSeconds(30);
     setWebhookSecret("auto");
     setShowSecret(false);
     setAllowedIps([]);
     setNewIpInput("");
+    setSigningSecretLast4(null);
+    setIsDialogLoading(false);
     setIsDialogOpen(true);
   };
 
-  const openEditDialog = (webhook: SavedWebhook) => {
+  const openEditDialog = async (webhook: SavedWebhook) => {
     setWebhookToEdit(webhook);
-    setEndpointUrl(webhook.endpoint_url);
-    setSelectedEvents([...webhook.event_types]);
-    setMaxRetries(webhook.maxRetries);
-    setRetryInterval(webhook.retryIntervalSeconds);
-    setWebhookSecret(webhook.secret);
+    setEndpointUrl("https://");
+    setSelectedEvents([]);
+    setMaxRetries(3);
+    setRetryInterval(5);
+    setTimeoutSeconds(30);
+    setWebhookSecret("");
     setShowSecret(false);
-    setAllowedIps([...webhook.allowedIps]);
+    setAllowedIps([]);
     setNewIpInput("");
+    setSigningSecretLast4(null);
     setIsDialogOpen(true);
+    setIsDialogLoading(true);
+
+    try {
+      const response = await fetch(`/v1.0/webhooks/${webhook.id}`, {
+        method: "GET",
+      });
+      if (!response.ok) {
+        throw new Error("Failed to fetch webhook details");
+      }
+      const data = await response.json();
+      const item: ApiWebhookDetail = data?.item ?? data;
+      const retry = item.retry ?? {};
+
+      setEndpointUrl(item.endpoint_url ?? webhook.endpoint_url);
+      setSelectedEvents(item.event_types ?? webhook.event_types);
+      setMaxRetries(retry.max_retries ?? webhook.maxRetries ?? 3);
+      setRetryInterval(retry.interval_seconds ?? webhook.retryIntervalSeconds ?? 5);
+      setTimeoutSeconds(item.timeout_seconds ?? webhook.timeoutSeconds ?? 30);
+      setWebhookSecret(item.signing_secret ?? webhook.secret ?? "");
+      setAllowedIps(item.ip_allowlist ?? webhook.allowedIps ?? []);
+      setSigningSecretLast4(item.signing_secret_last4 ?? null);
+    } catch (error) {
+      toast.error("Failed to load webhook details");
+      setEndpointUrl(webhook.endpoint_url);
+      setSelectedEvents([...webhook.event_types]);
+      setMaxRetries(webhook.maxRetries);
+      setRetryInterval(webhook.retryIntervalSeconds);
+      setTimeoutSeconds(webhook.timeoutSeconds);
+      setWebhookSecret(webhook.secret);
+      setAllowedIps([...webhook.allowedIps]);
+      setSigningSecretLast4(null);
+    } finally {
+      setIsDialogLoading(false);
+    }
   };
 
   const handleSaveWebhook = async () => {
+    if (isDialogLoading) {
+      return;
+    }
     if (!endpointUrl || endpointUrl === "https://") {
       toast.error("Please enter a valid endpoint URL");
       return;
@@ -293,9 +356,19 @@ export default function WebhooksPage() {
 
     if (webhookToEdit) {
       // Update existing webhook
+      const resolvedSecret = webhookSecret.trim() || webhookToEdit.secret;
       setWebhooks(prev => prev.map(w => 
         w.id === webhookToEdit.id 
-          ? { ...w, endpoint_url: endpointUrl, event_types: selectedEvents, maxRetries, retryIntervalSeconds: retryInterval, secret: webhookSecret, allowedIps }
+          ? { 
+              ...w, 
+              endpoint_url: endpointUrl, 
+              event_types: selectedEvents, 
+              maxRetries, 
+              retryIntervalSeconds: retryInterval, 
+              secret: resolvedSecret, 
+              allowedIps,
+              timeoutSeconds,
+            }
           : w
       ));
       toast.success("Webhook updated successfully");
@@ -309,6 +382,7 @@ export default function WebhooksPage() {
           interval_seconds: retryInterval,
         },
         ip_allowlist: allowedIps,
+        timeout_seconds: timeoutSeconds,
       };
 
       try {
@@ -586,6 +660,7 @@ export default function WebhooksPage() {
   };
 
   const toggleEvent = (eventId: string) => {
+    if (isDialogLoading) return;
     setSelectedEvents(prev =>
       prev.includes(eventId)
         ? prev.filter(e => e !== eventId)
@@ -594,6 +669,7 @@ export default function WebhooksPage() {
   };
 
   const toggleGroup = (group: EventGroup) => {
+    if (isDialogLoading) return;
     const groupEventIds = group.events.map(e => e.id);
     const allSelected = groupEventIds.every(id => selectedEvents.includes(id));
     
@@ -605,6 +681,7 @@ export default function WebhooksPage() {
   };
 
   const toggleAllEvents = () => {
+    if (isDialogLoading) return;
     if (selectedEvents.length === allEventIds.length) {
       setSelectedEvents([]);
     } else {
@@ -627,12 +704,14 @@ export default function WebhooksPage() {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (isDialogOpen && e.metaKey && e.key === "Enter") {
         e.preventDefault();
-        handleSaveWebhook();
+        if (!isDialogLoading) {
+          handleSaveWebhook();
+        }
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isDialogOpen, endpointUrl, selectedEvents, webhookToEdit]);
+  }, [isDialogOpen, endpointUrl, selectedEvents, webhookToEdit, isDialogLoading]);
 
   useEffect(() => {
     let isMounted = true;
@@ -951,13 +1030,27 @@ export default function WebhooksPage() {
         )}
       </div>
 
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+      <Dialog 
+        open={isDialogOpen} 
+        onOpenChange={(open) => {
+          setIsDialogOpen(open);
+          if (!open) {
+            setIsDialogLoading(false);
+          }
+        }}
+      >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>{webhookToEdit ? "Edit Webhook" : "Add Webhook"}</DialogTitle>
           </DialogHeader>
           
           <div className="space-y-4 pt-4">
+            {isDialogLoading && (
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                Loading webhook details...
+              </div>
+            )}
             <div className="space-y-2">
               <Label htmlFor="endpoint">Endpoint URL</Label>
               <Input
@@ -965,6 +1058,7 @@ export default function WebhooksPage() {
                 value={endpointUrl}
                 onChange={(e) => setEndpointUrl(e.target.value)}
                 placeholder="https://"
+                disabled={isDialogLoading}
               />
             </div>
 
@@ -977,6 +1071,7 @@ export default function WebhooksPage() {
                     role="combobox"
                     aria-expanded={isEventsOpen}
                     className="w-full justify-between font-normal"
+                    disabled={isDialogLoading}
                   >
                     {getDisplayText()}
                     <svg
@@ -1002,7 +1097,8 @@ export default function WebhooksPage() {
                     <div
                       className={cn(
                         "flex items-center justify-between px-3 py-2 cursor-pointer hover:bg-muted",
-                        selectedEvents.length === allEventIds.length && "bg-muted"
+                        selectedEvents.length === allEventIds.length && "bg-muted",
+                        isDialogLoading && "pointer-events-none opacity-60"
                       )}
                       onClick={toggleAllEvents}
                     >
@@ -1019,7 +1115,8 @@ export default function WebhooksPage() {
                         <div
                           className={cn(
                             "flex items-center justify-between px-3 py-2 cursor-pointer hover:bg-muted border-t border-border",
-                            isGroupSelected(group) && "bg-muted"
+                            isGroupSelected(group) && "bg-muted",
+                            isDialogLoading && "pointer-events-none opacity-60"
                           )}
                           onClick={() => toggleGroup(group)}
                         >
@@ -1037,7 +1134,8 @@ export default function WebhooksPage() {
                             key={event.id}
                             className={cn(
                               "flex items-center justify-between px-3 py-2 cursor-pointer hover:bg-muted pl-4",
-                              selectedEvents.includes(event.id) && "bg-muted"
+                              selectedEvents.includes(event.id) && "bg-muted",
+                              isDialogLoading && "pointer-events-none opacity-60"
                             )}
                             onClick={() => toggleEvent(event.id)}
                           >
@@ -1087,7 +1185,8 @@ export default function WebhooksPage() {
                     value={webhookSecret}
                     onChange={(e) => setWebhookSecret(e.target.value)}
                     className="pr-20 font-mono text-xs"
-                    placeholder="whsec_..."
+                    placeholder={signingSecretLast4 ? `••••${signingSecretLast4}` : "whsec_..."}
+                    disabled={isDialogLoading}
                   />
                   <div className="absolute right-1 top-1/2 -translate-y-1/2 flex gap-1">
                     <Button
@@ -1096,6 +1195,7 @@ export default function WebhooksPage() {
                       size="icon"
                       className="h-7 w-7"
                       onClick={() => setShowSecret(!showSecret)}
+                      disabled={isDialogLoading}
                     >
                       {showSecret ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
                     </Button>
@@ -1105,6 +1205,7 @@ export default function WebhooksPage() {
                       size="icon"
                       className="h-7 w-7"
                       onClick={() => copyToClipboard(webhookSecret, "Secret")}
+                      disabled={isDialogLoading}
                     >
                       <Copy className="h-3.5 w-3.5" />
                     </Button>
@@ -1115,6 +1216,7 @@ export default function WebhooksPage() {
                   variant="outline"
                   size="sm"
                   onClick={() => setWebhookSecret(generateSecret())}
+                  disabled={isDialogLoading}
                 >
                   Generate
                 </Button>
@@ -1130,7 +1232,7 @@ export default function WebhooksPage() {
                 <RefreshCw className="h-3.5 w-3.5" />
                 Retry Configuration
               </Label>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-3 gap-3">
                 <div className="space-y-1.5">
                   <Label htmlFor="maxRetries" className="text-xs">Max Retries</Label>
                   <Input
@@ -1141,6 +1243,7 @@ export default function WebhooksPage() {
                     value={maxRetries}
                     onChange={(e) => setMaxRetries(Math.max(0, Math.min(10, parseInt(e.target.value) || 0)))}
                     className="h-9"
+                    disabled={isDialogLoading}
                   />
                 </div>
                 <div className="space-y-1.5">
@@ -1153,6 +1256,20 @@ export default function WebhooksPage() {
                     value={retryInterval}
                     onChange={(e) => setRetryInterval(Math.max(1, Math.min(60, parseInt(e.target.value) || 1)))}
                     className="h-9"
+                    disabled={isDialogLoading}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="timeoutSeconds" className="text-xs">Timeout (seconds)</Label>
+                  <Input
+                    id="timeoutSeconds"
+                    type="number"
+                    min={1}
+                    max={120}
+                    value={timeoutSeconds}
+                    onChange={(e) => setTimeoutSeconds(Math.max(1, Math.min(120, parseInt(e.target.value) || 1)))}
+                    className="h-9"
+                    disabled={isDialogLoading}
                   />
                 </div>
               </div>
@@ -1170,6 +1287,7 @@ export default function WebhooksPage() {
                   onChange={(e) => setNewIpInput(e.target.value)}
                   placeholder="192.168.1.1 or 10.0.0.0/24"
                   className="flex-1"
+                  disabled={isDialogLoading}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
                       e.preventDefault();
@@ -1182,6 +1300,7 @@ export default function WebhooksPage() {
                   variant="outline"
                   size="icon"
                   onClick={addIpAddress}
+                  disabled={isDialogLoading}
                 >
                   <Plus className="h-4 w-4" />
                 </Button>
@@ -1197,6 +1316,7 @@ export default function WebhooksPage() {
                         size="icon"
                         className="h-4 w-4 hover:bg-destructive/20"
                         onClick={() => removeIpAddress(ip)}
+                        disabled={isDialogLoading}
                       >
                         <X className="h-3 w-3" />
                       </Button>
@@ -1212,10 +1332,10 @@ export default function WebhooksPage() {
             </div>
 
             <div className="flex gap-2 pt-2">
-              <Button onClick={handleSaveWebhook} className="gap-2">
+              <Button onClick={handleSaveWebhook} className="gap-2" disabled={isDialogLoading}>
                 {webhookToEdit ? "Save" : "Add"}
               </Button>
-              <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="gap-2">
+              <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="gap-2" disabled={isDialogLoading}>
                 Cancel
               </Button>
             </div>
