@@ -198,7 +198,7 @@ export default function AudiencePage() {
         .map(e => e.trim())
         .filter(e => e);
 
-      const body: { emails: string[]; segment_id?: string } = { emails: emailList };
+      const body: { emails: string[]; segment_ids?: string[] } = { emails: emailList };
       if (selectedSegmentId) {
         body.segment_ids = [selectedSegmentId];
       }

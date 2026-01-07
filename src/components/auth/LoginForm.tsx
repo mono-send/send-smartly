@@ -193,9 +193,12 @@ export const LoginForm = () => {
                 const reason =
                     notification.getNotDisplayedReason?.() ||
                     notification.getSkippedReason?.() ||
-                    notification.getDismissedReason?.() ||
-                    "Google authentication was cancelled. Please try again.";
-                toast.error(reason);
+                    notification.getDismissedReason?.();
+                
+                // Don't show toast for credential_returned as it's not an error
+                if (reason && reason !== "credential_returned") {
+                    toast.error(reason);
+                }
             }
         });
     };
