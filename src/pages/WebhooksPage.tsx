@@ -1377,10 +1377,10 @@ export default function WebhooksPage() {
             </div>
 
             <div className="flex gap-2 pt-2">
-              <Button onClick={handleSaveWebhook} className="gap-2" disabled={isDialogLoading}>
+              <Button onClick={handleSaveWebhook} className="gap-2 h-9" disabled={isDialogLoading}>
                 {webhookToEdit ? "Save" : "Add"}
               </Button>
-              <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="gap-2" disabled={isDialogLoading}>
+              <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="gap-2 h-9" disabled={isDialogLoading}>
                 Cancel
               </Button>
             </div>
@@ -1454,7 +1454,7 @@ export default function WebhooksPage() {
             )}
 
             <div className="flex gap-2 pt-2">
-              <Button onClick={handleTestWebhook} disabled={isTestingWebhook} className="gap-2">
+              <Button onClick={handleTestWebhook} disabled={isTestingWebhook} className="gap-2 h-9">
                 {isTestingWebhook ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -1467,7 +1467,7 @@ export default function WebhooksPage() {
                   </>
                 )}
               </Button>
-              <Button variant="outline" onClick={() => setWebhookToTest(null)}>
+              <Button className="h-9" variant="outline" onClick={() => setWebhookToTest(null)}>
                 Close
               </Button>
             </div>
