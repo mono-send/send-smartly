@@ -209,6 +209,7 @@ export default function WebhooksPage() {
   const [timeoutSeconds, setTimeoutSeconds] = useState(30);
   const [status, setStatus] = useState("active");
   const [webhookSecret, setWebhookSecret] = useState("");
+  const [isDeleteLoading, setIsDeleteLoading] = useState(false);
   const [showSecret, setShowSecret] = useState(false);
   const [generatedSignature, setGeneratedSignature] = useState("");
   const [allowedIps, setAllowedIps] = useState<string[]>([]);
@@ -481,11 +482,38 @@ export default function WebhooksPage() {
     setStatus("active");
   };
 
-  const handleDeleteWebhook = () => {
-    if (webhookToDelete) {
+  const handleDeleteWebhook = async () => {
+    if (!webhookToDelete || isDeleteLoading) return;
+    setIsDeleteLoading(true);
+    try {
+      const response = await api(`/webhooks/${webhookToDelete.id}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        let errorMessage = "Failed to delete webhook";
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData?.message ?? errorData?.error ?? errorMessage;
+        } catch {
+          const errorText = await response.text();
+          if (errorText) {
+            errorMessage = errorText;
+          }
+        }
+        throw new Error(errorMessage);
+      }
+
       setWebhooks(prev => prev.filter(w => w.id !== webhookToDelete.id));
       toast.success("Webhook deleted");
       setWebhookToDelete(null);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to delete webhook";
+      if (message !== "Unauthorized") {
+        toast.error(message);
+      }
+    } finally {
+      setIsDeleteLoading(false);
     }
   };
 
@@ -1381,6 +1409,8 @@ export default function WebhooksPage() {
         onConfirm={handleDeleteWebhook}
         title="Delete Webhook"
         description={`Are you sure you want to delete the webhook for "${webhookToDelete?.endpoint_url}"? This action cannot be undone.`}
+        confirmLabel={isDeleteLoading ? "Deleting..." : "Delete"}
+        isLoading={isDeleteLoading}
       />
 
       <Dialog open={!!webhookToTest} onOpenChange={(open) => !open && setWebhookToTest(null)}>
