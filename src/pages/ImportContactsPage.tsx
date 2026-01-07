@@ -18,7 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ChevronLeft, Upload, Check, Users } from "lucide-react";
+import { ChevronLeft, Upload, Check, Users, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Label } from "@/components/ui/label";
@@ -46,9 +46,6 @@ const destinationColumns = [
   { value: "email", label: "email" },
   { value: "first_name", label: "first_name" },
   { value: "last_name", label: "last_name" },
-  // { value: "phone", label: "phone" },
-  // { value: "company", label: "company" },
-  // { value: "skip", label: "Don't import" },
 ];
 
 export default function ImportContactsPage() {
@@ -61,6 +58,8 @@ export default function ImportContactsPage() {
   const [selectedSegment, setSelectedSegment] = useState<string>("");
   const [segments, setSegments] = useState<Segment[]>([]);
   const [isImporting, setIsImporting] = useState(false);
+  const [existingEmails, setExistingEmails] = useState<Set<string>>(new Set());
+  const [isCheckingExistence, setIsCheckingExistence] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -181,7 +180,7 @@ export default function ImportContactsPage() {
     ));
   };
 
-  const handleContinueToReview = () => {
+  const handleContinueToReview = async () => {
     const hasEmailMapping = columnMappings.some(
       m => m.destinationColumn === "email" && m.include
     );
@@ -190,6 +189,33 @@ export default function ImportContactsPage() {
       toast.error("Please map at least one column to 'email'");
       return;
     }
+
+    // Check email existence
+    setIsCheckingExistence(true);
+    try {
+      const reviewData = getReviewData();
+      const emails = reviewData.map(c => c.email).filter(Boolean);
+      
+      if (emails.length > 0) {
+        const response = await api("/contacts/existence", {
+          method: "POST",
+          body: { emails },
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          const existing = new Set<string>(
+            data.filter((item: { email: string; exists: boolean }) => item.exists)
+              .map((item: { email: string }) => item.email.toLowerCase())
+          );
+          setExistingEmails(existing);
+        }
+      }
+    } catch (error) {
+      console.error("Failed to check email existence:", error);
+    } finally {
+      setIsCheckingExistence(false);
+    }
     
     setCurrentStep("review");
   };
@@ -197,8 +223,18 @@ export default function ImportContactsPage() {
   const handleImport = async () => {
     const reviewData = getReviewData();
     
+    // Filter out existing emails
+    const newContacts = reviewData.filter(
+      contact => !existingEmails.has(contact.email?.toLowerCase())
+    );
+    
+    if (newContacts.length === 0) {
+      toast.error("All contacts already exist");
+      return;
+    }
+    
     // Build rows for the API
-    const rows = reviewData.map(contact => ({
+    const rows = newContacts.map(contact => ({
       email: contact.email,
       first_name: contact.first_name || undefined,
       last_name: contact.last_name || undefined,
@@ -231,14 +267,13 @@ export default function ImportContactsPage() {
         return;
       }
 
-      const contactCount = parsedData.length;
       const segmentLabel = selectedSegment && selectedSegment !== "none" 
         ? segments.find(s => s.id === selectedSegment)?.name 
         : null;
       
       const message = segmentLabel
-        ? `Successfully imported ${contactCount} contacts to ${segmentLabel}`
-        : `Successfully imported ${contactCount} contacts`;
+        ? `Successfully imported ${newContacts.length} contacts to ${segmentLabel}`
+        : `Successfully imported ${newContacts.length} contacts`;
       
       toast.success(message);
       navigate("/audience");
@@ -474,7 +509,14 @@ export default function ImportContactsPage() {
               <CardContent className="p-0">
                 <div className="p-4 border-b border-border flex items-center justify-between">
                   <p className="text-sm text-muted-foreground">
-                    <span className="font-medium text-foreground">{parsedData.length}</span> contacts will be imported
+                    <span className="font-medium text-foreground">
+                      {getReviewData().filter(c => !existingEmails.has(c.email?.toLowerCase())).length}
+                    </span> contacts will be imported
+                    {existingEmails.size > 0 && (
+                      <span className="text-destructive ml-2">
+                        (<span className="font-medium">{existingEmails.size}</span> will be skipped)
+                      </span>
+                    )}
                     {selectedSegment && selectedSegment !== "none" && (
                       <span> to <span className="font-medium text-foreground">{segments.find(s => s.id === selectedSegment)?.name}</span></span>
                     )}
@@ -490,22 +532,40 @@ export default function ImportContactsPage() {
                             {mapping.destinationColumn}
                           </TableHead>
                         ))}
+                        <TableHead className="w-[100px]"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {getReviewData()
                     .slice(0, 10)
-                    .map((contact, index) => (
-                      <TableRow key={index}>
-                        {columnMappings
-                          .filter((m) => m.include && m.destinationColumn !== "skip")
-                          .map((mapping) => (
-                            <TableCell key={mapping.destinationColumn}>
-                              {contact[mapping.destinationColumn] || "—"}
-                            </TableCell>
-                          ))}
-                      </TableRow>
-                    ))}
+                    .map((contact, index) => {
+                      const isExisting = existingEmails.has(contact.email?.toLowerCase());
+                      return (
+                        <TableRow 
+                          key={index} 
+                          className={cn(isExisting && "bg-destructive/5")}
+                        >
+                          {columnMappings
+                            .filter((m) => m.include && m.destinationColumn !== "skip")
+                            .map((mapping) => (
+                              <TableCell 
+                                key={mapping.destinationColumn}
+                                className={cn(isExisting && "text-muted-foreground")}
+                              >
+                                {contact[mapping.destinationColumn] || "—"}
+                              </TableCell>
+                            ))}
+                          <TableCell>
+                            {isExisting && (
+                              <div className="flex items-center gap-1 text-destructive text-xs">
+                                <AlertCircle className="h-3.5 w-3.5" />
+                                <span>Exists</span>
+                              </div>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
                 </TableBody>
               </Table>
               {parsedData.length > 10 && (
@@ -547,9 +607,9 @@ export default function ImportContactsPage() {
               handleImport();
             }
           }}
-          disabled={(currentStep === "upload" && !file) || isImporting}
+          disabled={(currentStep === "upload" && !file) || isImporting || isCheckingExistence}
         >
-          {isImporting ? "Importing..." : currentStep === "review" ? "Import contacts" : "Continue"}
+          {isImporting ? "Importing..." : isCheckingExistence ? "Checking..." : currentStep === "review" ? "Import contacts" : "Continue"}
         </Button>
       </footer>
     </div>
