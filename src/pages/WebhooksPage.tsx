@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { TopBar } from "@/components/layout/TopBar";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Webhook, Check, Info, MoreHorizontal, Trash2, ExternalLink, Pencil, Play, Loader2, Clock, CheckCircle2, XCircle, History, RefreshCw, Key, Copy, Eye, EyeOff, RotateCcw, Shield, Plus, X, BarChart3 } from "lucide-react";
@@ -48,10 +48,33 @@ interface EventGroup {
   events: WebhookEvent[];
 }
 
+interface WebhookStats {
+  total: number;
+  success: number;
+  failed: number;
+  pending?: number;
+  success_rate?: number;
+}
+
+interface ApiWebhookItem {
+  id: string;
+  endpoint_url: string;
+  status: string;
+  event_types: string[];
+  stats_7d?: WebhookStats | null;
+  created_at?: string;
+  max_retries?: number;
+  retry_interval_seconds?: number;
+  secret?: string;
+  allowed_ips?: string[];
+}
+
 interface SavedWebhook {
   id: string;
-  endpointUrl: string;
-  events: string[];
+  endpoint_url: string;
+  status: string;
+  event_types: string[];
+  stats_7d?: WebhookStats | null;
   createdAt: Date;
   maxRetries: number;
   retryIntervalSeconds: number;
@@ -145,6 +168,10 @@ export default function WebhooksPage() {
   const [generatedSignature, setGeneratedSignature] = useState("");
   const [allowedIps, setAllowedIps] = useState<string[]>([]);
   const [newIpInput, setNewIpInput] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
+  const [isFetchingNext, setIsFetchingNext] = useState(false);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
   const generateSecret = () => {
     const array = new Uint8Array(32);
@@ -182,16 +209,51 @@ export default function WebhooksPage() {
     setAllowedIps(prev => prev.filter(i => i !== ip));
   };
 
-  const getWebhookStats = (webhookId: string) => {
-    const webhookEntries = deliveryLog.filter(entry => entry.webhookId === webhookId);
-    const total = webhookEntries.length;
-    const success = webhookEntries.filter(e => e.status === "success").length;
-    const failed = webhookEntries.filter(e => e.status === "failed").length;
-    const pending = webhookEntries.filter(e => e.status === "pending" || e.status === "retrying").length;
-    const successRate = total > 0 ? Math.round((success / total) * 100) : 0;
-    
+  const getWebhookStats = (stats?: WebhookStats | null) => {
+    if (!stats) return null;
+    const total = stats.total ?? 0;
+    if (total === 0) return null;
+    const success = stats.success ?? 0;
+    const failed = stats.failed ?? 0;
+    const pending = stats.pending ?? 0;
+    const successRate = stats.success_rate ?? (total > 0 ? Math.round((success / total) * 100) : 0);
+
     return { total, success, failed, pending, successRate };
   };
+
+  const mapWebhookItem = (item: ApiWebhookItem): SavedWebhook => ({
+    id: item.id,
+    endpoint_url: item.endpoint_url,
+    status: item.status,
+    event_types: item.event_types ?? [],
+    stats_7d: item.stats_7d ?? null,
+    createdAt: item.created_at ? new Date(item.created_at) : new Date(),
+    maxRetries: item.max_retries ?? 3,
+    retryIntervalSeconds: item.retry_interval_seconds ?? 5,
+    secret: item.secret ?? "",
+    allowedIps: item.allowed_ips ?? [],
+  });
+
+  const fetchWebhooks = useCallback(async (cursor?: string) => {
+    try {
+      const url = new URL("/v1.0/webhooks", window.location.origin);
+      if (cursor) {
+        url.searchParams.set("cursor", cursor);
+      }
+      const response = await fetch(url.toString(), {
+        method: "GET",
+      });
+      if (!response.ok) {
+        throw new Error("Failed to fetch webhooks");
+      }
+      const data = await response.json();
+      const mappedItems = (data.items ?? []).map(mapWebhookItem);
+      setWebhooks(prev => (cursor ? [...prev, ...mappedItems] : mappedItems));
+      setNextCursor(data.next_cursor ?? null);
+    } catch (error) {
+      toast.error("Failed to load webhooks");
+    }
+  }, []);
 
   const openAddDialog = () => {
     setWebhookToEdit(null);
@@ -208,8 +270,8 @@ export default function WebhooksPage() {
 
   const openEditDialog = (webhook: SavedWebhook) => {
     setWebhookToEdit(webhook);
-    setEndpointUrl(webhook.endpointUrl);
-    setSelectedEvents([...webhook.events]);
+    setEndpointUrl(webhook.endpoint_url);
+    setSelectedEvents([...webhook.event_types]);
     setMaxRetries(webhook.maxRetries);
     setRetryInterval(webhook.retryIntervalSeconds);
     setWebhookSecret(webhook.secret);
@@ -233,7 +295,7 @@ export default function WebhooksPage() {
       // Update existing webhook
       setWebhooks(prev => prev.map(w => 
         w.id === webhookToEdit.id 
-          ? { ...w, endpointUrl, events: selectedEvents, maxRetries, retryIntervalSeconds: retryInterval, secret: webhookSecret, allowedIps }
+          ? { ...w, endpoint_url: endpointUrl, event_types: selectedEvents, maxRetries, retryIntervalSeconds: retryInterval, secret: webhookSecret, allowedIps }
           : w
       ));
       toast.success("Webhook updated successfully");
@@ -241,8 +303,10 @@ export default function WebhooksPage() {
       // Add new webhook
       const newWebhook: SavedWebhook = {
         id: crypto.randomUUID(),
-        endpointUrl,
-        events: selectedEvents,
+        endpoint_url: endpointUrl,
+        status: "active",
+        event_types: selectedEvents,
+        stats_7d: null,
         createdAt: new Date(),
         maxRetries,
         retryIntervalSeconds: retryInterval,
@@ -268,7 +332,7 @@ export default function WebhooksPage() {
   };
 
   const getTestPayload = (webhook: SavedWebhook) => {
-    const eventType = webhook.events[0] || "email.delivered";
+    const eventType = webhook.event_types[0] || "email.delivered";
     return {
       type: eventType,
       created_at: new Date().toISOString(),
@@ -308,10 +372,10 @@ export default function WebhooksPage() {
     webhook: SavedWebhook,
     payload: object,
     logEntryId: string,
-    attempt: number
+      attempt: number
   ): Promise<boolean> => {
     try {
-      await fetch(webhook.endpointUrl, {
+      await fetch(webhook.endpoint_url, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -336,7 +400,7 @@ export default function WebhooksPage() {
     const logEntry: DeliveryLogEntry = {
       id: logEntryId,
       webhookId: webhookToTest.id,
-      endpointUrl: webhookToTest.endpointUrl,
+      endpointUrl: webhookToTest.endpoint_url,
       eventType: payload.type,
       status: "pending",
       statusMessage: "Sending...",
@@ -540,6 +604,43 @@ export default function WebhooksPage() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isDialogOpen, endpointUrl, selectedEvents, webhookToEdit]);
 
+  useEffect(() => {
+    let isMounted = true;
+    const loadWebhooks = async () => {
+      setIsLoading(true);
+      await fetchWebhooks();
+      if (isMounted) {
+        setIsLoading(false);
+      }
+    };
+    loadWebhooks();
+    return () => {
+      isMounted = false;
+    };
+  }, [fetchWebhooks]);
+
+  useEffect(() => {
+    if (!loadMoreRef.current || !nextCursor || isLoading) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting && !isFetchingNext) {
+          setIsFetchingNext(true);
+          fetchWebhooks(nextCursor).finally(() => {
+            setIsFetchingNext(false);
+          });
+        }
+      },
+      { rootMargin: "200px" }
+    );
+
+    observer.observe(loadMoreRef.current);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [fetchWebhooks, isFetchingNext, isLoading, nextCursor]);
+
   return (
     <>
       <TopBar 
@@ -552,7 +653,35 @@ export default function WebhooksPage() {
       />
       
       <div className="p-6">
-        {webhooks.length === 0 ? (
+        {isLoading ? (
+          <div className="space-y-4">
+            {[...Array(3)].map((_, index) => (
+              <Card key={`skeleton-${index}`}>
+                <CardContent className="p-4 animate-pulse">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1 min-w-0 space-y-3">
+                      <div className="flex items-center gap-2">
+                        <div className="h-4 w-4 rounded-full bg-muted" />
+                        <div className="h-4 w-56 bg-muted rounded" />
+                      </div>
+                      <div className="flex flex-wrap gap-1.5">
+                        <div className="h-5 w-20 rounded-full bg-muted" />
+                        <div className="h-5 w-16 rounded-full bg-muted" />
+                        <div className="h-5 w-24 rounded-full bg-muted" />
+                      </div>
+                      <div className="flex items-center gap-4 pt-2 border-t border-border">
+                        <div className="h-4 w-24 bg-muted rounded" />
+                        <div className="h-3 flex-1 max-w-[120px] bg-muted rounded" />
+                        <div className="h-4 w-16 bg-muted rounded" />
+                      </div>
+                    </div>
+                    <div className="h-8 w-8 rounded bg-muted" />
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : webhooks.length === 0 ? (
           <EmptyState
             icon={Webhook}
             title="No webhooks yet"
@@ -572,37 +701,37 @@ export default function WebhooksPage() {
                       <div className="flex items-center gap-2">
                         <Webhook className="h-4 w-4 text-muted-foreground shrink-0" />
                         <a 
-                          href={webhook.endpointUrl}
+                          href={webhook.endpoint_url}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-sm font-medium text-foreground hover:underline truncate flex items-center gap-1"
                         >
-                          {webhook.endpointUrl}
+                          {webhook.endpoint_url}
                           <ExternalLink className="h-3 w-3" />
                         </a>
                       </div>
                       <div className="flex flex-wrap gap-1.5">
-                        {webhook.events.length === allEventIds.length ? (
+                        {webhook.event_types.length === allEventIds.length ? (
                           <Badge variant="secondary" className="text-xs">All Events</Badge>
                         ) : (
-                          webhook.events.slice(0, 5).map((eventId) => (
+                          webhook.event_types.slice(0, 5).map((eventId) => (
                             <Badge key={eventId} variant="outline" className="text-xs gap-1">
                               <span className={cn("w-1.5 h-1.5 rounded-full", getEventColor(eventId))} />
                               {eventId}
                             </Badge>
                           ))
                         )}
-                        {webhook.events.length > 5 && webhook.events.length !== allEventIds.length && (
+                        {webhook.event_types.length > 5 && webhook.event_types.length !== allEventIds.length && (
                           <Badge variant="outline" className="text-xs">
-                            +{webhook.events.length - 5} more
+                            +{webhook.event_types.length - 5} more
                           </Badge>
                         )}
                       </div>
                       
                       {/* Delivery Statistics */}
                       {(() => {
-                        const stats = getWebhookStats(webhook.id);
-                        if (stats.total === 0) return null;
+                        const stats = getWebhookStats(webhook.stats_7d);
+                        if (!stats) return null;
                         
                         return (
                           <div className="flex items-center gap-4 pt-2 border-t border-border">
@@ -671,6 +800,19 @@ export default function WebhooksPage() {
                 </CardContent>
               </Card>
             ))}
+            {nextCursor && (
+              <div ref={loadMoreRef} className="h-8" />
+            )}
+            {isFetchingNext && (
+              <Card>
+                <CardContent className="p-4 animate-pulse">
+                  <div className="flex items-center gap-2">
+                    <div className="h-4 w-4 rounded-full bg-muted" />
+                    <div className="h-4 w-40 bg-muted rounded" />
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
         )}
 
@@ -1056,7 +1198,7 @@ export default function WebhooksPage() {
         onOpenChange={(open) => !open && setWebhookToDelete(null)}
         onConfirm={handleDeleteWebhook}
         title="Delete Webhook"
-        description={`Are you sure you want to delete the webhook for "${webhookToDelete?.endpointUrl}"? This action cannot be undone.`}
+        description={`Are you sure you want to delete the webhook for "${webhookToDelete?.endpoint_url}"? This action cannot be undone.`}
       />
 
       <Dialog open={!!webhookToTest} onOpenChange={(open) => !open && setWebhookToTest(null)}>
@@ -1068,7 +1210,7 @@ export default function WebhooksPage() {
           <div className="space-y-4 pt-2">
             <div className="space-y-2">
               <Label className="text-muted-foreground text-sm">Endpoint</Label>
-              <p className="text-sm font-medium truncate">{webhookToTest?.endpointUrl}</p>
+              <p className="text-sm font-medium truncate">{webhookToTest?.endpoint_url}</p>
             </div>
 
             <div className="space-y-2">
