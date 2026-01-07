@@ -395,7 +395,7 @@ bg-[size:10px_10px]">
             ))}
 
             {/* Add Email Block */}
-            <Card className="p-4 flex justify-center">
+            <div className="p-4 flex justify-center">
               <Button
                 variant="outline"
                 className="w-full max-w-xs justify-center gap-2 text-sm font-medium"
@@ -405,7 +405,7 @@ bg-[size:10px_10px]">
                 ADD EMAIL
                 <Plus className="h-4 w-4" />
               </Button>
-            </Card>
+            </div>
 
             {/* Email Configuration Dialog */}
             <Dialog open={emailDialogOpen} onOpenChange={setEmailDialogOpen}>
