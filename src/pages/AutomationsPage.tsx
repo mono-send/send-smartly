@@ -33,6 +33,8 @@ interface EmailStep {
   sender: string;
   subject: string;
   content: string;
+  waitTime: number;
+  waitUnit: string;
 }
 
 export default function AutomationsPage() {
@@ -61,6 +63,8 @@ export default function AutomationsPage() {
   const [emailSubject, setEmailSubject] = useState("");
   const [emailContent, setEmailContent] = useState("");
   const [emailSender, setEmailSender] = useState("");
+  const [emailWaitTime, setEmailWaitTime] = useState(5);
+  const [emailWaitUnit, setEmailWaitUnit] = useState("day");
 
   useEffect(() => {
     if (isEditingTitle && titleInputRef.current) {
@@ -82,6 +86,8 @@ export default function AutomationsPage() {
     setEmailSender("");
     setEmailSubject("");
     setEmailContent("");
+    setEmailWaitTime(5);
+    setEmailWaitUnit("day");
     setEmailDialogOpen(true);
   };
 
@@ -90,6 +96,8 @@ export default function AutomationsPage() {
     setEmailSender(email.sender);
     setEmailSubject(email.subject);
     setEmailContent(email.content);
+    setEmailWaitTime(email.waitTime);
+    setEmailWaitUnit(email.waitUnit);
     setEmailDialogOpen(true);
   };
 
@@ -106,9 +114,9 @@ export default function AutomationsPage() {
 
     if (editingEmailId) {
       // Update existing
-      setEmailSteps(emailSteps.map(e => 
-        e.id === editingEmailId 
-          ? { ...e, sender: emailSender, subject: emailSubject, content: emailContent }
+      setEmailSteps(emailSteps.map(e =>
+        e.id === editingEmailId
+          ? { ...e, sender: emailSender, subject: emailSubject, content: emailContent, waitTime: emailWaitTime, waitUnit: emailWaitUnit }
           : e
       ));
       toast.success("Email step updated");
@@ -119,6 +127,8 @@ export default function AutomationsPage() {
         sender: emailSender,
         subject: emailSubject,
         content: emailContent,
+        waitTime: emailWaitTime,
+        waitUnit: emailWaitUnit,
       };
       setEmailSteps([...emailSteps, newEmail]);
       toast.success("Email step added");
@@ -264,64 +274,84 @@ export default function AutomationsPage() {
               </div>
             </div>
 
-            {/* Wait For Block */}
-            <Card className="px-4 py-2 max-w-[400px] mx-auto">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-                  <Clock className="h-4 w-4" />
-                  WAIT FOR
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="flex h-9 items-stretch rounded-md border bg-background overflow-hidden divide-x divide-border">
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="h-full w-10 rounded-none"
-                      onClick={() => setWaitTime(Math.max(0, waitTime - 1))}
-                    >
-                      <Minus className="h-3 w-3" />
-                    </Button>
-                    <Input 
-                      type="number" 
-                      value={waitTime}
-                      onChange={(e) => setWaitTime(parseInt(e.target.value) || 1)}
-                      className="h-full w-16 border-0 rounded-none text-center focus-visible:ring-0 focus-visible:ring-offset-0"
-                    />
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="h-full w-10 rounded-none"
-                      onClick={() => setWaitTime(waitTime + 1)}
-                    >
-                      <Plus className="h-3 w-3" />
-                    </Button>
-                  </div>
-                  <Select value={waitUnit} onValueChange={setWaitUnit}>
-                    <SelectTrigger className="w-24 h-9">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="min">min(s)</SelectItem>
-                      <SelectItem value="hour">hour(s)</SelectItem>
-                      <SelectItem value="day">day(s)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </Card>
-
-            {/* Connector */}
-            <div className="flex justify-center py-2">
-              <div className="flex flex-col items-center">
-                {/* <div className="w-px h-4 bg-border" /> */}
-                <div className="h-1.5 w-1.5 rounded-full bg-border" />
-                {/* <div className="w-px h-4 bg-border" /> */}
-              </div>
-            </div>
-
             {/* Email Steps */}
             {emailSteps.map((email, index) => (
               <div key={email.id}>
+                {/* Wait For Block for this email */}
+                <Card className="px-4 py-2 max-w-[400px] mx-auto">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                      <Clock className="h-4 w-4" />
+                      WAIT FOR
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="flex h-9 items-stretch rounded-md border bg-background overflow-hidden divide-x divide-border">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-full w-10 rounded-none"
+                          onClick={() => {
+                            const updatedSteps = [...emailSteps];
+                            updatedSteps[index] = { ...email, waitTime: Math.max(0, email.waitTime - 1) };
+                            setEmailSteps(updatedSteps);
+                          }}
+                        >
+                          <Minus className="h-3 w-3" />
+                        </Button>
+                        <Input
+                          type="number"
+                          value={email.waitTime}
+                          onChange={(e) => {
+                            const updatedSteps = [...emailSteps];
+                            updatedSteps[index] = { ...email, waitTime: parseInt(e.target.value) || 1 };
+                            setEmailSteps(updatedSteps);
+                          }}
+                          className="h-full w-16 border-0 rounded-none text-center focus-visible:ring-0 focus-visible:ring-offset-0"
+                        />
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-full w-10 rounded-none"
+                          onClick={() => {
+                            const updatedSteps = [...emailSteps];
+                            updatedSteps[index] = { ...email, waitTime: email.waitTime + 1 };
+                            setEmailSteps(updatedSteps);
+                          }}
+                        >
+                          <Plus className="h-3 w-3" />
+                        </Button>
+                      </div>
+                      <Select
+                        value={email.waitUnit}
+                        onValueChange={(value) => {
+                          const updatedSteps = [...emailSteps];
+                          updatedSteps[index] = { ...email, waitUnit: value };
+                          setEmailSteps(updatedSteps);
+                        }}
+                      >
+                        <SelectTrigger className="w-24 h-9">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="min">min(s)</SelectItem>
+                          <SelectItem value="hour">hour(s)</SelectItem>
+                          <SelectItem value="day">day(s)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </Card>
+
+                {/* Connector */}
+                <div className="flex justify-center py-2">
+                  <div className="flex flex-col items-center">
+                    <div className="w-px h-4 bg-border" />
+                    <div className="h-1.5 w-1.5 rounded-full bg-border" />
+                    <div className="w-px h-4 bg-border" />
+                  </div>
+                </div>
+
+                {/* Email Card */}
                 <Card className="p-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2 text-sm font-medium text-foreground">
@@ -329,17 +359,17 @@ export default function AutomationsPage() {
                       EMAIL {index + 1}
                     </div>
                     <div className="flex items-center gap-1">
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
+                      <Button
+                        variant="ghost"
+                        size="icon"
                         className="h-8 w-8"
                         onClick={() => handleEditEmail(email)}
                       >
                         <Pencil className="h-3 w-3" />
                       </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
+                      <Button
+                        variant="ghost"
+                        size="icon"
                         className="h-8 w-8 text-destructive hover:text-destructive"
                         onClick={() => handleDeleteEmail(email.id)}
                       >
