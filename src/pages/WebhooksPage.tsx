@@ -39,7 +39,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
-import { API_BASE_URL } from "@/lib/api";
+import { api } from "@/lib/api";
 import { toast } from "sonner";
 import { ConfirmDeleteDialog } from "@/components/dialogs/ConfirmDeleteDialog";
 import { CodeBlock } from "@/components/ui/code-block";
@@ -284,13 +284,8 @@ export default function WebhooksPage() {
 
   const fetchWebhooks = useCallback(async (cursor?: string) => {
     try {
-      const url = new URL(`${API_BASE_URL}/webhooks`);
-      if (cursor) {
-        url.searchParams.set("cursor", cursor);
-      }
-      const response = await fetch(url.toString(), {
-        method: "GET",
-      });
+      const queryString = cursor ? `?${new URLSearchParams({ cursor }).toString()}` : "";
+      const response = await api(`/webhooks${queryString}`);
       if (!response.ok) {
         throw new Error("Failed to fetch webhooks");
       }
@@ -337,9 +332,7 @@ export default function WebhooksPage() {
     setIsDialogLoading(true);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/webhooks/${webhook.id}`, {
-        method: "GET",
-      });
+      const response = await api(`/webhooks/${webhook.id}`);
       if (!response.ok) {
         throw new Error("Failed to fetch webhook details");
       }
@@ -403,12 +396,9 @@ export default function WebhooksPage() {
 
       try {
         setIsDialogLoading(true);
-        const response = await fetch(`${API_BASE_URL}/webhooks/${webhookToEdit.id}`, {
+        const response = await api(`/webhooks/${webhookToEdit.id}`, {
           method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(payload),
+          body: payload,
         });
 
         if (!response.ok) {
@@ -452,12 +442,9 @@ export default function WebhooksPage() {
       };
 
       try {
-        const response = await fetch(`${API_BASE_URL}/webhooks`, {
+        const response = await api("/webhooks", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(payload),
+          body: payload,
         });
 
         if (!response.ok) {
@@ -554,11 +541,8 @@ export default function WebhooksPage() {
       } else {
         setIsDeliveryLogLoading(true);
       }
-      const url = new URL(`${API_BASE_URL}/webhooks/${webhook.id}/deliveries`);
-      if (cursor) {
-        url.searchParams.set("cursor", cursor);
-      }
-      const response = await fetch(url.toString(), { method: "GET" });
+      const queryString = cursor ? `?${new URLSearchParams({ cursor }).toString()}` : "";
+      const response = await api(`/webhooks/${webhook.id}/deliveries${queryString}`);
       if (!response.ok) {
         throw new Error("Failed to fetch delivery logs");
       }
@@ -603,12 +587,9 @@ export default function WebhooksPage() {
 
     const payload = getTestPayload(webhookToTest);
     try {
-      const response = await fetch(`${API_BASE_URL}/webhooks/${webhookToTest.id}`, {
+      const response = await api(`/webhooks/${webhookToTest.id}`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ event_type: payload.type }),
+        body: { event_type: payload.type },
       });
 
       if (!response.ok) {
