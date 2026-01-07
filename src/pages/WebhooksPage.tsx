@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { TopBar } from "@/components/layout/TopBar";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Webhook, Check, Info, MoreHorizontal, Trash2, ExternalLink, Pencil, Play, Loader2, Clock, CheckCircle2, XCircle, History, RefreshCw, Key, Copy, Eye, EyeOff, RotateCcw, Shield, Plus, X, BarChart3 } from "lucide-react";
+import { Webhook, Check, Info, MoreHorizontal, Trash2, ExternalLink, Pencil, Play, Loader2, Clock, CheckCircle2, XCircle, History, RefreshCw, Key, Copy, Eye, EyeOff, Shield, Plus, X, BarChart3 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -92,6 +92,20 @@ interface ApiWebhookDetail {
   signing_secret_last4?: string;
 }
 
+interface ApiDeliveryItem {
+  delivery_id?: string;
+  status?: string;
+  attempt_count?: number;
+  max_attempts?: number;
+  event_type?: string;
+  created_at?: string;
+  delivered_at?: string;
+  failed_at?: string;
+  updated_at?: string;
+  error?: string;
+  endpoint_url?: string;
+}
+
 interface SavedWebhook {
   id: string;
   endpoint_url: string;
@@ -108,13 +122,13 @@ interface SavedWebhook {
 
 interface DeliveryLogEntry {
   id: string;
+  deliveryId: string;
   webhookId: string;
   endpointUrl: string;
   eventType: string;
   status: "success" | "failed" | "pending" | "retrying";
   statusMessage: string;
   timestamp: Date;
-  payload: object;
   attempt: number;
   maxRetries: number;
 }
@@ -185,6 +199,10 @@ export default function WebhooksPage() {
   const [testResult, setTestResult] = useState<{ success: boolean; message: string; statusCode?: number } | null>(null);
   const [deliveryLog, setDeliveryLog] = useState<DeliveryLogEntry[]>([]);
   const [showDeliveryLog, setShowDeliveryLog] = useState(false);
+  const [deliveryLogWebhook, setDeliveryLogWebhook] = useState<SavedWebhook | null>(null);
+  const [isDeliveryLogLoading, setIsDeliveryLogLoading] = useState(false);
+  const [isDeliveryLogFetchingNext, setIsDeliveryLogFetchingNext] = useState(false);
+  const [deliveryLogCursor, setDeliveryLogCursor] = useState<string | null>(null);
   const [maxRetries, setMaxRetries] = useState(3);
   const [retryInterval, setRetryInterval] = useState(5);
   const [timeoutSeconds, setTimeoutSeconds] = useState(30);
@@ -520,26 +538,61 @@ export default function WebhooksPage() {
     toast.success(`${label} copied to clipboard`);
   };
 
-  const sendWebhookRequest = async (
-    webhook: SavedWebhook,
-    payload: object,
-    logEntryId: string,
-      attempt: number
-  ): Promise<boolean> => {
-    try {
-      await fetch(webhook.endpoint_url, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-        mode: "no-cors",
-      });
-      return true;
-    } catch {
-      return false;
-    }
+  const mapDeliveryStatus = (status?: string): DeliveryLogEntry["status"] => {
+    const normalized = status?.toLowerCase() ?? "";
+    if (["success", "succeeded", "delivered"].includes(normalized)) return "success";
+    if (["failed", "error"].includes(normalized)) return "failed";
+    if (["retrying", "retry", "retry_scheduled"].includes(normalized)) return "retrying";
+    return "pending";
   };
+
+  const fetchDeliveryLogs = useCallback(async (webhook: SavedWebhook, cursor?: string) => {
+    try {
+      if (cursor) {
+        setIsDeliveryLogFetchingNext(true);
+      } else {
+        setIsDeliveryLogLoading(true);
+      }
+      const url = new URL(`/v1.0/webhooks/${webhook.id}/deliveries`, window.location.origin);
+      if (cursor) {
+        url.searchParams.set("cursor", cursor);
+      }
+      const response = await fetch(url.toString(), { method: "GET" });
+      if (!response.ok) {
+        throw new Error("Failed to fetch delivery logs");
+      }
+      const data = await response.json();
+      const items: ApiDeliveryItem[] = data?.items ?? data?.deliveries ?? [];
+      const mappedEntries: DeliveryLogEntry[] = items.map((item) => {
+        const timestamp = item.delivered_at ?? item.failed_at ?? item.created_at ?? item.updated_at;
+        const status = mapDeliveryStatus(item.status);
+        const attemptCount = item.attempt_count ?? 1;
+        const maxAttempts = item.max_attempts ?? webhook.maxRetries + 1;
+        const statusMessage = item.error ?? item.status ?? "Delivery queued.";
+
+        return {
+          id: item.delivery_id ?? crypto.randomUUID(),
+          deliveryId: item.delivery_id ?? "unknown",
+          webhookId: webhook.id,
+          endpointUrl: item.endpoint_url ?? webhook.endpoint_url,
+          eventType: item.event_type ?? "unknown",
+          status,
+          statusMessage,
+          timestamp: timestamp ? new Date(timestamp) : new Date(),
+          attempt: attemptCount,
+          maxRetries: Math.max(0, maxAttempts - 1),
+        };
+      });
+
+      setDeliveryLog(prev => (cursor ? [...prev, ...mappedEntries] : mappedEntries));
+      setDeliveryLogCursor(data?.next_cursor ?? null);
+    } catch (error) {
+      toast.error("Failed to load delivery logs");
+    } finally {
+      setIsDeliveryLogLoading(false);
+      setIsDeliveryLogFetchingNext(false);
+    }
+  }, []);
 
   const handleTestWebhook = async () => {
     if (!webhookToTest) return;
@@ -548,84 +601,56 @@ export default function WebhooksPage() {
     setTestResult(null);
 
     const payload = getTestPayload(webhookToTest);
-    const logEntryId = crypto.randomUUID();
-    const logEntry: DeliveryLogEntry = {
-      id: logEntryId,
-      webhookId: webhookToTest.id,
-      endpointUrl: webhookToTest.endpoint_url,
-      eventType: payload.type,
-      status: "pending",
-      statusMessage: "Sending...",
-      timestamp: new Date(),
-      payload,
-      attempt: 1,
-      maxRetries: webhookToTest.maxRetries,
-    };
-
-    setDeliveryLog(prev => [logEntry, ...prev].slice(0, 50));
-
-    let success = false;
-    let currentAttempt = 1;
-    const maxAttempts = webhookToTest.maxRetries + 1;
-
-    while (currentAttempt <= maxAttempts && !success) {
-      if (currentAttempt > 1) {
-        // Update log to show retrying
-        setDeliveryLog(prev => prev.map(entry => 
-          entry.id === logEntryId 
-            ? { 
-                ...entry, 
-                status: "retrying" as const, 
-                statusMessage: `Retry ${currentAttempt - 1}/${webhookToTest.maxRetries}...`,
-                attempt: currentAttempt,
-              }
-            : entry
-        ));
-        
-        // Wait before retry
-        await new Promise(resolve => setTimeout(resolve, webhookToTest.retryIntervalSeconds * 1000));
-      }
-
-      success = await sendWebhookRequest(webhookToTest, payload, logEntryId, currentAttempt);
-      
-      if (!success && currentAttempt < maxAttempts) {
-        currentAttempt++;
-      } else {
-        break;
-      }
-    }
-
-    if (success) {
-      const successMessage = "Test payload sent. Due to browser security restrictions, we cannot verify the response. Check your endpoint logs to confirm receipt.";
-      
-      setDeliveryLog(prev => prev.map(entry => 
-        entry.id === logEntryId 
-          ? { ...entry, status: "success" as const, statusMessage: successMessage, attempt: currentAttempt }
-          : entry
-      ));
-      
-      setTestResult({
-        success: true,
-        message: currentAttempt > 1 
-          ? `Succeeded on attempt ${currentAttempt}. ${successMessage}`
-          : successMessage,
+    try {
+      const response = await fetch(`/v1.0/webhooks/${webhookToTest.id}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ event_type: payload.type }),
       });
-    } else {
-      const errorMessage = `Failed after ${currentAttempt} attempt${currentAttempt > 1 ? 's' : ''}. Check your endpoint URL.`;
-      
-      setDeliveryLog(prev => prev.map(entry => 
-        entry.id === logEntryId 
-          ? { ...entry, status: "failed" as const, statusMessage: errorMessage, attempt: currentAttempt }
-          : entry
-      ));
-      
+
+      if (!response.ok) {
+        let errorMessage = "Failed to send test webhook";
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData?.message ?? errorData?.error ?? errorMessage;
+        } catch {
+          const errorText = await response.text();
+          if (errorText) {
+            errorMessage = errorText;
+          }
+        }
+        throw new Error(errorMessage);
+      }
+
+      const data = await response.json();
+      const result = data?.item ?? data ?? {};
+      const deliveryId = result.delivery_id ?? "unknown";
+      const eventType = result.event_type ?? payload.type;
+      const success = Boolean(result.success ?? true);
+
+      setTestResult({
+        success,
+        message: success
+          ? `Delivery ${deliveryId} queued for ${eventType}.`
+          : `Delivery ${deliveryId} failed for ${eventType}.`,
+      });
+
+      setDeliveryLogWebhook(webhookToTest);
+      setDeliveryLog([]);
+      setDeliveryLogCursor(null);
+      await fetchDeliveryLogs(webhookToTest);
+      setShowDeliveryLog(true);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to send test webhook";
       setTestResult({
         success: false,
-        message: errorMessage,
+        message,
       });
+    } finally {
+      setIsTestingWebhook(false);
     }
-
-    setIsTestingWebhook(false);
   };
 
   const openTestDialog = async (webhook: SavedWebhook) => {
@@ -642,69 +667,9 @@ export default function WebhooksPage() {
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
   };
 
-  const handleRetryDelivery = async (entry: DeliveryLogEntry) => {
-    const webhook = webhooks.find(w => w.id === entry.webhookId);
-    if (!webhook) {
-      toast.error("Webhook not found");
-      return;
-    }
-
-    // Update entry to pending
-    setDeliveryLog(prev => prev.map(e => 
-      e.id === entry.id 
-        ? { ...e, status: "pending" as const, statusMessage: "Retrying...", attempt: 1 }
-        : e
-    ));
-
-    let success = false;
-    let currentAttempt = 1;
-    const maxAttempts = webhook.maxRetries + 1;
-
-    while (currentAttempt <= maxAttempts && !success) {
-      if (currentAttempt > 1) {
-        setDeliveryLog(prev => prev.map(e => 
-          e.id === entry.id 
-            ? { 
-                ...e, 
-                status: "retrying" as const, 
-                statusMessage: `Retry ${currentAttempt - 1}/${webhook.maxRetries}...`,
-                attempt: currentAttempt,
-              }
-            : e
-        ));
-        await new Promise(resolve => setTimeout(resolve, webhook.retryIntervalSeconds * 1000));
-      }
-
-      success = await sendWebhookRequest(webhook, entry.payload, entry.id, currentAttempt);
-      
-      if (!success && currentAttempt < maxAttempts) {
-        currentAttempt++;
-      } else {
-        break;
-      }
-    }
-
-    if (success) {
-      const successMessage = currentAttempt > 1 
-        ? `Succeeded on attempt ${currentAttempt}. Payload delivered.`
-        : "Payload delivered successfully.";
-      
-      setDeliveryLog(prev => prev.map(e => 
-        e.id === entry.id 
-          ? { ...e, status: "success" as const, statusMessage: successMessage, attempt: currentAttempt, timestamp: new Date() }
-          : e
-      ));
-      toast.success("Webhook retry successful");
-    } else {
-      const errorMessage = `Retry failed after ${currentAttempt} attempt${currentAttempt > 1 ? 's' : ''}.`;
-      
-      setDeliveryLog(prev => prev.map(e => 
-        e.id === entry.id 
-          ? { ...e, status: "failed" as const, statusMessage: errorMessage, attempt: currentAttempt, timestamp: new Date() }
-          : e
-      ));
-      toast.error("Webhook retry failed");
-    }
+  const handleRefreshDeliveryLog = async () => {
+    if (!deliveryLogWebhook) return;
+    await fetchDeliveryLogs(deliveryLogWebhook);
   };
 
   const toggleEvent = (eventId: string) => {
@@ -974,11 +939,17 @@ export default function WebhooksPage() {
         )}
 
         {/* Delivery Log Section */}
-        {deliveryLog.length > 0 && (
+        {(deliveryLogWebhook || deliveryLog.length > 0) && (
           <Card className="mt-6">
             <CardContent className="p-4">
               <button
-                onClick={() => setShowDeliveryLog(!showDeliveryLog)}
+                onClick={() => {
+                  const nextOpen = !showDeliveryLog;
+                  setShowDeliveryLog(nextOpen);
+                  if (nextOpen && deliveryLogWebhook) {
+                    fetchDeliveryLogs(deliveryLogWebhook);
+                  }
+                }}
                 className="w-full flex items-center justify-between text-left"
               >
                 <div className="flex items-center gap-2">
@@ -1005,7 +976,31 @@ export default function WebhooksPage() {
 
               {showDeliveryLog && (
                 <div className="mt-4 space-y-2">
-                  {deliveryLog.map((entry) => (
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span>
+                      {deliveryLogWebhook
+                        ? `Webhook: ${deliveryLogWebhook.endpoint_url}`
+                        : "Delivery log"}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 gap-1"
+                      onClick={handleRefreshDeliveryLog}
+                      disabled={isDeliveryLogLoading}
+                    >
+                      <RefreshCw className={cn("h-3 w-3", isDeliveryLogLoading && "animate-spin")} />
+                      Refresh
+                    </Button>
+                  </div>
+                  {isDeliveryLogLoading ? (
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                      Loading deliveries...
+                    </div>
+                  ) : deliveryLog.length === 0 ? (
+                    <div className="text-xs text-muted-foreground">No delivery logs available yet.</div>
+                  ) : deliveryLog.map((entry) => (
                     <div 
                       key={entry.id} 
                       className="flex items-start gap-3 p-3 rounded-md bg-muted/50 text-sm"
@@ -1030,6 +1025,9 @@ export default function WebhooksPage() {
                             <span className={cn("w-1.5 h-1.5 rounded-full", getEventColor(entry.eventType))} />
                             {entry.eventType}
                           </Badge>
+                          <Badge variant="secondary" className="text-xs">
+                            ID {entry.deliveryId}
+                          </Badge>
                           {entry.attempt > 1 && (
                             <Badge variant="secondary" className="text-xs gap-1">
                               <RefreshCw className="h-2.5 w-2.5" />
@@ -1045,25 +1043,6 @@ export default function WebhooksPage() {
                         </p>
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
-                        {entry.status === "failed" && (
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-7 w-7"
-                                  onClick={() => handleRetryDelivery(entry)}
-                                >
-                                  <RotateCcw className="h-3.5 w-3.5" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>Retry delivery</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        )}
                         <div className="flex items-center gap-1 text-xs text-muted-foreground">
                           <Clock className="h-3 w-3" />
                           {formatLogTime(entry.timestamp)}
@@ -1071,6 +1050,29 @@ export default function WebhooksPage() {
                       </div>
                     </div>
                   ))}
+                  {deliveryLogCursor && (
+                    <div className="flex justify-center">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-2"
+                        onClick={() => {
+                          if (!deliveryLogWebhook || !deliveryLogCursor) return;
+                          fetchDeliveryLogs(deliveryLogWebhook, deliveryLogCursor);
+                        }}
+                        disabled={isDeliveryLogFetchingNext}
+                      >
+                        {isDeliveryLogFetchingNext ? (
+                          <>
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            Loading...
+                          </>
+                        ) : (
+                          "Load more"
+                        )}
+                      </Button>
+                    </div>
+                  )}
                 </div>
               )}
             </CardContent>
