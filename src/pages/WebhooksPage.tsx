@@ -587,7 +587,7 @@ export default function WebhooksPage() {
 
     const payload = getTestPayload(webhookToTest);
     try {
-      const response = await api(`/webhooks/${webhookToTest.id}`, {
+      const response = await api(`/webhooks/${webhookToTest.id}/test`, {
         method: "POST",
         body: { event_type: payload.type },
       });
