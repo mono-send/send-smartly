@@ -12,6 +12,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Popover,
   PopoverContent,
   PopoverTrigger,
@@ -181,6 +188,7 @@ export default function WebhooksPage() {
   const [maxRetries, setMaxRetries] = useState(3);
   const [retryInterval, setRetryInterval] = useState(5);
   const [timeoutSeconds, setTimeoutSeconds] = useState(30);
+  const [status, setStatus] = useState("active");
   const [webhookSecret, setWebhookSecret] = useState("");
   const [showSecret, setShowSecret] = useState(false);
   const [generatedSignature, setGeneratedSignature] = useState("");
@@ -283,6 +291,7 @@ export default function WebhooksPage() {
     setMaxRetries(3);
     setRetryInterval(5);
     setTimeoutSeconds(30);
+    setStatus("active");
     setWebhookSecret("auto");
     setShowSecret(false);
     setAllowedIps([]);
@@ -299,6 +308,7 @@ export default function WebhooksPage() {
     setMaxRetries(3);
     setRetryInterval(5);
     setTimeoutSeconds(30);
+    setStatus(webhook.status ?? "active");
     setWebhookSecret("");
     setShowSecret(false);
     setAllowedIps([]);
@@ -323,6 +333,7 @@ export default function WebhooksPage() {
       setMaxRetries(retry.max_retries ?? webhook.maxRetries ?? 3);
       setRetryInterval(retry.interval_seconds ?? webhook.retryIntervalSeconds ?? 5);
       setTimeoutSeconds(item.timeout_seconds ?? webhook.timeoutSeconds ?? 30);
+      setStatus(item.status ?? webhook.status ?? "active");
       setWebhookSecret(item.signing_secret ?? webhook.secret ?? "");
       setAllowedIps(item.ip_allowlist ?? webhook.allowedIps ?? []);
       setSigningSecretLast4(item.signing_secret_last4 ?? null);
@@ -333,6 +344,7 @@ export default function WebhooksPage() {
       setMaxRetries(webhook.maxRetries);
       setRetryInterval(webhook.retryIntervalSeconds);
       setTimeoutSeconds(webhook.timeoutSeconds);
+      setStatus(webhook.status ?? "active");
       setWebhookSecret(webhook.secret);
       setAllowedIps([...webhook.allowedIps]);
       setSigningSecretLast4(null);
@@ -357,23 +369,58 @@ export default function WebhooksPage() {
     if (webhookToEdit) {
       // Update existing webhook
       const resolvedSecret = webhookSecret.trim() || webhookToEdit.secret;
-      setWebhooks(prev => prev.map(w => 
-        w.id === webhookToEdit.id 
-          ? { 
-              ...w, 
-              endpoint_url: endpointUrl, 
-              event_types: selectedEvents, 
-              maxRetries, 
-              retryIntervalSeconds: retryInterval, 
-              secret: resolvedSecret, 
-              allowedIps,
-              timeoutSeconds,
+      const payload = {
+        status,
+        event_types: selectedEvents,
+        timeout_seconds: timeoutSeconds,
+        endpoint_url: endpointUrl,
+        signing_secret: resolvedSecret,
+        retry: {
+          max_retries: maxRetries,
+          interval_seconds: retryInterval,
+        },
+        ip_allowlist: allowedIps,
+      };
+
+      try {
+        setIsDialogLoading(true);
+        const response = await fetch(`/v1.0/webhooks/${webhookToEdit.id}`, {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+          let errorMessage = "Failed to update webhook";
+          try {
+            const errorData = await response.json();
+            errorMessage = errorData?.message ?? errorData?.error ?? errorMessage;
+          } catch {
+            const errorText = await response.text();
+            if (errorText) {
+              errorMessage = errorText;
             }
-          : w
-      ));
-      toast.success("Webhook updated successfully");
+          }
+          throw new Error(errorMessage);
+        }
+
+        const data = await response.json();
+        const item = data?.item ?? data;
+        const mappedWebhook = mapWebhookItem(item);
+        setWebhooks(prev => prev.map(w => (w.id === webhookToEdit.id ? mappedWebhook : w)));
+        toast.success("Webhook updated successfully");
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Failed to update webhook";
+        toast.error(message);
+        return;
+      } finally {
+        setIsDialogLoading(false);
+      }
     } else {
       const payload = {
+        status,
         endpoint_url: endpointUrl,
         event_types: selectedEvents,
         signing_secret: webhookSecret.trim() || "auto",
@@ -425,6 +472,7 @@ export default function WebhooksPage() {
     setWebhookToEdit(null);
     setEndpointUrl("https://");
     setSelectedEvents([]);
+    setStatus("active");
   };
 
   const handleDeleteWebhook = () => {
@@ -1060,6 +1108,19 @@ export default function WebhooksPage() {
                 placeholder="https://"
                 disabled={isDialogLoading}
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="status">Status</Label>
+              <Select value={status} onValueChange={setStatus} disabled={isDialogLoading}>
+                <SelectTrigger id="status">
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="disabled">Disabled</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-2">
