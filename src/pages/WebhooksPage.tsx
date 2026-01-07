@@ -261,7 +261,7 @@ export default function WebhooksPage() {
     setSelectedEvents([]);
     setMaxRetries(3);
     setRetryInterval(5);
-    setWebhookSecret(generateSecret());
+    setWebhookSecret("auto");
     setShowSecret(false);
     setAllowedIps([]);
     setNewIpInput("");
@@ -281,7 +281,7 @@ export default function WebhooksPage() {
     setIsDialogOpen(true);
   };
 
-  const handleSaveWebhook = () => {
+  const handleSaveWebhook = async () => {
     if (!endpointUrl || endpointUrl === "https://") {
       toast.error("Please enter a valid endpoint URL");
       return;
@@ -300,21 +300,51 @@ export default function WebhooksPage() {
       ));
       toast.success("Webhook updated successfully");
     } else {
-      // Add new webhook
-      const newWebhook: SavedWebhook = {
-        id: crypto.randomUUID(),
+      const payload = {
         endpoint_url: endpointUrl,
-        status: "active",
         event_types: selectedEvents,
-        stats_7d: null,
-        createdAt: new Date(),
-        maxRetries,
-        retryIntervalSeconds: retryInterval,
-        secret: webhookSecret,
-        allowedIps,
+        signing_secret: webhookSecret.trim() || "auto",
+        retry: {
+          max_retries: maxRetries,
+          interval_seconds: retryInterval,
+        },
+        ip_allowlist: allowedIps,
       };
-      setWebhooks(prev => [...prev, newWebhook]);
-      toast.success("Webhook added successfully");
+
+      try {
+        const response = await fetch("/v1.0/webhooks", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+          let errorMessage = "Failed to create webhook";
+          try {
+            const errorData = await response.json();
+            errorMessage = errorData?.message ?? errorData?.error ?? errorMessage;
+          } catch {
+            const errorText = await response.text();
+            if (errorText) {
+              errorMessage = errorText;
+            }
+          }
+          throw new Error(errorMessage);
+        }
+
+        const data = await response.json();
+        const item = data?.item ?? data;
+        const mappedWebhook = mapWebhookItem(item);
+
+        setWebhooks(prev => [mappedWebhook, ...prev]);
+        toast.success("Webhook added successfully");
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Failed to create webhook";
+        toast.error(message);
+        return;
+      }
     }
 
     setIsDialogOpen(false);
