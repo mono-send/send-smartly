@@ -395,7 +395,7 @@ bg-[size:10px_10px]">
             ))}
 
             {/* Add Email Block */}
-            <div className="p-4 flex justify-center">
+            <div className="flex justify-center">
               <Button
                 variant="outline"
                 className="w-full max-w-xs justify-center gap-2 text-sm font-medium"
