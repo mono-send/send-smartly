@@ -39,6 +39,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
+import { API_BASE_URL } from "@/lib/api";
 import { toast } from "sonner";
 import { ConfirmDeleteDialog } from "@/components/dialogs/ConfirmDeleteDialog";
 import { CodeBlock } from "@/components/ui/code-block";
@@ -283,7 +284,7 @@ export default function WebhooksPage() {
 
   const fetchWebhooks = useCallback(async (cursor?: string) => {
     try {
-      const url = new URL("/v1.0/webhooks", window.location.origin);
+      const url = new URL(`${API_BASE_URL}/webhooks`);
       if (cursor) {
         url.searchParams.set("cursor", cursor);
       }
@@ -336,7 +337,7 @@ export default function WebhooksPage() {
     setIsDialogLoading(true);
 
     try {
-      const response = await fetch(`/v1.0/webhooks/${webhook.id}`, {
+      const response = await fetch(`${API_BASE_URL}/webhooks/${webhook.id}`, {
         method: "GET",
       });
       if (!response.ok) {
@@ -402,7 +403,7 @@ export default function WebhooksPage() {
 
       try {
         setIsDialogLoading(true);
-        const response = await fetch(`/v1.0/webhooks/${webhookToEdit.id}`, {
+        const response = await fetch(`${API_BASE_URL}/webhooks/${webhookToEdit.id}`, {
           method: "PATCH",
           headers: {
             "Content-Type": "application/json",
@@ -451,7 +452,7 @@ export default function WebhooksPage() {
       };
 
       try {
-        const response = await fetch("/v1.0/webhooks", {
+        const response = await fetch(`${API_BASE_URL}/webhooks`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -553,7 +554,7 @@ export default function WebhooksPage() {
       } else {
         setIsDeliveryLogLoading(true);
       }
-      const url = new URL(`/v1.0/webhooks/${webhook.id}/deliveries`, window.location.origin);
+      const url = new URL(`${API_BASE_URL}/webhooks/${webhook.id}/deliveries`);
       if (cursor) {
         url.searchParams.set("cursor", cursor);
       }
@@ -602,7 +603,7 @@ export default function WebhooksPage() {
 
     const payload = getTestPayload(webhookToTest);
     try {
-      const response = await fetch(`/v1.0/webhooks/${webhookToTest.id}`, {
+      const response = await fetch(`${API_BASE_URL}/webhooks/${webhookToTest.id}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
