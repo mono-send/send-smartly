@@ -10,7 +10,7 @@ const LoginPage = () => {
   return (
     <div className="min-h-screen flex">
       {/* Left Section - Login Form */}
-      <div className="flex-1 flex flex-col justify-center px-8 lg:px-16 xl:px-24 bg-background">
+      <div className="flex-1 flex flex-col justify-center px-8 lg:px-4 xl:px-4 bg-background">
         <LoginForm />
       </div>
 
