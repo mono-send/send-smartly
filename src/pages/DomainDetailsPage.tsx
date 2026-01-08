@@ -1,5 +1,8 @@
 import { TopBar } from "@/components/layout/TopBar";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Globe, Code, MoreVertical, ExternalLink, AlertTriangle, Mail, Loader2, Copy, Check, RefreshCw } from "lucide-react";
 import { useParams, useNavigate } from "react-router-dom";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -178,6 +181,9 @@ export default function DomainDetailsPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isSendRecordsDialogOpen, setIsSendRecordsDialogOpen] = useState(false);
+  const [recipientEmail, setRecipientEmail] = useState("");
+  const [isSendingRecords, setIsSendingRecords] = useState(false);
 
   const handleCopyDomain = async () => {
     if (!domain) return;
@@ -320,6 +326,37 @@ export default function DomainDetailsPage() {
       }
     } finally {
       setIsDeleting(false);
+    }
+  };
+
+  const handleSendRecords = async () => {
+    if (!domain) return;
+    const trimmedEmail = recipientEmail.trim();
+    if (!trimmedEmail) {
+      toast.error("Please enter an email address.");
+      return;
+    }
+    setIsSendingRecords(true);
+    try {
+      const response = await api(`/domains/${domain.id}/send-dns-records`, {
+        method: "POST",
+        body: { recipient_email: trimmedEmail },
+      });
+      const data = await response.json().catch(() => null);
+      if (response.ok) {
+        toast.success(data?.message || "DNS records sent successfully.");
+        setIsSendRecordsDialogOpen(false);
+        setRecipientEmail("");
+      } else {
+        const errorMessage = Array.isArray(data?.detail) ? data.detail[0]?.msg : data?.detail;
+        toast.error(errorMessage || "Failed to send DNS records.");
+      }
+    } catch (error: any) {
+      if (error.message !== "Unauthorized") {
+        toast.error("An error occurred while sending DNS records.");
+      }
+    } finally {
+      setIsSendingRecords(false);
     }
   };
 
@@ -488,7 +525,13 @@ export default function DomainDetailsPage() {
                   <AlertTriangle className="h-4 w-4" />
                   How to add records
                 </Button>
-                <Button variant="outline" size="icon" className="h-9 w-9">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-9 w-9"
+                  aria-label="Send DNS records"
+                  onClick={() => setIsSendRecordsDialogOpen(true)}
+                >
                   <Mail className="h-4 w-4" />
                 </Button>
               </div>
@@ -579,6 +622,47 @@ export default function DomainDetailsPage() {
         confirmLabel={isDeleting ? "Removing..." : "Remove domain"}
         onConfirm={handleDelete}
       />
+
+      <Dialog
+        open={isSendRecordsDialogOpen}
+        onOpenChange={(open) => {
+          setIsSendRecordsDialogOpen(open);
+          if (!open) {
+            setRecipientEmail("");
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Send DNS records to another person</DialogTitle>
+            <DialogDescription>
+              Enter the recipient email address and we'll send the DNS records for {domain.domain}.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-2">
+            <Label htmlFor="recipient-email">Email</Label>
+            <Input
+              id="recipient-email"
+              type="email"
+              placeholder="Enter email"
+              value={recipientEmail}
+              onChange={(event) => setRecipientEmail(event.target.value)}
+            />
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsSendRecordsDialogOpen(false)}
+              disabled={isSendingRecords}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleSendRecords} disabled={isSendingRecords}>
+              {isSendingRecords ? "Sending..." : "Send"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
