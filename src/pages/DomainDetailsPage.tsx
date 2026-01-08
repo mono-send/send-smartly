@@ -389,7 +389,16 @@ export default function DomainDetailsPage() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem>Verify now</DropdownMenuItem>
+                {shouldShowButtons && (
+                  <DropdownMenuItem onClick={handleRefresh} disabled={isRefreshing} className="gap-2">
+                    {isRefreshing ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <RefreshCw className="h-4 w-4" />
+                    )}
+                    Verify now
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem>Copy domain</DropdownMenuItem>
                 <DropdownMenuItem 
                   className="text-destructive"
