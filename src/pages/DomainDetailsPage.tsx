@@ -34,14 +34,14 @@ interface DNSRecord {
   content: string;
   ttl: string;
   priority: number | null;
-  status: "verified" | "pending" | "not_started";
+  status: "verified" | "pending" | "not_started" | "unverified";
   created_at: string;
 }
 
 interface DomainData {
   id: string;
   domain: string;
-  status: "verified" | "pending";
+  status: "verified" | "pending" | "unverified";
   region: string;
   enable_sending: boolean;
   enable_receiving: boolean;
@@ -58,9 +58,10 @@ const regionLabels: Record<string, { label: string; flag: string }> = {
   "ap-northeast-1": { label: "Tokyo (ap-northeast-1)", flag: "🇯🇵" },
 };
 
-function RecordStatusBadge({ status }: { status: "verified" | "pending" | "not_started" }) {
+function RecordStatusBadge({ status }: { status: "verified" | "unverified" | "pending" | "not_started" }) {
   const config = {
     verified: { label: "Verified", className: "bg-success/10 text-success border-success/20" },
+    unverified: { label: "Verified", className: "bg-warning/10 text-warning border-warning/20" },
     pending: { label: "Pending", className: "bg-warning/10 text-warning border-warning/20" },
     not_started: { label: "Not Started", className: "bg-muted text-muted-foreground border-border" }
   };
