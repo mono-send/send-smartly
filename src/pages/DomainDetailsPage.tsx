@@ -465,30 +465,34 @@ export default function DomainDetailsPage() {
           <div className="mb-8">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-medium text-foreground">Enable Sending</h3>
-              <Switch 
-                checked={sendingEnabled} 
+              <Switch
+                checked={sendingEnabled}
                 onCheckedChange={handleSendingToggle}
                 disabled={isUpdatingSending}
               />
             </div>
-            <div className="flex items-center gap-2 mb-4">
-              <span className="font-medium text-sm">SPF</span>
-              <ExternalLink className="h-3.5 w-3.5 text-muted-foreground" />
-            </div>
-            {spfRecords.length > 0 ? (
-              <DNSRecordsTable records={spfRecords} />
-            ) : (
-              <p className="text-sm text-muted-foreground">No SPF records configured</p>
-            )}
+            {sendingEnabled && (
+              <>
+                <div className="flex items-center gap-2 mb-4">
+                  <span className="font-medium text-sm">SPF</span>
+                  <ExternalLink className="h-3.5 w-3.5 text-muted-foreground" />
+                </div>
+                {spfRecords.length > 0 ? (
+                  <DNSRecordsTable records={spfRecords} />
+                ) : (
+                  <p className="text-sm text-muted-foreground">No SPF records configured</p>
+                )}
 
-            <div className="flex items-center gap-2 mb-4 mt-6">
-              <span className="font-medium text-sm">DMARC (Optional)</span>
-              <ExternalLink className="h-3.5 w-3.5 text-muted-foreground" />
-            </div>
-            {dmarcRecords.length > 0 ? (
-              <DNSRecordsTable records={dmarcRecords} />
-            ) : (
-              <p className="text-sm text-muted-foreground">No DMARC records configured</p>
+                <div className="flex items-center gap-2 mb-4 mt-6">
+                  <span className="font-medium text-sm">DMARC (Optional)</span>
+                  <ExternalLink className="h-3.5 w-3.5 text-muted-foreground" />
+                </div>
+                {dmarcRecords.length > 0 ? (
+                  <DNSRecordsTable records={dmarcRecords} />
+                ) : (
+                  <p className="text-sm text-muted-foreground">No DMARC records configured</p>
+                )}
+              </>
             )}
           </div>
 
@@ -496,20 +500,24 @@ export default function DomainDetailsPage() {
           <div>
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-medium text-foreground">Enable Receiving</h3>
-              <Switch 
-                checked={receivingEnabled} 
+              <Switch
+                checked={receivingEnabled}
                 onCheckedChange={handleReceivingToggle}
                 disabled={isUpdatingReceiving}
               />
             </div>
-            <div className="flex items-center gap-2 mb-4">
-              <span className="font-medium text-sm">MX</span>
-              <ExternalLink className="h-3.5 w-3.5 text-muted-foreground" />
-            </div>
-            {mxRecords.length > 0 ? (
-              <DNSRecordsTable records={mxRecords} />
-            ) : (
-              <p className="text-sm text-muted-foreground">No MX records configured</p>
+            {receivingEnabled && (
+              <>
+                <div className="flex items-center gap-2 mb-4">
+                  <span className="font-medium text-sm">MX</span>
+                  <ExternalLink className="h-3.5 w-3.5 text-muted-foreground" />
+                </div>
+                {mxRecords.length > 0 ? (
+                  <DNSRecordsTable records={mxRecords} />
+                ) : (
+                  <p className="text-sm text-muted-foreground">No MX records configured</p>
+                )}
+              </>
             )}
           </div>
         </div>
