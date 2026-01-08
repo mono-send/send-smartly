@@ -103,7 +103,7 @@ function CopyableValue({ value, truncate }: { value: string; truncate?: boolean 
               handleCopy(value);
             }}
           >
-            {copiedId === value ? (
+            {copied === value ? (
               <Check className="h-3.5 w-3.5 text-success" />
             ) : (
               <Copy className="h-3.5 w-3.5" />
