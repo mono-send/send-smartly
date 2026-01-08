@@ -199,8 +199,9 @@ export default function DomainsPage() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem>View DNS records</DropdownMenuItem>
-                          <DropdownMenuItem>Configure</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => navigate(`/domains/${domain.id}`)}>
+                            View DNS records
+                          </DropdownMenuItem>
                           <DropdownMenuItem
                             className="text-destructive"
                             onClick={() => setDomainToRemove({ id: domain.id, domain: domain.domain })}
