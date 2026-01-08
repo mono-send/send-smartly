@@ -635,7 +635,7 @@ export default function DomainDetailsPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Send DNS records to another person</DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="py-2">
               Enter the recipient email address and we'll send the DNS records for {domain.domain}.
             </DialogDescription>
           </DialogHeader>
