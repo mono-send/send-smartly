@@ -40,7 +40,7 @@ export function Sidebar() {
     <aside className="fixed left-0 top-0 z-40 h-screen w-64 border-r border-border bg-sidebar">
       <div className="flex h-full flex-col">
         {/* Logo */}
-        <div className="flex h-16 items-center gap-2 border-b border-border px-6 min-h-20">
+        <div className="flex h-16 items-center gap-2 border-b border-border px-6 min-h-18">
           {/* <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
             <Send className="h-4 w-4 text-primary-foreground" />
           </div> */}
