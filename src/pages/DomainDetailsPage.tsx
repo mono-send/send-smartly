@@ -29,7 +29,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface DNSRecord {
   id: string;
-  dns_standard: "DKIM" | "SPF" | "MX";
+  dns_standard: "DKIM" | "SPF" | "DMARC" | "MX";
   record_type: string;
   name: string;
   content: string;
@@ -335,6 +335,7 @@ export default function DomainDetailsPage() {
 
   const dkimRecords = domain.dns_records.filter(r => r.dns_standard === "DKIM");
   const spfRecords = domain.dns_records.filter(r => r.dns_standard === "SPF");
+  const dmarcRecords = domain.dns_records.filter(r => r.dns_standard === "DMARC");
   const mxRecords = domain.dns_records.filter(r => r.dns_standard === "MX");
 
   const regionInfo = regionLabels[domain.region] || { label: domain.region, flag: "🌍" };
@@ -478,6 +479,16 @@ export default function DomainDetailsPage() {
               <DNSRecordsTable records={spfRecords} />
             ) : (
               <p className="text-sm text-muted-foreground">No SPF records configured</p>
+            )}
+
+            <div className="flex items-center gap-2 mb-4 mt-6">
+              <span className="font-medium text-sm">DMARC (Optional)</span>
+              <ExternalLink className="h-3.5 w-3.5 text-muted-foreground" />
+            </div>
+            {dmarcRecords.length > 0 ? (
+              <DNSRecordsTable records={dmarcRecords} />
+            ) : (
+              <p className="text-sm text-muted-foreground">No DMARC records configured</p>
             )}
           </div>
 
