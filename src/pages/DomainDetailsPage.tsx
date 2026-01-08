@@ -348,6 +348,12 @@ export default function DomainDetailsPage() {
   const dmarcRecords = domain.dns_records.filter(r => r.dns_standard === "DMARC");
   const mxRecords = domain.dns_records.filter(r => r.dns_standard === "MX");
 
+  // Check if there's an unverified MX record with record_type="MX"
+  const hasUnverifiedMXRecord = mxRecords.some(r => r.record_type === "MX" && r.status !== "verified");
+
+  // Show buttons if domain is not verified OR (domain is verified AND receiving is enabled AND has unverified MX record)
+  const shouldShowButtons = domain.status !== "verified" || (domain.status === "verified" && receivingEnabled && hasUnverifiedMXRecord);
+
   const regionInfo = regionLabels[domain.region] || { label: domain.region, flag: "🌍" };
 
   return (
@@ -432,7 +438,7 @@ export default function DomainDetailsPage() {
         <div className="rounded-lg border border-border bg-card p-6">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-lg font-semibold text-foreground">DNS Records</h2>
-            {domain.status !== "verified" && (
+            {shouldShowButtons && (
               <div className="flex items-center gap-2">
                 <Button
                   variant="default"
