@@ -147,7 +147,11 @@ export default function SendersPage() {
         }}
       />
 
-      <div className="p-6">
+      <div className="p-6 space-y-4">
+        <p className="text-sm text-muted-foreground">
+          A sender represents the email address with an authorized domain to send emails on your behalf. It helps
+          ensure emails are legitimate, not spoofed, and can be trusted by recipients and mail servers.
+        </p>
         {/* Table */}
         <div className="rounded-lg border border-border bg-card">
           <Table>
