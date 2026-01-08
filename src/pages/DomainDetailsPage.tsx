@@ -479,7 +479,7 @@ export default function DomainDetailsPage() {
           </div>
           <div>
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Status</p>
-            <StatusBadge status={domain.status} />
+            <StatusBadge className="uppercase" status={domain.status} />
           </div>
           <div>
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Region</p>
