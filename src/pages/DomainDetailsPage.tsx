@@ -132,28 +132,28 @@ function DNSRecordsTable({ records }: { records: DNSRecord[] }) {
       <TooltipProvider>
         <Table>
           <TableHeader>
-            <TableRow className="bg-muted/50">
-              <TableHead className="w-[80px]">Type</TableHead>
-              <TableHead className="w-[180px]">Name</TableHead>
+            <TableRow className="bg-muted/50 uppercase text-xs">
+              <TableHead className="w-[80px] h-10">Type</TableHead>
+              <TableHead className="w-[180px] h-10">Name</TableHead>
               <TableHead>Content</TableHead>
-            <TableHead className="w-[80px]">TTL</TableHead>
-            <TableHead className="w-[80px]">Priority</TableHead>
-            <TableHead className="w-[100px]">Status</TableHead>
-          </TableRow>
+              <TableHead className="w-[80px] h-10">TTL</TableHead>
+              <TableHead className="w-[80px] h-10">Priority</TableHead>
+              <TableHead className="w-[100px] h-10">Status</TableHead>
+            </TableRow>
           </TableHeader>
           <TableBody>
             {records.map((record) => (
               <TableRow key={record.id} className="group">
-                <TableCell className="font-mono text-sm">{record.record_type}</TableCell>
-                <TableCell>
+                <TableCell className="font-mono text-sm px-4 py-2">{record.record_type}</TableCell>
+                <TableCell className="px-4 py-2">
                   <CopyableValue value={record.name} />
                 </TableCell>
-                <TableCell>
+                <TableCell className="px-4 py-2">
                   <CopyableValue value={record.content} truncate />
                 </TableCell>
-                <TableCell className="text-muted-foreground">{record.ttl}</TableCell>
-                <TableCell className="text-muted-foreground">{record.priority ?? "-"}</TableCell>
-                <TableCell>
+                <TableCell className="text-muted-foreground px-4 py-2">{record.ttl}</TableCell>
+                <TableCell className="text-muted-foreground px-4 py-2">{record.priority ?? "-"}</TableCell>
+                <TableCell className="px-4 py-2">
                   <RecordStatusBadge status={record.status} />
                 </TableCell>
               </TableRow>
