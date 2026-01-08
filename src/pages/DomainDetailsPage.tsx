@@ -411,7 +411,7 @@ export default function DomainDetailsPage() {
         {domain.status === "unverified" && (
           <Alert className="mb-6 bg-destructive/5 border-destructive/20">
             <AlertTriangle className="h-4 w-4 text-destructive" />
-            <AlertTitle className="text-destructive">No DNS records found</AlertTitle>
+            <AlertTitle className="text-destructive text-sm">No DNS records found</AlertTitle>
             <AlertDescription className="text-destructive/90">
               Please add the DNS records below to verify domain ownership.
             </AlertDescription>
