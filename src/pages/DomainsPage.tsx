@@ -176,10 +176,19 @@ export default function DomainsPage() {
                     className="cursor-pointer hover:bg-muted/50"
                     onClick={() => navigate(`/domains/${domain.id}`)}
                   >
-                    <TableCell className="px-4 py-2font-medium">
+                    <TableCell className="px-4 py-2 font-medium">
                       <div className="flex items-center gap-2">
                         {domain.domain}
-                        <ExternalLink className="h-3.5 w-3.5 text-muted-foreground" />
+                        <a
+                          href={`https://${domain.domain}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          aria-label={`Open ${domain.domain} in a new tab`}
+                          className="text-muted-foreground hover:text-foreground"
+                          onClick={(event) => event.stopPropagation()}
+                        >
+                          <ExternalLink className="h-3.5 w-3.5" />
+                        </a>
                       </div>
                     </TableCell>
                     <TableCell className="px-4 py-2">
