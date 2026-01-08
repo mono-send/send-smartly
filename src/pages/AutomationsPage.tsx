@@ -14,9 +14,26 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { X, ArrowRight, Clock, Mail, LogOut, Plus, Minus, Info, Pencil, Trash2 } from "lucide-react";
+import { X, ArrowRight, Clock, Mail, LogOut, Plus, Minus, Info, Pencil, Trash2, GripVertical } from "lucide-react";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 interface Segment {
   id: string;
@@ -35,6 +52,169 @@ interface EmailStep {
   content: string;
   waitTime: number;
   waitUnit: string;
+}
+
+interface SortableEmailStepProps {
+  email: EmailStep;
+  index: number;
+  emailSteps: EmailStep[];
+  setEmailSteps: (steps: EmailStep[]) => void;
+  handleEditEmail: (email: EmailStep) => void;
+  handleDeleteEmail: (id: string) => void;
+}
+
+function SortableEmailStep({
+  email,
+  index,
+  emailSteps,
+  setEmailSteps,
+  handleEditEmail,
+  handleDeleteEmail
+}: SortableEmailStepProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: email.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style}>
+      {/* Wait For Block for this email */}
+      <Card className="px-4 py-2 max-w-[400px] mx-auto">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+            <Clock className="h-4 w-4" />
+            WAIT FOR
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="flex h-9 items-stretch rounded-md border bg-background overflow-hidden divide-x divide-border">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-full w-10 rounded-none"
+                onClick={() => {
+                  const updatedSteps = [...emailSteps];
+                  updatedSteps[index] = { ...email, waitTime: Math.max(0, email.waitTime - 1) };
+                  setEmailSteps(updatedSteps);
+                }}
+              >
+                <Minus className="h-3 w-3" />
+              </Button>
+              <Input
+                type="number"
+                value={email.waitTime}
+                onChange={(e) => {
+                  const updatedSteps = [...emailSteps];
+                  updatedSteps[index] = { ...email, waitTime: parseInt(e.target.value) || 1 };
+                  setEmailSteps(updatedSteps);
+                }}
+                className="h-full w-16 border-0 rounded-none text-center focus-visible:ring-0 focus-visible:ring-offset-0"
+              />
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-full w-10 rounded-none"
+                onClick={() => {
+                  const updatedSteps = [...emailSteps];
+                  updatedSteps[index] = { ...email, waitTime: email.waitTime + 1 };
+                  setEmailSteps(updatedSteps);
+                }}
+              >
+                <Plus className="h-3 w-3" />
+              </Button>
+            </div>
+            <Select
+              value={email.waitUnit}
+              onValueChange={(value) => {
+                const updatedSteps = [...emailSteps];
+                updatedSteps[index] = { ...email, waitUnit: value };
+                setEmailSteps(updatedSteps);
+              }}
+            >
+              <SelectTrigger className="w-24 h-9">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="min">min(s)</SelectItem>
+                <SelectItem value="hour">hour(s)</SelectItem>
+                <SelectItem value="day">day(s)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </Card>
+
+      {/* Connector */}
+      <div className="flex justify-center py-2">
+        <div className="flex flex-col items-center">
+          <div className="w-px h-4 bg-border" />
+          <div className="h-1.5 w-1.5 rounded-full bg-border" />
+          <div className="w-px h-4 bg-border" />
+        </div>
+      </div>
+
+      {/* Email Card with drag handle */}
+      <Card className="p-4 relative group">
+        {/* Drag Handle - Top Left */}
+        <div
+          {...attributes}
+          {...listeners}
+          className="absolute top-2 left-2 cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity duration-200 p-1 hover:bg-muted rounded"
+        >
+          <GripVertical className="h-4 w-4 text-muted-foreground" />
+        </div>
+
+        {/* Header with Email title and action buttons */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+            <Mail className="h-4 w-4" />
+            EMAIL {index + 1}
+          </div>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+              onClick={() => handleEditEmail(email)}
+              title="Edit Email Step"
+            >
+              <Pencil className="h-3.5 w-3.5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 text-destructive hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+              onClick={() => handleDeleteEmail(email.id)}
+              title="Delete"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        </div>
+        <div className="mt-2 text-sm text-muted-foreground truncate">
+          {email.subject}
+        </div>
+      </Card>
+
+      {/* Connector after each email */}
+      <div className="flex justify-center py-2">
+        <div className="flex flex-col items-center">
+          <div className="w-px h-4 bg-border" />
+          <div className="h-1.5 w-1.5 rounded-full bg-border" />
+          <div className="w-px h-4 bg-border" />
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export default function AutomationsPage() {
@@ -65,6 +245,28 @@ export default function AutomationsPage() {
   const [emailSender, setEmailSender] = useState("");
   const [emailWaitTime, setEmailWaitTime] = useState(5);
   const [emailWaitUnit, setEmailWaitUnit] = useState("day");
+
+  // Drag and drop sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      setEmailSteps((items) => {
+        const oldIndex = items.findIndex((item) => item.id === active.id);
+        const newIndex = items.findIndex((item) => item.id === over.id);
+
+        return arrayMove(items, oldIndex, newIndex);
+      });
+      toast.success("Email order updated");
+    }
+  };
 
   useEffect(() => {
     if (isEditingTitle && titleInputRef.current) {
@@ -275,124 +477,29 @@ bg-[size:10px_10px]">
               </div>
             </div>
 
-            {/* Email Steps */}
-            {emailSteps.map((email, index) => (
-              <div key={email.id}>
-                {/* Wait For Block for this email */}
-                <Card className="px-4 py-2 max-w-[400px] mx-auto">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-                      <Clock className="h-4 w-4" />
-                      WAIT FOR
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="flex h-9 items-stretch rounded-md border bg-background overflow-hidden divide-x divide-border">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-full w-10 rounded-none"
-                          onClick={() => {
-                            const updatedSteps = [...emailSteps];
-                            updatedSteps[index] = { ...email, waitTime: Math.max(0, email.waitTime - 1) };
-                            setEmailSteps(updatedSteps);
-                          }}
-                        >
-                          <Minus className="h-3 w-3" />
-                        </Button>
-                        <Input
-                          type="number"
-                          value={email.waitTime}
-                          onChange={(e) => {
-                            const updatedSteps = [...emailSteps];
-                            updatedSteps[index] = { ...email, waitTime: parseInt(e.target.value) || 1 };
-                            setEmailSteps(updatedSteps);
-                          }}
-                          className="h-full w-16 border-0 rounded-none text-center focus-visible:ring-0 focus-visible:ring-offset-0"
-                        />
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-full w-10 rounded-none"
-                          onClick={() => {
-                            const updatedSteps = [...emailSteps];
-                            updatedSteps[index] = { ...email, waitTime: email.waitTime + 1 };
-                            setEmailSteps(updatedSteps);
-                          }}
-                        >
-                          <Plus className="h-3 w-3" />
-                        </Button>
-                      </div>
-                      <Select
-                        value={email.waitUnit}
-                        onValueChange={(value) => {
-                          const updatedSteps = [...emailSteps];
-                          updatedSteps[index] = { ...email, waitUnit: value };
-                          setEmailSteps(updatedSteps);
-                        }}
-                      >
-                        <SelectTrigger className="w-24 h-9">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="min">min(s)</SelectItem>
-                          <SelectItem value="hour">hour(s)</SelectItem>
-                          <SelectItem value="day">day(s)</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                </Card>
-
-                {/* Connector */}
-                <div className="flex justify-center py-2">
-                  <div className="flex flex-col items-center">
-                    <div className="w-px h-4 bg-border" />
-                    <div className="h-1.5 w-1.5 rounded-full bg-border" />
-                    <div className="w-px h-4 bg-border" />
-                  </div>
-                </div>
-
-                {/* Email Card */}
-                <Card className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-                      <Mail className="h-4 w-4" />
-                      EMAIL {index + 1}
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={() => handleEditEmail(email)}
-                      >
-                        <Pencil className="h-3 w-3" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-destructive hover:text-destructive"
-                        onClick={() => handleDeleteEmail(email.id)}
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  </div>
-                  <div className="mt-2 text-sm text-muted-foreground truncate">
-                    {email.subject}
-                  </div>
-                </Card>
-
-                {/* Connector after each email */}
-                <div className="flex justify-center py-2">
-                  <div className="flex flex-col items-center">
-                    <div className="w-px h-4 bg-border" />
-                    <div className="h-1.5 w-1.5 rounded-full bg-border" />
-                    <div className="w-px h-4 bg-border" />
-                  </div>
-                </div>
-              </div>
-            ))}
+            {/* Email Steps with Drag and Drop */}
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext
+                items={emailSteps.map(email => email.id)}
+                strategy={verticalListSortingStrategy}
+              >
+                {emailSteps.map((email, index) => (
+                  <SortableEmailStep
+                    key={email.id}
+                    email={email}
+                    index={index}
+                    emailSteps={emailSteps}
+                    setEmailSteps={setEmailSteps}
+                    handleEditEmail={handleEditEmail}
+                    handleDeleteEmail={handleDeleteEmail}
+                  />
+                ))}
+              </SortableContext>
+            </DndContext>
 
             {/* Add Email Block */}
             <div className="flex justify-center">
