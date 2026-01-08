@@ -654,10 +654,11 @@ export default function DomainDetailsPage() {
               variant="outline"
               onClick={() => setIsSendRecordsDialogOpen(false)}
               disabled={isSendingRecords}
+              className="h-9"
             >
               Cancel
             </Button>
-            <Button onClick={handleSendRecords} disabled={isSendingRecords}>
+            <Button onClick={handleSendRecords} disabled={isSendingRecords} className="h-9">
               {isSendingRecords ? "Sending..." : "Send"}
             </Button>
           </DialogFooter>
