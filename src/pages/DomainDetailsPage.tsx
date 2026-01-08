@@ -231,16 +231,26 @@ export default function DomainDetailsPage() {
     if (!domain) return;
     setIsRefreshing(true);
     try {
-      const response = await api(`/domains/${domain.id}`);
-      if (response.ok) {
-        const data = await response.json();
-        setDomain(data);
-        setSendingEnabled(data.enable_sending);
-        setReceivingEnabled(data.enable_receiving);
-        toast.success("Domain status refreshed successfully.");
+      // First, POST to verify endpoint
+      const verifyResponse = await api(`/domains/${domain.id}/verify`, {
+        method: "POST",
+      });
+      if (verifyResponse.ok) {
+        // If verify is successful, fetch the domain data
+        const getResponse = await api(`/domains/${domain.id}`);
+        if (getResponse.ok) {
+          const data = await getResponse.json();
+          setDomain(data);
+          setSendingEnabled(data.enable_sending);
+          setReceivingEnabled(data.enable_receiving);
+          toast.success("Domain status refreshed successfully.");
+        } else {
+          const data = await getResponse.json();
+          toast.error(data.detail || "Failed to fetch domain");
+        }
       } else {
-        const data = await response.json();
-        toast.error(data.detail || "Failed to refresh domain");
+        const data = await verifyResponse.json();
+        toast.error(data.detail || "Failed to verify domain");
       }
     } catch (error: any) {
       if (error.message !== "Unauthorized") {
@@ -422,29 +432,31 @@ export default function DomainDetailsPage() {
         <div className="rounded-lg border border-border bg-card p-6">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-lg font-semibold text-foreground">DNS Records</h2>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="default"
-                size="sm"
-                className="gap-2 bg-primary"
-                onClick={handleRefresh}
-                disabled={isRefreshing}
-              >
-                {isRefreshing ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <RefreshCw className="h-4 w-4" />
-                )}
-                Refresh
-              </Button>
-              <Button variant="outline" size="sm" className="gap-2">
-                <AlertTriangle className="h-4 w-4" />
-                How to add records
-              </Button>
-              <Button variant="outline" size="icon" className="h-9 w-9">
-                <Mail className="h-4 w-4" />
-              </Button>
-            </div>
+            {domain.status !== "verified" && (
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="default"
+                  size="sm"
+                  className="gap-2 bg-primary"
+                  onClick={handleRefresh}
+                  disabled={isRefreshing}
+                >
+                  {isRefreshing ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <RefreshCw className="h-4 w-4" />
+                  )}
+                  Refresh
+                </Button>
+                <Button variant="outline" size="sm" className="gap-2">
+                  <AlertTriangle className="h-4 w-4" />
+                  How to add records
+                </Button>
+                <Button variant="outline" size="icon" className="h-9 w-9">
+                  <Mail className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
           </div>
 
           {/* Domain Verification - DKIM */}
