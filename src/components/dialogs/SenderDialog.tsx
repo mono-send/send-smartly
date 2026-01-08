@@ -160,40 +160,42 @@ export function SenderDialog({
 
               <div className="space-y-2">
                 <Label htmlFor="fromEmail">From email</Label>
-                <Input
-                  id="fromEmail"
-                  placeholder="e.g., no-reply"
-                  value={from}
-                  onChange={(e) => setFrom(e.target.value)}
-                />
+                <div className="flex flex-col gap-2 md:flex-row md:items-center">
+                  <Input
+                    id="fromEmail"
+                    placeholder="e.g., no-reply"
+                    value={from}
+                    onChange={(e) => setFrom(e.target.value)}
+                    className="md:flex-1"
+                  />
+                  <span className="hidden text-sm font-medium text-muted-foreground md:inline">@</span>
+                  {isLoadingDomains ? (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Loading domains...
+                    </div>
+                  ) : domains.length === 0 ? (
+                    <p className="text-sm text-muted-foreground py-2">No domains available</p>
+                  ) : (
+                    <div className="md:flex-1">
+                      <Select value={domainId} onValueChange={setDomainId}>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Select a domain" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {domains.map((domain) => (
+                            <SelectItem key={domain.id} value={domain.id}>
+                              {domain.domain}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                </div>
                 <p className="text-xs text-muted-foreground">
                   Enter the local part of the email (before @)
                 </p>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Domain</Label>
-                {isLoadingDomains ? (
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Loading domains...
-                  </div>
-                ) : domains.length === 0 ? (
-                  <p className="text-sm text-muted-foreground py-2">No domains available</p>
-                ) : (
-                  <Select value={domainId} onValueChange={setDomainId}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a domain" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {domains.map((domain) => (
-                        <SelectItem key={domain.id} value={domain.id}>
-                          {domain.domain}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
               </div>
 
               <div className="space-y-2">
@@ -204,6 +206,11 @@ export function SenderDialog({
                   value={replyTo}
                   onChange={(e) => setReplyTo(e.target.value)}
                 />
+              </div>
+
+              <div className="rounded-lg border border-muted bg-muted/30 px-4 py-3 text-sm text-muted-foreground">
+                <span className="font-medium text-foreground">Tip:</span> Marketing emails such as product updates or
+                feature announcements get higher engagement when sent from a real person’s name.
               </div>
             </>
           )}
