@@ -179,6 +179,16 @@ export default function DomainDetailsPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
+  const handleCopyDomain = async () => {
+    if (!domain) return;
+    try {
+      await navigator.clipboard.writeText(domain.domain);
+      toast.success("Domain copied to clipboard.");
+    } catch (error: any) {
+      toast.error(error?.message || "Failed to copy domain.");
+    }
+  };
+
   const handleSendingToggle = async (checked: boolean) => {
     if (!domain) return;
     setIsUpdatingSending(true);
@@ -373,7 +383,18 @@ export default function DomainDetailsPage() {
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Domain</p>
-              <h1 className="text-2xl font-semibold text-foreground">{domain.domain}</h1>
+              <div className="group flex items-center gap-2">
+                <h1 className="text-2xl font-semibold text-foreground">{domain.domain}</h1>
+                <a
+                  href={`https://${domain.domain}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label={`Open ${domain.domain} in a new tab`}
+                  className="text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 focus:opacity-100"
+                >
+                  <ExternalLink className="h-4 w-4" />
+                </a>
+              </div>
             </div>
           </div>
           
@@ -399,7 +420,7 @@ export default function DomainDetailsPage() {
                     Verify now
                   </DropdownMenuItem>
                 )}
-                <DropdownMenuItem>Copy domain</DropdownMenuItem>
+                <DropdownMenuItem onClick={handleCopyDomain}>Copy domain</DropdownMenuItem>
                 <DropdownMenuItem 
                   className="text-destructive"
                   onClick={() => setIsDeleteDialogOpen(true)}
