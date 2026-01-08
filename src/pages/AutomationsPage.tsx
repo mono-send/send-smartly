@@ -156,9 +156,9 @@ function SortableEmailStep({
       {/* Connector */}
       <div className="flex justify-center py-2">
         <div className="flex flex-col items-center">
-          <div className="w-px h-4 bg-border" />
-          <div className="h-1.5 w-1.5 rounded-full bg-border" />
-          <div className="w-px h-4 bg-border" />
+          <div className="w-px h-4 bg-[#777]" />
+          <div className="h-1.5 w-1.5 rounded-full bg-[#777]" />
+          <div className="w-px h-4 bg-[#777]" />
         </div>
       </div>
 
