@@ -192,7 +192,7 @@ export default function DomainsPage() {
                       </div>
                     </TableCell>
                     <TableCell className="px-4 py-2">
-                      <StatusBadge status={domain.status} />
+                      <StatusBadge className="uppercase" status={domain.status} />
                     </TableCell>
                     <TableCell className="px-4 py-2 font-mono text-sm text-muted-foreground">
                       {domain.region}
