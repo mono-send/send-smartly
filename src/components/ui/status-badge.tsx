@@ -10,6 +10,7 @@ type StatusType =
   | "pending" 
   | "queued"
   | "verified"
+  | "unverified"
   | "subscribed"
   | "unsubscribed"
   | "suspended"
