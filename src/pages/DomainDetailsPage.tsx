@@ -1,6 +1,6 @@
 import { TopBar } from "@/components/layout/TopBar";
 import { Button } from "@/components/ui/button";
-import { Globe, Code, MoreVertical, ExternalLink, AlertTriangle, Mail, Loader2, Copy, Check } from "lucide-react";
+import { Globe, Code, MoreVertical, ExternalLink, AlertTriangle, Mail, Loader2, Copy, Check, RefreshCw } from "lucide-react";
 import { useParams, useNavigate } from "react-router-dom";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Switch } from "@/components/ui/switch";
@@ -25,6 +25,7 @@ import { toast } from "sonner";
 import { api } from "@/lib/api";
 import { formatDistanceToNow } from "date-fns";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface DNSRecord {
   id: string;
@@ -176,6 +177,7 @@ export default function DomainDetailsPage() {
   const [isUpdatingReceiving, setIsUpdatingReceiving] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const handleSendingToggle = async (checked: boolean) => {
     if (!domain) return;
@@ -222,6 +224,30 @@ export default function DomainDetailsPage() {
       }
     } finally {
       setIsUpdatingReceiving(false);
+    }
+  };
+
+  const handleRefresh = async () => {
+    if (!domain) return;
+    setIsRefreshing(true);
+    try {
+      const response = await api(`/domains/${domain.id}`);
+      if (response.ok) {
+        const data = await response.json();
+        setDomain(data);
+        setSendingEnabled(data.enable_sending);
+        setReceivingEnabled(data.enable_receiving);
+        toast.success("Domain status refreshed successfully.");
+      } else {
+        const data = await response.json();
+        toast.error(data.detail || "Failed to refresh domain");
+      }
+    } catch (error: any) {
+      if (error.message !== "Unauthorized") {
+        toast.error("An error occurred while refreshing domain");
+      }
+    } finally {
+      setIsRefreshing(false);
     }
   };
 
@@ -380,11 +406,36 @@ export default function DomainDetailsPage() {
           </div>
         </div>
 
+        {/* Unverified Domain Alert */}
+        {domain.status === "unverified" && (
+          <Alert className="mb-6 bg-destructive/5 border-destructive/20">
+            <AlertTriangle className="h-4 w-4 text-destructive" />
+            <AlertTitle className="text-destructive">No DNS records found</AlertTitle>
+            <AlertDescription className="text-destructive/90">
+              Please add the DNS records below to verify domain ownership.
+            </AlertDescription>
+          </Alert>
+        )}
+
         {/* DNS Records Card */}
         <div className="rounded-lg border border-border bg-card p-6">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-lg font-semibold text-foreground">DNS Records</h2>
             <div className="flex items-center gap-2">
+              <Button
+                variant="default"
+                size="sm"
+                className="gap-2 bg-primary"
+                onClick={handleRefresh}
+                disabled={isRefreshing}
+              >
+                {isRefreshing ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-4 w-4" />
+                )}
+                Refresh
+              </Button>
               <Button variant="outline" size="sm" className="gap-2">
                 <AlertTriangle className="h-4 w-4" />
                 How to add records
