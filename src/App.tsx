@@ -31,6 +31,7 @@ import SettingsPage from "./pages/SettingsPage";
 import NotificationsPage from "./pages/NotificationsPage";
 import NotificationPreferencesPage from "./pages/NotificationPreferencesPage";
 import AutomationsPage from "./pages/AutomationsPage";
+import SendersPage from "./pages/SendersPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -58,6 +59,7 @@ const App = () => (
               <Route path="/domains" element={<DomainsPage />} />
               <Route path="/domains/new" element={<AddDomainPage />} />
               <Route path="/domains/:id" element={<DomainDetailsPage />} />
+              <Route path="/senders" element={<SendersPage />} />
               <Route path="/logs" element={<LogsPage />} />
               <Route path="/logs/:id" element={<LogDetailsPage />} />
               <Route path="/api-keys" element={<ApiKeysPage />} />

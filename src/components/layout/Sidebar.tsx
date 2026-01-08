@@ -13,6 +13,7 @@ import {
   Settings,
   Send,
   Workflow,
+  UserCircle,
 } from "lucide-react";
 import logo from '/favicon-48x48.png';
 import logo2 from '/logo.png';
@@ -25,6 +26,7 @@ const navigation = [
   { name: "Audience", href: "/audience", icon: Users },
   { name: "Metrics", href: "/metrics", icon: BarChart3 },
   { name: "Domains", href: "/domains", icon: Globe },
+  { name: "Senders", href: "/senders", icon: UserCircle },
   { name: "Logs", href: "/logs", icon: ScrollText },
   { name: "API Keys", href: "/api-keys", icon: Key },
   { name: "Webhooks", href: "/webhooks", icon: Webhook },
