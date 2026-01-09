@@ -673,16 +673,36 @@ export default function AutomationsPage() {
     setEmailDialogOpen(true);
   };
 
-  const handleDeleteEmail = (id: string, source: 'main' | 'post') => {
-    if (source === 'main') {
-      setEmailSteps(emailSteps.filter(e => e.id !== id));
-      if (conditionBranch?.targetEmailId === id) {
-        setConditionBranch(null);
-      }
-    } else {
-      setPostConditionEmailSteps(postConditionEmailSteps.filter(e => e.id !== id));
+  const handleDeleteEmail = async (id: string, source: 'main' | 'post') => {
+    if (!selectedWorkflow) {
+      toast.error("No workflow selected");
+      return;
     }
-    toast.success("Email step removed");
+
+    try {
+      const response = await api(`/workflows/${selectedWorkflow.id}/steps/${id}`, {
+        method: "DELETE",
+      });
+
+      // Expect 204 No Content response
+      if (response.status === 204) {
+        // Update local state after successful deletion
+        if (source === 'main') {
+          setEmailSteps(emailSteps.filter(e => e.id !== id));
+          if (conditionBranch?.targetEmailId === id) {
+            setConditionBranch(null);
+          }
+        } else {
+          setPostConditionEmailSteps(postConditionEmailSteps.filter(e => e.id !== id));
+        }
+        toast.success("Email step removed");
+      } else {
+        toast.error("Failed to delete step");
+      }
+    } catch (error) {
+      console.error("Error deleting step:", error);
+      toast.error("Failed to delete step");
+    }
   };
 
   const handleAddCondition = (emailId: string) => {
