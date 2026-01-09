@@ -1039,16 +1039,18 @@ bg-[size:10px_10px]">
                 {/* Merge connector */}
                 <div className="flex justify-center">
                   <div className="flex flex-col items-center">
-                    {/* Connection nodes at top with vertical lines going down to horizontal merge */}
-                    <div className="flex items-center w-[416px] justify-between">
-                      <div className="flex flex-col items-center">
-                        <div className="h-1.5 w-1.5" />
-                        <div className="w-px h-4 bg-[#999]" />
-                      </div>
-                      <div className="flex flex-col items-center">
-                        <div className="h-1.5 w-1.5" />
-                        <div className="w-px h-4 bg-[#999]" />
-                      </div>
+                    {/* Upper horizontal line with nodes - same pattern as lower */}
+                    <div className="flex items-center gap-0">
+                      <div className="h-1.5 w-1.5 rounded-full bg-[#999]" />
+                      <div className="w-[200px] h-px bg-[#999] -mx-[0.5px]" />
+                      <div className="h-1.5 w-1.5 rounded-full bg-[#999]" />
+                      <div className="w-[200px] h-px bg-[#999] -mx-[0.5px]" />
+                      <div className="h-1.5 w-1.5 rounded-full bg-[#999]" />
+                    </div>
+                    {/* Vertical lines going down from left and right nodes */}
+                    <div className="flex items-center w-[406px] justify-between -mt-[3px]">
+                      <div className="w-px h-4 bg-[#999]" />
+                      <div className="w-px h-4 bg-[#999]" />
                     </div>
                     {/* Horizontal merge line with center node */}
                     <div className="flex items-center gap-0 -mt-[3px]">
