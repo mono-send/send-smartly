@@ -1079,7 +1079,7 @@ bg-[size:10px_10px]">
 
             {/* Exit Block */}
             <Card className="p-4">
-              <div className="flex items-center gap-2 text-sm font-medium text-foreground mb-4">
+              <div className="flex items-center gap-2 text-sm font-medium text-foreground mb-4 justify-center">
                 <LogOut className="h-4 w-4" />
                 EXIT
               </div>
