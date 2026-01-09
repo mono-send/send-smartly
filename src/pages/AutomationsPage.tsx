@@ -752,7 +752,7 @@ bg-[size:10px_10px]">
             {conditionBranch && emailSteps.length > 0 && (
               <div className="relative">
                 {/* IF Condition Block */}
-                <Card className="p-4 border-2 border-dashed border-primary/50 bg-card">
+                <Card className="p-4 border border-dashed border-primary/50 bg-card">
                   <div className="flex items-center gap-2 mb-3 justify-center">
                     <div className="flex items-center gap-2 text-sm font-medium text-foreground">
                       <GitBranch className="h-4 w-4 text-primary" />
@@ -811,7 +811,7 @@ bg-[size:10px_10px]">
                 {/* YES and NO Branches side by side */}
                 <div className="grid grid-cols-2 gap-8">
                   {/* YES Branch */}
-                  <div className="flex flex-col items-center rounded-lg text-card-foreground shadow-sm p-4 m-4 border-2 border-dashed border-primary/50 bg-card">
+                  <div className="flex flex-col items-center rounded-lg text-card-foreground shadow-sm p-4 m-4 border border-dashed border-primary/50 bg-card">
                     <div className="flex items-center gap-2 text-xs font-semibold text-green-600 mb-2">
                       <div className="h-1.5 w-1.5 rounded-full bg-green-500" />
                       YES
@@ -886,7 +886,7 @@ bg-[size:10px_10px]">
                   </div>
 
                   {/* NO Branch */}
-                  <div className="flex flex-col items-center rounded-lg text-card-foreground shadow-sm p-4 m-4 border-2 border-dashed border-primary/50 bg-card">
+                  <div className="flex flex-col items-center rounded-lg text-card-foreground shadow-sm p-4 m-4 border border-dashed border-primary/50 bg-card">
                     <div className="flex items-center gap-2 text-xs font-semibold text-orange-600 mb-2">
                       <div className="h-1.5 w-1.5 rounded-full bg-orange-500" />
                       NO
