@@ -472,17 +472,123 @@ export default function AutomationsPage() {
     setSteps: React.Dispatch<React.SetStateAction<EmailStep[]>>,
     successMessage: string
   ) => {
-    return (event: DragEndEvent) => {
+    return async (event: DragEndEvent) => {
       const { active, over } = event;
 
       if (over && active.id !== over.id) {
+        let reorderedSteps: EmailStep[] = [];
+
         setSteps((items) => {
           const oldIndex = items.findIndex((item) => item.id === active.id);
           const newIndex = items.findIndex((item) => item.id === over.id);
 
-          return arrayMove(items, oldIndex, newIndex);
+          reorderedSteps = arrayMove(items, oldIndex, newIndex);
+          return reorderedSteps;
         });
-        toast.success(successMessage);
+
+        // Persist the reordering to the backend
+        if (selectedWorkflow && reorderedSteps.length > 0) {
+          try {
+            // Build a map of email step ID to its new position
+            const emailPositionMap = new Map<string, number>();
+            reorderedSteps.forEach((emailStep, index) => {
+              emailPositionMap.set(emailStep.id, index);
+            });
+
+            // Find all workflow steps and group them by email step
+            // Each email step may have an associated wait step
+            const emailStepGroups = new Map<string, { email: WorkflowStep; wait?: WorkflowStep }>();
+
+            selectedWorkflow.steps.forEach(step => {
+              if (step.step_type === 'email') {
+                emailStepGroups.set(step.id, { email: step });
+              }
+            });
+
+            // Associate wait steps with their emails
+            const sortedSteps = [...selectedWorkflow.steps].sort((a, b) => a.position - b.position);
+            sortedSteps.forEach((step, index) => {
+              if (step.step_type === 'wait') {
+                // Check if next step is an email
+                const nextStep = index < sortedSteps.length - 1 ? sortedSteps[index + 1] : null;
+                if (nextStep && nextStep.step_type === 'email') {
+                  const group = emailStepGroups.get(nextStep.id);
+                  if (group) {
+                    group.wait = step;
+                  }
+                }
+              }
+            });
+
+            // Build the steps array with updated positions
+            const stepsToReorder: Array<{
+              id: string;
+              position: number;
+              parent_step_id: string | null;
+              branch: string | null;
+            }> = [];
+
+            reorderedSteps.forEach((emailStep, index) => {
+              const group = emailStepGroups.get(emailStep.id);
+              if (!group) return;
+
+              let currentPosition = (index * 2) + 1;
+
+              // Add wait step first (if exists)
+              if (group.wait) {
+                stepsToReorder.push({
+                  id: group.wait.id,
+                  position: currentPosition,
+                  parent_step_id: group.wait.parent_step_id,
+                  branch: group.wait.branch,
+                });
+                currentPosition++;
+              }
+
+              // Add email step
+              stepsToReorder.push({
+                id: group.email.id,
+                position: currentPosition,
+                parent_step_id: group.email.parent_step_id,
+                branch: group.email.branch,
+              });
+            });
+
+            // Call the reorder API
+            const response = await api(`/workflows/${selectedWorkflow.id}/steps/reorder`, {
+              method: "PUT",
+              body: {
+                steps: stepsToReorder,
+              },
+            });
+
+            if (!response.ok) {
+              const error = await response.json();
+              toast.error(error.detail || "Failed to reorder steps");
+              // Revert the local state by refetching workflow
+              fetchWorkflowDetails(selectedWorkflow.id);
+              return;
+            }
+
+            const updatedSteps: WorkflowStep[] = await response.json();
+
+            // Update the selectedWorkflow with new steps
+            setSelectedWorkflow({
+              ...selectedWorkflow,
+              steps: updatedSteps,
+            });
+
+            toast.success(successMessage);
+          } catch (error) {
+            toast.error("Failed to reorder steps");
+            // Revert the local state by refetching workflow
+            if (selectedWorkflow) {
+              fetchWorkflowDetails(selectedWorkflow.id);
+            }
+          }
+        } else {
+          toast.success(successMessage);
+        }
       }
     };
   };
