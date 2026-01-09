@@ -346,6 +346,7 @@ export default function AutomationsPage() {
 
   // Email steps
   const [emailSteps, setEmailSteps] = useState<EmailStep[]>([]);
+  const [postConditionEmailSteps, setPostConditionEmailSteps] = useState<EmailStep[]>([]);
   const [conditionBranch, setConditionBranch] = useState<ConditionBranch | null>(null);
   const [emailDialogOpen, setEmailDialogOpen] = useState(false);
   const [editingEmailId, setEditingEmailId] = useState<string | null>(null);
@@ -355,6 +356,7 @@ export default function AutomationsPage() {
   const [emailTemplateId, setEmailTemplateId] = useState<string | null>(null);
   const [emailWaitTime, setEmailWaitTime] = useState(5);
   const [emailWaitUnit, setEmailWaitUnit] = useState("day");
+  const [editingEmailSource, setEditingEmailSource] = useState<'main' | 'post' | null>(null);
   
   // For editing branch emails
   const [editingBranchType, setEditingBranchType] = useState<'yes' | 'no' | null>(null);
@@ -367,18 +369,23 @@ export default function AutomationsPage() {
     })
   );
 
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
+  const createDragEndHandler = (
+    setSteps: React.Dispatch<React.SetStateAction<EmailStep[]>>,
+    successMessage: string
+  ) => {
+    return (event: DragEndEvent) => {
+      const { active, over } = event;
 
-    if (over && active.id !== over.id) {
-      setEmailSteps((items) => {
-        const oldIndex = items.findIndex((item) => item.id === active.id);
-        const newIndex = items.findIndex((item) => item.id === over.id);
+      if (over && active.id !== over.id) {
+        setSteps((items) => {
+          const oldIndex = items.findIndex((item) => item.id === active.id);
+          const newIndex = items.findIndex((item) => item.id === over.id);
 
-        return arrayMove(items, oldIndex, newIndex);
-      });
-      toast.success("Email order updated");
-    }
+          return arrayMove(items, oldIndex, newIndex);
+        });
+        toast.success(successMessage);
+      }
+    };
   };
 
   useEffect(() => {
@@ -396,7 +403,7 @@ export default function AutomationsPage() {
     }
   };
 
-  const handleAddEmail = () => {
+  const handleAddEmail = (source: 'main' | 'post') => {
     setEditingEmailId(null);
     setEmailSender("");
     setEmailSubject("");
@@ -404,10 +411,12 @@ export default function AutomationsPage() {
     setEmailTemplateId(null);
     setEmailWaitTime(5);
     setEmailWaitUnit("day");
+    setEditingEmailSource(source);
+    setEditingBranchType(null);
     setEmailDialogOpen(true);
   };
 
-  const handleEditEmail = (email: EmailStep) => {
+  const handleEditEmail = (email: EmailStep, source: 'main' | 'post') => {
     setEditingEmailId(email.id);
     setEmailSender(email.sender);
     setEmailSubject(email.subject);
@@ -415,14 +424,19 @@ export default function AutomationsPage() {
     setEmailTemplateId(email.templateId ?? null);
     setEmailWaitTime(email.waitTime);
     setEmailWaitUnit(email.waitUnit);
+    setEditingEmailSource(source);
+    setEditingBranchType(null);
     setEmailDialogOpen(true);
   };
 
-  const handleDeleteEmail = (id: string) => {
-    setEmailSteps(emailSteps.filter(e => e.id !== id));
-    // Also remove condition if it references this email
-    if (conditionBranch?.targetEmailId === id) {
-      setConditionBranch(null);
+  const handleDeleteEmail = (id: string, source: 'main' | 'post') => {
+    if (source === 'main') {
+      setEmailSteps(emailSteps.filter(e => e.id !== id));
+      if (conditionBranch?.targetEmailId === id) {
+        setConditionBranch(null);
+      }
+    } else {
+      setPostConditionEmailSteps(postConditionEmailSteps.filter(e => e.id !== id));
     }
     toast.success("Email step removed");
   };
@@ -454,6 +468,7 @@ export default function AutomationsPage() {
   const handleAddBranchEmail = (branchType: 'yes' | 'no') => {
     setEditingEmailId(null);
     setEditingBranchType(branchType);
+    setEditingEmailSource(null);
     setEmailSender("");
     setEmailSubject("");
     setEmailContent("");
@@ -466,6 +481,7 @@ export default function AutomationsPage() {
   const handleEditBranchEmail = (branchType: 'yes' | 'no', email: EmailStep) => {
     setEditingEmailId(email.id);
     setEditingBranchType(branchType);
+    setEditingEmailSource(null);
     setEmailSender(email.sender);
     setEmailSubject(email.subject);
     setEmailContent(email.content);
@@ -522,15 +538,21 @@ export default function AutomationsPage() {
     }
 
     if (editingEmailId) {
-      // Update existing
-      setEmailSteps(emailSteps.map(e =>
-        e.id === editingEmailId
-          ? { ...e, sender: emailSender, subject: emailSubject, content: emailContent, templateId: emailTemplateId, waitTime: emailWaitTime, waitUnit: emailWaitUnit }
-          : e
-      ));
+      if (editingEmailSource === 'post') {
+        setPostConditionEmailSteps(postConditionEmailSteps.map(e =>
+          e.id === editingEmailId
+            ? { ...e, sender: emailSender, subject: emailSubject, content: emailContent, templateId: emailTemplateId, waitTime: emailWaitTime, waitUnit: emailWaitUnit }
+            : e
+        ));
+      } else {
+        setEmailSteps(emailSteps.map(e =>
+          e.id === editingEmailId
+            ? { ...e, sender: emailSender, subject: emailSubject, content: emailContent, templateId: emailTemplateId, waitTime: emailWaitTime, waitUnit: emailWaitUnit }
+            : e
+        ));
+      }
       toast.success("Email step updated");
     } else {
-      // Add new
       const newEmail: EmailStep = {
         id: crypto.randomUUID(),
         sender: emailSender,
@@ -540,9 +562,14 @@ export default function AutomationsPage() {
         waitTime: emailWaitTime,
         waitUnit: emailWaitUnit,
       };
-      setEmailSteps([...emailSteps, newEmail]);
+      if (editingEmailSource === 'post') {
+        setPostConditionEmailSteps([...postConditionEmailSteps, newEmail]);
+      } else {
+        setEmailSteps([...emailSteps, newEmail]);
+      }
       toast.success("Email step added");
     }
+    setEditingEmailSource(null);
     setEmailDialogOpen(false);
   };
 
@@ -627,6 +654,9 @@ export default function AutomationsPage() {
 
   const showPostConditionActions = !conditionBranch
     || Boolean(conditionBranch.yesBranch.email || conditionBranch.noBranch.email);
+
+  const handleEmailDragEnd = createDragEndHandler(setEmailSteps, "Email order updated");
+  const handlePostConditionDragEnd = createDragEndHandler(setPostConditionEmailSteps, "Post-condition email order updated");
 
   return (
     <div className="min-h-screen bg-muted/30 flex flex-col">
@@ -730,7 +760,7 @@ bg-[size:10px_10px]">
             <DndContext
               sensors={sensors}
               collisionDetection={closestCenter}
-              onDragEnd={handleDragEnd}
+              onDragEnd={handleEmailDragEnd}
             >
               <SortableContext
                 items={emailSteps.map(email => email.id)}
@@ -743,8 +773,8 @@ bg-[size:10px_10px]">
                     index={index}
                     emailSteps={emailSteps}
                     setEmailSteps={setEmailSteps}
-                    handleEditEmail={handleEditEmail}
-                    handleDeleteEmail={handleDeleteEmail}
+                    handleEditEmail={(step) => handleEditEmail(step, 'main')}
+                    handleDeleteEmail={(id) => handleDeleteEmail(id, 'main')}
                     getSenderLabel={getSenderLabel}
                   />
                 ))}
@@ -978,6 +1008,33 @@ bg-[size:10px_10px]">
               </div>
             )}
 
+            {/* Post-condition email steps */}
+            {conditionBranch && (
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handlePostConditionDragEnd}
+              >
+                <SortableContext
+                  items={postConditionEmailSteps.map(email => email.id)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  {postConditionEmailSteps.map((email, index) => (
+                    <SortableEmailStep
+                      key={email.id}
+                      email={email}
+                      index={index}
+                      emailSteps={postConditionEmailSteps}
+                      setEmailSteps={setPostConditionEmailSteps}
+                      handleEditEmail={(step) => handleEditEmail(step, 'post')}
+                      handleDeleteEmail={(id) => handleDeleteEmail(id, 'post')}
+                      getSenderLabel={getSenderLabel}
+                    />
+                  ))}
+                </SortableContext>
+              </DndContext>
+            )}
+
             {/* Add Email Block - shown when no condition or after at least one branch email */}
             {showPostConditionActions && (
               <div className="flex justify-center">
@@ -986,7 +1043,7 @@ bg-[size:10px_10px]">
                     <Button
                       variant="ghost"
                       className="flex-1 rounded-none justify-center gap-2 text-sm font-medium"
-                      onClick={handleAddEmail}
+                      onClick={() => handleAddEmail(conditionBranch ? 'post' : 'main')}
                     >
                       <Mail className="h-4 w-4" />
                       Add Email
@@ -1004,7 +1061,7 @@ bg-[size:10px_10px]">
                   <Button
                     variant="outline"
                     className="max-w-xs justify-center gap-2 text-sm font-medium"
-                    onClick={handleAddEmail}
+                    onClick={() => handleAddEmail('main')}
                   >
                     <Mail className="h-4 w-4" />
                     Add Email
