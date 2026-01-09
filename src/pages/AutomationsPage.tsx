@@ -407,7 +407,7 @@ export default function AutomationsPage() {
 
   const handleAddEmail = (source: 'main' | 'post') => {
     if (!selectedSegment) {
-      toast.error("Segment should be selected before adding an email.");
+      toast.warning("Segment should be selected before adding an email.");
       setAddEmailBounce(true);
       window.setTimeout(() => setAddEmailBounce(false), 600);
       return;
@@ -475,7 +475,7 @@ export default function AutomationsPage() {
 
   const handleAddBranchEmail = (branchType: 'yes' | 'no') => {
     if (!selectedSegment) {
-      toast.error("Segment should be selected before adding an email.");
+      toast.warning("Segment should be selected before adding an email.");
       setAddEmailBounce(true);
       window.setTimeout(() => setAddEmailBounce(false), 600);
       return;
