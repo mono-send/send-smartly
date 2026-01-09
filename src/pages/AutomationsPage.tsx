@@ -717,77 +717,61 @@ export default function AutomationsPage() {
       }
       toast.success("Email step updated");
     } else {
-      if (editingEmailSource === 'main' && emailSteps.length === 0) {
-        if (!selectedWorkflow) {
-          toast.error("No workflow selected");
-          return;
-        }
-
-        const position = 1;
-        try {
-          const response = await api(`/workflows/${selectedWorkflow.id}/steps`, {
-            method: "POST",
-            body: {
-              step_type: "email",
-              position,
-              parent_step_id: null,
-              branch: null,
-              sender_id: emailSender,
-              template_id: emailTemplateId,
-              subject_override: emailSubject,
-              content_override: emailContent,
-            },
-          });
-
-          if (!response.ok) {
-            const error = await response.json();
-            toast.error(error.detail || "Failed to add email step");
-            return;
-          }
-
-          const createdStep: WorkflowStep = await response.json();
-          const createdConfig = createdStep.config ?? {};
-          const newEmail: EmailStep = {
-            id: createdStep.id,
-            senderId: createdConfig.sender_id ?? emailSender,
-            senderEmail: createdConfig.sender_email ?? selectedSenderEmail,
-            senderFrom: selectedSender.from,
-            subject: createdConfig.subject_override ?? emailSubject,
-            content: createdConfig.content_override ?? emailContent,
-            templateId: createdConfig.template_id ?? emailTemplateId,
-            waitTime: emailWaitTime,
-            waitUnit: emailWaitUnit,
-          };
-
-          setEmailSteps([newEmail]);
-          toast.success("Email step added");
-        } catch (error) {
-          toast.error("Failed to add email step");
-          return;
-        }
-
-        setEditingEmailSource(null);
-        setEmailDialogOpen(false);
+      // Adding a new email step - use API for all email steps
+      if (!selectedWorkflow) {
+        toast.error("No workflow selected");
         return;
       }
 
-      const newEmail: EmailStep = {
-        id: crypto.randomUUID(),
-        senderId: emailSender,
-        senderFrom: selectedSender.from,
-        senderEmail: selectedSenderEmail,
-        subject: emailSubject,
-        content: emailContent,
-        templateId: emailTemplateId,
-        waitTime: emailWaitTime,
-        waitUnit: emailWaitUnit,
-      };
-      if (editingEmailSource === 'post') {
-        setPostConditionEmailSteps([...postConditionEmailSteps, newEmail]);
-      } else {
-        setEmailSteps([...emailSteps, newEmail]);
+      const isMainBranch = editingEmailSource === 'main';
+      const currentSteps = isMainBranch ? emailSteps : postConditionEmailSteps;
+      const position = currentSteps.length + 1;
+
+      try {
+        const response = await api(`/workflows/${selectedWorkflow.id}/steps`, {
+          method: "POST",
+          body: {
+            step_type: "email",
+            position,
+            parent_step_id: null,
+            branch: null,
+            sender_id: emailSender,
+            template_id: emailTemplateId,
+            subject_override: emailSubject,
+            content_override: emailContent,
+          },
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          toast.error(error.detail || "Failed to add email step");
+          return;
+        }
+
+        const createdStep: WorkflowStep = await response.json();
+        const createdConfig = createdStep.config ?? {};
+        const newEmail: EmailStep = {
+          id: createdStep.id,
+          senderId: createdConfig.sender_id ?? emailSender,
+          senderEmail: createdConfig.sender_email ?? selectedSenderEmail,
+          senderFrom: selectedSender.from,
+          subject: createdConfig.subject_override ?? emailSubject,
+          content: createdConfig.content_override ?? emailContent,
+          templateId: createdConfig.template_id ?? emailTemplateId,
+          waitTime: emailWaitTime,
+          waitUnit: emailWaitUnit,
+        };
+
+        if (editingEmailSource === 'post') {
+          setPostConditionEmailSteps([...postConditionEmailSteps, newEmail]);
+        } else {
+          setEmailSteps([...emailSteps, newEmail]);
+        }
+        toast.success("Email step added");
+      } catch (error) {
+        toast.error("Failed to add email step");
+        return;
       }
-      toast.success("Email step added");
     }
     setEditingEmailSource(null);
     setEmailDialogOpen(false);
