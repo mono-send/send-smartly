@@ -974,7 +974,7 @@ bg-[size:10px_10px]">
                         <div className="h-1.5 w-1.5 rounded-full bg-orange-500" />
                         NO
                       </div>
-                      <div className="w-px h-4 bg-orange-400" />
+                      {/* <div className="w-px h-4 bg-orange-400" /> */}
                     
                     {/* Wait time for NO branch */}
                     <Card className="p-4 w-full max-w-[240px] border-orange-200 bg-orange-50/50">
@@ -997,7 +997,7 @@ bg-[size:10px_10px]">
                       </div>
                     </Card>
                     
-                    <div className="w-px h-4 bg-orange-400" />
+                    {/* <div className="w-px h-4 bg-orange-400" /> */}
 
                     {/* Email for NO branch */}
                     {conditionBranch.noBranch.email ? (
