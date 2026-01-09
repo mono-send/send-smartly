@@ -882,38 +882,41 @@ bg-[size:10px_10px]">
                     </Card>
                     
                     <div className="w-px h-4 bg-green-400" />
-                    
+
                     {/* Email for YES branch */}
                     {conditionBranch.yesBranch.email ? (
-                      <Card className="p-3 w-full max-w-[180px] border-green-200 group relative">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-1 text-xs font-medium">
-                            <Mail className="h-3 w-3" />
-                            EMAIL 2
+                      <>
+                        <Card className="p-3 w-full max-w-[180px] border-green-200 group relative">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-1 text-xs font-medium">
+                              <Mail className="h-3 w-3" />
+                              EMAIL 2
+                            </div>
+                            <div className="flex items-center gap-0.5">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-5 w-5 opacity-0 group-hover:opacity-100"
+                                onClick={() => handleEditBranchEmail('yes', conditionBranch.yesBranch.email!)}
+                              >
+                                <Pencil className="h-2.5 w-2.5" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-5 w-5 text-destructive opacity-0 group-hover:opacity-100"
+                                onClick={() => handleDeleteBranchEmail('yes')}
+                              >
+                                <Trash2 className="h-2.5 w-2.5" />
+                              </Button>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-0.5">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-5 w-5 opacity-0 group-hover:opacity-100"
-                              onClick={() => handleEditBranchEmail('yes', conditionBranch.yesBranch.email!)}
-                            >
-                              <Pencil className="h-2.5 w-2.5" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-5 w-5 text-destructive opacity-0 group-hover:opacity-100"
-                              onClick={() => handleDeleteBranchEmail('yes')}
-                            >
-                              <Trash2 className="h-2.5 w-2.5" />
-                            </Button>
-                          </div>
-                        </div>
-                        <p className="text-xs text-muted-foreground mt-1 truncate">
-                          {conditionBranch.yesBranch.email.subject}
-                        </p>
-                      </Card>
+                          <p className="text-xs text-muted-foreground mt-1 truncate">
+                            {conditionBranch.yesBranch.email.subject}
+                          </p>
+                        </Card>
+                        <div className="w-px h-4 bg-green-400" />
+                      </>
                     ) : (
                       <Button
                         variant="outline"
@@ -957,38 +960,41 @@ bg-[size:10px_10px]">
                     </Card>
                     
                     <div className="w-px h-4 bg-orange-400" />
-                    
+
                     {/* Email for NO branch */}
                     {conditionBranch.noBranch.email ? (
-                      <Card className="p-3 w-full max-w-[180px] border-orange-200 group relative">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-1 text-xs font-medium">
-                            <Mail className="h-3 w-3" />
-                            EMAIL 2
+                      <>
+                        <Card className="p-3 w-full max-w-[180px] border-orange-200 group relative">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-1 text-xs font-medium">
+                              <Mail className="h-3 w-3" />
+                              EMAIL 2
+                            </div>
+                            <div className="flex items-center gap-0.5">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-5 w-5 opacity-0 group-hover:opacity-100"
+                                onClick={() => handleEditBranchEmail('no', conditionBranch.noBranch.email!)}
+                              >
+                                <Pencil className="h-2.5 w-2.5" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-5 w-5 text-destructive opacity-0 group-hover:opacity-100"
+                                onClick={() => handleDeleteBranchEmail('no')}
+                              >
+                                <Trash2 className="h-2.5 w-2.5" />
+                              </Button>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-0.5">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-5 w-5 opacity-0 group-hover:opacity-100"
-                              onClick={() => handleEditBranchEmail('no', conditionBranch.noBranch.email!)}
-                            >
-                              <Pencil className="h-2.5 w-2.5" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-5 w-5 text-destructive opacity-0 group-hover:opacity-100"
-                              onClick={() => handleDeleteBranchEmail('no')}
-                            >
-                              <Trash2 className="h-2.5 w-2.5" />
-                            </Button>
-                          </div>
-                        </div>
-                        <p className="text-xs text-muted-foreground mt-1 truncate">
-                          {conditionBranch.noBranch.email.subject}
-                        </p>
-                      </Card>
+                          <p className="text-xs text-muted-foreground mt-1 truncate">
+                            {conditionBranch.noBranch.email.subject}
+                          </p>
+                        </Card>
+                        <div className="w-px h-4 bg-orange-400" />
+                      </>
                     ) : (
                       <Button
                         variant="outline"
