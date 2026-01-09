@@ -250,7 +250,7 @@ function SortableEmailStep({
             <GripVertical className="h-4 w-4 text-muted-foreground" />
           </div>
           <div className="flex flex-1 gap-3 p-4">
-            <div className="h-12 w-12 rounded-md border bg-muted/20 flex items-center justify-center text-muted-foreground">
+            <div className="h-20 w-20 rounded-md border bg-muted/20 flex items-center justify-center text-muted-foreground">
               <Mail className="h-5 w-5" />
             </div>
             <div className="flex-1 space-y-2">
