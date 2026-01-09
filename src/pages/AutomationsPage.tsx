@@ -800,7 +800,7 @@ bg-[size:10px_10px]">
                     
                     {/* Wait time for YES branch */}
                     <Card className="px-3 py-2 w-full max-w-[240px] border-green-200 bg-green-50/50">
-                      <div className="flex flex-wrap items-center gap-2 text-xs text-foreground">
+                      <div className="flex flex-wrap items-center gap-2 text-xs text-foreground justify-center">
                         <Clock className="h-3 w-3" />
                         <span>Wait</span>
                         <WaitForControl
@@ -875,7 +875,7 @@ bg-[size:10px_10px]">
                     
                     {/* Wait time for NO branch */}
                     <Card className="px-3 py-2 w-full max-w-[240px] border-orange-200 bg-orange-50/50">
-                      <div className="flex flex-wrap items-center gap-2 text-xs text-foreground">
+                      <div className="flex flex-wrap items-center gap-2 text-xs text-foreground justify-center">
                         <Clock className="h-3 w-3" />
                         <span>Wait</span>
                         <WaitForControl
