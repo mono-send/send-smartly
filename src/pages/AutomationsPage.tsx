@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/dialog";
 import { X, ArrowRight, Clock, Mail, LogOut, Plus, Minus, Info, Pencil, Trash2, GripVertical, GitBranch, Eye, EyeOff, MoreVertical, ChevronDown } from "lucide-react";
 import { api } from "@/lib/api";
+import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import {
   DndContext,
@@ -357,6 +358,7 @@ export default function AutomationsPage() {
   const [emailWaitTime, setEmailWaitTime] = useState(5);
   const [emailWaitUnit, setEmailWaitUnit] = useState("day");
   const [editingEmailSource, setEditingEmailSource] = useState<'main' | 'post' | null>(null);
+  const [addEmailBounce, setAddEmailBounce] = useState(false);
   
   // For editing branch emails
   const [editingBranchType, setEditingBranchType] = useState<'yes' | 'no' | null>(null);
@@ -404,6 +406,12 @@ export default function AutomationsPage() {
   };
 
   const handleAddEmail = (source: 'main' | 'post') => {
+    if (!selectedSegment) {
+      toast.error("Segment should be selected before adding an email.");
+      setAddEmailBounce(true);
+      window.setTimeout(() => setAddEmailBounce(false), 600);
+      return;
+    }
     setEditingEmailId(null);
     setEmailSender("");
     setEmailSubject("");
@@ -466,6 +474,12 @@ export default function AutomationsPage() {
   };
 
   const handleAddBranchEmail = (branchType: 'yes' | 'no') => {
+    if (!selectedSegment) {
+      toast.error("Segment should be selected before adding an email.");
+      setAddEmailBounce(true);
+      window.setTimeout(() => setAddEmailBounce(false), 600);
+      return;
+    }
     setEditingEmailId(null);
     setEditingBranchType(branchType);
     setEditingEmailSource(null);
@@ -932,7 +946,10 @@ bg-[size:10px_10px]">
                         <Button
                           variant="outline"
                           size="sm"
-                          className="w-full max-w-[180px] text-xs h-8 border-green-200 hover:border-green-400"
+                          className={cn(
+                            "w-full max-w-[180px] text-xs h-8 border-green-200 hover:border-green-400",
+                            addEmailBounce && "animate-bounce"
+                          )}
                           onClick={() => handleAddBranchEmail('yes')}
                         >
                           <Plus className="h-3 w-3 mr-1" />
@@ -1022,7 +1039,10 @@ bg-[size:10px_10px]">
                         <Button
                           variant="outline"
                           size="sm"
-                          className="w-full max-w-[180px] text-xs h-8 border-orange-200 hover:border-orange-400"
+                          className={cn(
+                            "w-full max-w-[180px] text-xs h-8 border-orange-200 hover:border-orange-400",
+                            addEmailBounce && "animate-bounce"
+                          )}
                           onClick={() => handleAddBranchEmail('no')}
                         >
                           <Plus className="h-3 w-3 mr-1" />
@@ -1100,7 +1120,10 @@ bg-[size:10px_10px]">
                   <div className="flex w-full max-w-xs overflow-hidden rounded-md border divide-x divide-border bg-background">
                     <Button
                       variant="ghost"
-                      className="flex-1 rounded-none justify-center gap-2 text-sm font-medium"
+                      className={cn(
+                        "flex-1 rounded-none justify-center gap-2 text-sm font-medium",
+                        addEmailBounce && "animate-bounce"
+                      )}
                       onClick={() => handleAddEmail(conditionBranch ? 'post' : 'main')}
                     >
                       <Mail className="h-4 w-4" />
@@ -1118,7 +1141,10 @@ bg-[size:10px_10px]">
                 ) : (
                   <Button
                     variant="outline"
-                    className="max-w-xs justify-center gap-2 text-sm font-medium"
+                    className={cn(
+                      "max-w-xs justify-center gap-2 text-sm font-medium",
+                      addEmailBounce && "animate-bounce"
+                    )}
                     onClick={() => handleAddEmail('main')}
                   >
                     <Mail className="h-4 w-4" />
