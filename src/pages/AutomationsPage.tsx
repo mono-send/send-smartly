@@ -972,7 +972,7 @@ bg-[size:10px_10px]">
                     <div className="flex flex-col items-center rounded-lg text-card-foreground shadow-sm p-4 w-full border border-dashed border-primary/50 bg-card">
                       <div className="flex items-center gap-2 text-xs font-semibold text-orange-600 mb-2">
                         <div className="h-1.5 w-1.5 rounded-full bg-orange-500" />
-                        NO
+                        NO1
                       </div>
                       {/* <div className="w-px h-4 bg-orange-400" /> */}
                     
