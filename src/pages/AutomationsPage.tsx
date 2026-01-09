@@ -633,9 +633,25 @@ export default function AutomationsPage() {
     toast.success("Email removed from branch");
   };
 
-  const handleSaveEmail = () => {
+  const handleSaveEmail = async () => {
+    if (!emailSender) {
+      toast.error("Sender is required");
+      return;
+    }
+
+    if (!emailTemplateId) {
+      toast.error("Email template is required");
+      return;
+    }
+
     if (!emailSubject.trim()) {
       toast.error("Email subject is required");
+      return;
+    }
+
+    const selectedSender = senders.find((sender) => sender.from === emailSender);
+    if (!selectedSender) {
+      toast.error("Sender is required");
       return;
     }
 
@@ -685,6 +701,58 @@ export default function AutomationsPage() {
       }
       toast.success("Email step updated");
     } else {
+      if (editingEmailSource === 'main' && emailSteps.length === 0) {
+        if (!selectedWorkflow) {
+          toast.error("No workflow selected");
+          return;
+        }
+
+        const position = 1;
+        try {
+          const response = await api(`/workflows/${selectedWorkflow.id}/steps`, {
+            method: "POST",
+            body: {
+              step_type: "email",
+              position,
+              parent_step_id: null,
+              branch: null,
+              sender_id: selectedSender.id,
+              template_id: emailTemplateId,
+              subject_override: emailSubject,
+              content_override: emailContent,
+            },
+          });
+
+          if (!response.ok) {
+            const error = await response.json();
+            toast.error(error.detail || "Failed to add email step");
+            return;
+          }
+
+          const createdStep: WorkflowStep = await response.json();
+          const createdConfig = createdStep.config ?? {};
+          const newEmail: EmailStep = {
+            id: createdStep.id,
+            sender: createdConfig.sender_email ?? emailSender,
+            subject: createdConfig.subject_override ?? emailSubject,
+            content: createdConfig.content_override ?? emailContent,
+            templateId: createdConfig.template_id ?? emailTemplateId,
+            waitTime: emailWaitTime,
+            waitUnit: emailWaitUnit,
+          };
+
+          setEmailSteps([newEmail]);
+          toast.success("Email step added");
+        } catch (error) {
+          toast.error("Failed to add email step");
+          return;
+        }
+
+        setEditingEmailSource(null);
+        setEmailDialogOpen(false);
+        return;
+      }
+
       const newEmail: EmailStep = {
         id: crypto.randomUUID(),
         sender: emailSender,
