@@ -662,10 +662,10 @@ bg-[size:10px_10px]">
                   </div>
                 </div>
                 <DialogFooter>
-                  <Button variant="outline" onClick={() => setEmailDialogOpen(false)}>
+                  <Button variant="outline" onClick={() => setEmailDialogOpen(false)} className="h-9">
                     Cancel
                   </Button>
-                  <Button onClick={handleSaveEmail}>
+                  <Button onClick={handleSaveEmail} className="h-9">
                     {editingEmailId ? "Save Changes" : "Add Email"}
                   </Button>
                 </DialogFooter>
