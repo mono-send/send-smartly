@@ -122,10 +122,10 @@ export default function AddDomainPage() {
             </div>
 
             <div className="flex gap-3 pt-4">
-              <Button variant="outline" onClick={() => navigate("/domains")} disabled={isSubmitting}>
+              <Button variant="outline" onClick={() => navigate("/domains")} disabled={isSubmitting} className="h-9">
                 Cancel
               </Button>
-              <Button onClick={handleAddDomain} disabled={isSubmitting}>
+              <Button onClick={handleAddDomain} disabled={isSubmitting} className="h-9">
                 {isSubmitting ? "Adding..." : "Add domain"}
               </Button>
             </div>
