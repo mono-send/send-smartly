@@ -20,7 +20,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { X, ArrowRight, Clock, Mail, LogOut, Plus, Minus, Info, Pencil, Trash2, GripVertical, GitBranch, Eye, EyeOff, MoreVertical } from "lucide-react";
+import { X, ArrowRight, Clock, Mail, LogOut, Plus, Minus, Info, Pencil, Trash2, GripVertical, GitBranch, Eye, EyeOff, MoreVertical, ChevronDown } from "lucide-react";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
 import {
@@ -97,9 +97,6 @@ interface SortableEmailStepProps {
   setEmailSteps: (steps: EmailStep[]) => void;
   handleEditEmail: (email: EmailStep) => void;
   handleDeleteEmail: (id: string) => void;
-  showAddCondition: boolean;
-  onAddCondition: (emailId: string) => void;
-  hasCondition: boolean;
 }
 
 interface WaitForControlProps {
@@ -184,10 +181,7 @@ function SortableEmailStep({
   emailSteps,
   setEmailSteps,
   handleEditEmail,
-  handleDeleteEmail,
-  showAddCondition,
-  onAddCondition,
-  hasCondition
+  handleDeleteEmail
 }: SortableEmailStepProps) {
   const {
     attributes,
@@ -254,22 +248,11 @@ function SortableEmailStep({
               <Mail className="h-5 w-5" />
             </div>
             <div className="flex-1 space-y-2">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-                  EMAIL {index + 1}
-                </div>
-                <div className="flex items-center gap-1">
-                  {showAddCondition && !hasCondition && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                      onClick={() => onAddCondition(email.id)}
-                      title="Add condition branch"
-                    >
-                      <GitBranch className="h-3.5 w-3.5" />
-                    </Button>
-                  )}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                    EMAIL {index + 1}
+                  </div>
+                  <div className="flex items-center gap-1">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button
@@ -741,9 +724,6 @@ bg-[size:10px_10px]">
                     setEmailSteps={setEmailSteps}
                     handleEditEmail={handleEditEmail}
                     handleDeleteEmail={handleDeleteEmail}
-                    showAddCondition={index === 0}
-                    onAddCondition={handleAddCondition}
-                    hasCondition={conditionBranch?.targetEmailId === email.id}
                   />
                 ))}
               </SortableContext>
@@ -979,15 +959,34 @@ bg-[size:10px_10px]">
             {/* Add Email Block - shown when no condition or after condition */}
             {!conditionBranch && (
               <div className="flex justify-center">
-                <Button
-                  variant="outline"
-                  className="w-full max-w-xs justify-center gap-2 text-sm font-medium"
-                  onClick={handleAddEmail}
-                >
-                  <Mail className="h-4 w-4" />
-                  ADD EMAIL
-                  <Plus className="h-4 w-4" />
-                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="w-full max-w-xs justify-center gap-2 text-sm font-medium"
+                    >
+                      <Mail className="h-4 w-4" />
+                      ADD EMAIL
+                      <ChevronDown className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="center">
+                    <DropdownMenuItem onClick={handleAddEmail}>
+                      Add Email
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => {
+                        if (emailSteps.length === 0) {
+                          handleAddEmail();
+                          return;
+                        }
+                        handleAddCondition(emailSteps[0].id);
+                      }}
+                    >
+                      Add Condition Branch
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             )}
 
