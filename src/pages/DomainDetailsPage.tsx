@@ -104,10 +104,10 @@ function CopyableValue({ value, truncate }: { value: string; truncate?: boolean 
             className="h-7 w-7"
             onClick={(e) => {
               e.stopPropagation();
-              handleCopy(value);
+              handleCopy();
             }}
           >
-            {copied === value ? (
+            {copied ? (
               <Check className="h-3.5 w-3.5 text-success" />
             ) : (
               <Copy className="h-3.5 w-3.5" />
