@@ -841,6 +841,15 @@ bg-[size:10px_10px]">
                   </div>
                 </div>
 
+                {/* Horizontal connector row aligned with YES/NO columns */}
+                <div className="flex justify-center pb-2">
+                  <div className="flex w-full items-center px-6">
+                    <div className="h-px flex-1 bg-[#999]" />
+                    <div className="h-1.5 w-1.5 rounded-full bg-[#999]" />
+                    <div className="h-px flex-1 bg-[#999]" />
+                  </div>
+                </div>
+
                 {/* YES and NO Branches side by side */}
                 <div className="grid grid-cols-2 gap-8">
                   {/* YES Branch */}
