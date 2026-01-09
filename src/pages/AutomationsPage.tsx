@@ -750,7 +750,7 @@ export default function AutomationsPage() {
   const fetchWorkflowDetails = async (workflowId: string) => {
     setIsLoadingWorkflowDetails(true);
     try {
-      const response = await api(`/v1.0/workflows/${workflowId}`);
+      const response = await api(`/workflows/${workflowId}`);
       if (!response.ok) {
         toast.error("Failed to load workflow details");
         return;
