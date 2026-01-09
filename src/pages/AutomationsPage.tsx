@@ -834,31 +834,34 @@ bg-[size:10px_10px]">
                 </Card>
 
                 {/* Branch connector - splits into YES and NO */}
-                <div className="flex justify-center py-2">
-                  <div className="flex flex-col items-center">
+                <div className="flex justify-center">
+                  <div className="flex flex-col items-center w-full">
+                    {/* Vertical line going down */}
                     <div className="w-px h-4 bg-[#999]" />
-                    <div className="h-1.5 w-1.5 rounded-full bg-[#999]" />
-                  </div>
-                </div>
-
-                {/* Horizontal connector row aligned with YES/NO columns */}
-                <div className="flex justify-center pb-2">
-                  <div className="flex w-full items-center px-6">
-                    <div className="h-px flex-1 bg-[#999]" />
-                    <div className="h-1.5 w-1.5 rounded-full bg-[#999]" />
-                    <div className="h-px flex-1 bg-[#999]" />
+                    {/* Horizontal split line with center node */}
+                    <div className="flex w-full items-center px-6">
+                      <div className="h-px flex-1 bg-[#999]" />
+                      <div className="h-1.5 w-1.5 rounded-full bg-[#999]" />
+                      <div className="h-px flex-1 bg-[#999]" />
+                    </div>
                   </div>
                 </div>
 
                 {/* YES and NO Branches side by side */}
                 <div className="grid grid-cols-2 gap-8">
                   {/* YES Branch */}
-                  <div className="flex flex-col items-center rounded-lg text-card-foreground shadow-sm p-4 m-4 border border-dashed border-primary/50 bg-card">
-                    <div className="flex items-center gap-2 text-xs font-semibold text-green-600 mb-2">
-                      <div className="h-1.5 w-1.5 rounded-full bg-green-500" />
-                      YES
-                    </div>
-                    <div className="w-px h-4 bg-green-400" />
+                  <div className="flex flex-col items-center">
+                    {/* Vertical connector from horizontal line to YES block */}
+                    <div className="w-px h-4 bg-[#999]" />
+                    <div className="h-1.5 w-1.5 rounded-full bg-[#999]" />
+                    <div className="w-px h-4 bg-[#999]" />
+
+                    <div className="flex flex-col items-center rounded-lg text-card-foreground shadow-sm p-4 w-full border border-dashed border-primary/50 bg-card">
+                      <div className="flex items-center gap-2 text-xs font-semibold text-green-600 mb-2">
+                        <div className="h-1.5 w-1.5 rounded-full bg-green-500" />
+                        YES
+                      </div>
+                      <div className="w-px h-4 bg-green-400" />
                     
                     {/* Wait time for YES branch */}
                     <Card className="p-4 w-full max-w-[240px] border-green-200 bg-green-50/50">
@@ -915,28 +918,44 @@ bg-[size:10px_10px]">
                             {conditionBranch.yesBranch.email.subject}
                           </p>
                         </Card>
+                        {/* Connector after YES branch email */}
                         <div className="w-px h-4 bg-green-400" />
+                        <div className="h-1.5 w-1.5 rounded-full bg-[#999]" />
+                        <div className="w-px h-4 bg-[#999]" />
                       </>
                     ) : (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="w-full max-w-[180px] text-xs h-8 border-green-200 hover:border-green-400"
-                        onClick={() => handleAddBranchEmail('yes')}
-                      >
-                        <Plus className="h-3 w-3 mr-1" />
-                        Add Email
-                      </Button>
+                      <>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full max-w-[180px] text-xs h-8 border-green-200 hover:border-green-400"
+                          onClick={() => handleAddBranchEmail('yes')}
+                        >
+                          <Plus className="h-3 w-3 mr-1" />
+                          Add Email
+                        </Button>
+                        {/* Connector when no email */}
+                        <div className="w-px h-4 bg-green-400" />
+                        <div className="h-1.5 w-1.5 rounded-full bg-[#999]" />
+                        <div className="w-px h-4 bg-[#999]" />
+                      </>
                     )}
+                    </div>
                   </div>
 
                   {/* NO Branch */}
-                  <div className="flex flex-col items-center rounded-lg text-card-foreground shadow-sm p-4 m-4 border border-dashed border-primary/50 bg-card">
-                    <div className="flex items-center gap-2 text-xs font-semibold text-orange-600 mb-2">
-                      <div className="h-1.5 w-1.5 rounded-full bg-orange-500" />
-                      NO
-                    </div>
-                    <div className="w-px h-4 bg-orange-400" />
+                  <div className="flex flex-col items-center">
+                    {/* Vertical connector from horizontal line to NO block */}
+                    <div className="w-px h-4 bg-[#999]" />
+                    <div className="h-1.5 w-1.5 rounded-full bg-[#999]" />
+                    <div className="w-px h-4 bg-[#999]" />
+
+                    <div className="flex flex-col items-center rounded-lg text-card-foreground shadow-sm p-4 w-full border border-dashed border-primary/50 bg-card">
+                      <div className="flex items-center gap-2 text-xs font-semibold text-orange-600 mb-2">
+                        <div className="h-1.5 w-1.5 rounded-full bg-orange-500" />
+                        NO
+                      </div>
+                      <div className="w-px h-4 bg-orange-400" />
                     
                     {/* Wait time for NO branch */}
                     <Card className="p-4 w-full max-w-[240px] border-orange-200 bg-orange-50/50">
@@ -993,19 +1012,29 @@ bg-[size:10px_10px]">
                             {conditionBranch.noBranch.email.subject}
                           </p>
                         </Card>
+                        {/* Connector after NO branch email */}
                         <div className="w-px h-4 bg-orange-400" />
+                        <div className="h-1.5 w-1.5 rounded-full bg-[#999]" />
+                        <div className="w-px h-4 bg-[#999]" />
                       </>
                     ) : (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="w-full max-w-[180px] text-xs h-8 border-orange-200 hover:border-orange-400"
-                        onClick={() => handleAddBranchEmail('no')}
-                      >
-                        <Plus className="h-3 w-3 mr-1" />
-                        Add Email
-                      </Button>
+                      <>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full max-w-[180px] text-xs h-8 border-orange-200 hover:border-orange-400"
+                          onClick={() => handleAddBranchEmail('no')}
+                        >
+                          <Plus className="h-3 w-3 mr-1" />
+                          Add Email
+                        </Button>
+                        {/* Connector when no email */}
+                        <div className="w-px h-4 bg-orange-400" />
+                        <div className="h-1.5 w-1.5 rounded-full bg-[#999]" />
+                        <div className="w-px h-4 bg-[#999]" />
+                      </>
                     )}
+                    </div>
                   </div>
                 </div>
 
