@@ -55,6 +55,10 @@ interface Sender {
   id: string;
   name: string;
   from: string;
+  domain: {
+    id: string;
+    name: string;
+  };
 }
 
 interface Template {
@@ -97,6 +101,7 @@ interface SortableEmailStepProps {
   setEmailSteps: (steps: EmailStep[]) => void;
   handleEditEmail: (email: EmailStep) => void;
   handleDeleteEmail: (id: string) => void;
+  getSenderLabel: (from?: string) => string;
 }
 
 interface WaitForControlProps {
@@ -181,7 +186,8 @@ function SortableEmailStep({
   emailSteps,
   setEmailSteps,
   handleEditEmail,
-  handleDeleteEmail
+  handleDeleteEmail,
+  getSenderLabel,
 }: SortableEmailStepProps) {
   const {
     attributes,
@@ -283,7 +289,8 @@ function SortableEmailStep({
                   <span className="font-medium text-foreground">Subject:</span> {email.subject}
                 </div>
                 <div className="truncate">
-                  <span className="font-medium text-foreground">Sender:</span> {email.sender || "Not set"}
+                  <span className="font-medium text-foreground">Sender:</span>{" "}
+                  {getSenderLabel(email.sender)}
                 </div>
               </div>
             </div>
@@ -320,6 +327,17 @@ export default function AutomationsPage() {
   const [isLoadingSenders, setIsLoadingSenders] = useState(false);
   const [templates, setTemplates] = useState<Template[]>([]);
   const [isLoadingTemplates, setIsLoadingTemplates] = useState(false);
+
+  const formatSenderLabel = (sender: Sender) => `${sender.name} <${sender.from}@${sender.domain.name}>`;
+  const getSenderLabel = (from?: string) => {
+    if (!from) {
+      return "Not set";
+    }
+
+    const sender = senders.find((entry) => entry.from === from);
+    return sender ? formatSenderLabel(sender) : from;
+  };
+
 
   // Inline title editing
   const [automationTitle, setAutomationTitle] = useState("Untitled Automation");
@@ -724,6 +742,7 @@ bg-[size:10px_10px]">
                     setEmailSteps={setEmailSteps}
                     handleEditEmail={handleEditEmail}
                     handleDeleteEmail={handleDeleteEmail}
+                    getSenderLabel={getSenderLabel}
                   />
                 ))}
               </SortableContext>
@@ -1015,7 +1034,7 @@ bg-[size:10px_10px]">
                         ) : senders.length ? (
                           senders.map((sender) => (
                             <SelectItem key={sender.id} value={sender.from}>
-                              {sender.name} ({sender.from})
+                              {formatSenderLabel(sender)}
                             </SelectItem>
                           ))
                         ) : (
