@@ -1000,7 +1000,7 @@ bg-[size:10px_10px]">
                 ) : (
                   <Button
                     variant="outline"
-                    className="w-full max-w-xs justify-center gap-2 text-sm font-medium"
+                    className="max-w-xs justify-center gap-2 text-sm font-medium"
                     onClick={handleAddEmail}
                   >
                     <Mail className="h-4 w-4" />
