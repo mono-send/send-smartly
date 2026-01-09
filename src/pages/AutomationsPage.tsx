@@ -8,13 +8,19 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { X, ArrowRight, Clock, Mail, LogOut, Plus, Minus, Info, Pencil, Trash2, GripVertical, GitBranch, Eye, EyeOff } from "lucide-react";
+import { X, ArrowRight, Clock, Mail, LogOut, Plus, Minus, Info, Pencil, Trash2, GripVertical, GitBranch, Eye, EyeOff, MoreVertical } from "lucide-react";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
 import {
@@ -234,56 +240,71 @@ function SortableEmailStep({
       </div>
 
       {/* Email Card with drag handle */}
-      <Card className="p-4 relative group">
-        {/* Drag Handle - Top Left */}
-        <div
-          {...attributes}
-          {...listeners}
-          className="absolute top-2 left-2 cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity duration-200 p-1 hover:bg-muted rounded"
-        >
-          <GripVertical className="h-4 w-4 text-muted-foreground" />
-        </div>
-
-        {/* Header with Email title and action buttons */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-            <Mail className="h-4 w-4" />
-            EMAIL {index + 1}
+      <Card className="group">
+        <div className="flex">
+          <div
+            {...attributes}
+            {...listeners}
+            className="flex w-10 items-center justify-center border-r bg-muted/40 cursor-grab active:cursor-grabbing"
+          >
+            <GripVertical className="h-4 w-4 text-muted-foreground" />
           </div>
-          <div className="flex items-center gap-1">
-            {showAddCondition && !hasCondition && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                onClick={() => onAddCondition(email.id)}
-                title="Add condition branch"
-              >
-                <GitBranch className="h-3.5 w-3.5" />
-              </Button>
-            )}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-              onClick={() => handleEditEmail(email)}
-              title="Edit Email Step"
-            >
-              <Pencil className="h-3.5 w-3.5" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7 text-destructive hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-              onClick={() => handleDeleteEmail(email.id)}
-              title="Delete"
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-            </Button>
+          <div className="flex flex-1 gap-3 p-4">
+            <div className="h-12 w-12 rounded-md border bg-muted/20 flex items-center justify-center text-muted-foreground">
+              <Mail className="h-5 w-5" />
+            </div>
+            <div className="flex-1 space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                  EMAIL {index + 1}
+                </div>
+                <div className="flex items-center gap-1">
+                  {showAddCondition && !hasCondition && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                      onClick={() => onAddCondition(email.id)}
+                      title="Add condition branch"
+                    >
+                      <GitBranch className="h-3.5 w-3.5" />
+                    </Button>
+                  )}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7"
+                        title="Email actions"
+                      >
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => handleEditEmail(email)}>
+                        Edit
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        className="text-destructive focus:text-destructive"
+                        onClick={() => handleDeleteEmail(email.id)}
+                      >
+                        Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              </div>
+              <div className="space-y-1 text-sm text-muted-foreground">
+                <div className="truncate">
+                  <span className="font-medium text-foreground">Subject:</span> {email.subject}
+                </div>
+                <div className="truncate">
+                  <span className="font-medium text-foreground">Sender:</span> {email.sender || "Not set"}
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
-        <div className="mt-2 text-sm text-muted-foreground truncate">
-          {email.subject}
         </div>
       </Card>
 
