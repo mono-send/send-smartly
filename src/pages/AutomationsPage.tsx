@@ -978,14 +978,35 @@ bg-[size:10px_10px]">
             {/* Add Email Block - shown when no condition or after condition */}
             {!conditionBranch && (
               <div className="flex justify-center">
-                <Button
-                  variant="outline"
-                  className="w-full max-w-xs justify-center gap-2 text-sm font-medium"
-                  onClick={handleAddEmail}
-                >
-                  <Mail className="h-4 w-4" />
-                  Add Email
-                </Button>
+                {emailSteps.length > 0 ? (
+                  <div className="flex w-full max-w-xs overflow-hidden rounded-md border divide-x divide-border">
+                    <Button
+                      variant="ghost"
+                      className="flex-1 rounded-none justify-center gap-2 text-sm font-medium"
+                      onClick={handleAddEmail}
+                    >
+                      <Mail className="h-4 w-4" />
+                      Add Email
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      className="flex-1 rounded-none justify-center gap-2 text-sm font-medium"
+                      onClick={() => handleAddCondition(emailSteps[0].id)}
+                    >
+                      <GitBranch className="h-4 w-4" />
+                      Add Condition
+                    </Button>
+                  </div>
+                ) : (
+                  <Button
+                    variant="outline"
+                    className="w-full max-w-xs justify-center gap-2 text-sm font-medium"
+                    onClick={handleAddEmail}
+                  >
+                    <Mail className="h-4 w-4" />
+                    Add Email
+                  </Button>
+                )}
               </div>
             )}
 
