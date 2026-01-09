@@ -828,20 +828,76 @@ export default function AutomationsPage() {
     }
 
     if (editingEmailId) {
-      if (editingEmailSource === 'post') {
-        setPostConditionEmailSteps(postConditionEmailSteps.map(e =>
-          e.id === editingEmailId
-            ? { ...e, senderId: emailSender, senderFrom: selectedSender.from, senderEmail: selectedSenderEmail, subject: emailSubject, content: emailContent, templateId: emailTemplateId, waitTime: emailWaitTime, waitUnit: emailWaitUnit }
-            : e
-        ));
-      } else {
-        setEmailSteps(emailSteps.map(e =>
-          e.id === editingEmailId
-            ? { ...e, senderId: emailSender, senderFrom: selectedSender.from, senderEmail: selectedSenderEmail, subject: emailSubject, content: emailContent, templateId: emailTemplateId, waitTime: emailWaitTime, waitUnit: emailWaitUnit }
-            : e
-        ));
+      // Editing existing email step - use API to persist changes
+      if (!selectedWorkflow) {
+        toast.error("No workflow selected");
+        return;
       }
-      toast.success("Email step updated");
+
+      // Find the step being edited to get position, parent_step_id, and branch
+      const stepBeingEdited = selectedWorkflow.steps.find(s => s.id === editingEmailId);
+      if (!stepBeingEdited) {
+        toast.error("Step not found");
+        return;
+      }
+
+      try {
+        const response = await api(`/workflows/${selectedWorkflow.id}/steps/${editingEmailId}`, {
+          method: "PATCH",
+          body: {
+            step_type: "email",
+            position: stepBeingEdited.position,
+            parent_step_id: stepBeingEdited.parent_step_id,
+            branch: stepBeingEdited.branch,
+            sender_id: emailSender,
+            template_id: emailTemplateId,
+            subject_override: emailSubject,
+            content_override: emailContent,
+          },
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          toast.error(error.detail || "Failed to update email step");
+          return;
+        }
+
+        const updatedStep: WorkflowStep = await response.json();
+        const updatedConfig = updatedStep.config ?? {};
+        const updatedEmail: EmailStep = {
+          id: updatedStep.id,
+          senderId: updatedConfig.sender_id ?? emailSender,
+          senderEmail: updatedConfig.sender_email ?? selectedSenderEmail,
+          senderFrom: selectedSender.from,
+          subject: updatedConfig.subject_override ?? emailSubject,
+          content: updatedConfig.content_override ?? emailContent,
+          templateId: updatedConfig.template_id ?? emailTemplateId,
+          waitTime: emailWaitTime,
+          waitUnit: emailWaitUnit,
+        };
+
+        // Update local state
+        if (editingEmailSource === 'post') {
+          setPostConditionEmailSteps(postConditionEmailSteps.map(e =>
+            e.id === editingEmailId ? updatedEmail : e
+          ));
+        } else {
+          setEmailSteps(emailSteps.map(e =>
+            e.id === editingEmailId ? updatedEmail : e
+          ));
+        }
+
+        // Update workflow steps in selectedWorkflow
+        setSelectedWorkflow({
+          ...selectedWorkflow,
+          steps: selectedWorkflow.steps.map(s => s.id === editingEmailId ? updatedStep : s)
+        });
+
+        toast.success("Email step updated");
+      } catch (error) {
+        toast.error("Failed to update email step");
+        return;
+      }
     } else {
       // Adding a new email step - use API for all email steps
       if (!selectedWorkflow) {
