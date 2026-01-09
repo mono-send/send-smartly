@@ -170,9 +170,9 @@ function SortableEmailStep({
       {/* Connector */}
       <div className="flex justify-center py-2">
         <div className="flex flex-col items-center">
-          <div className="w-px h-4 bg-[#777]" />
-          <div className="h-1.5 w-1.5 rounded-full bg-[#777]" />
-          <div className="w-px h-4 bg-[#777]" />
+          <div className="w-px h-4 bg-[#999]" />
+          <div className="h-1.5 w-1.5 rounded-full bg-[#999]" />
+          <div className="w-px h-4 bg-[#999]" />
         </div>
       </div>
 
@@ -222,9 +222,9 @@ function SortableEmailStep({
       {/* Connector after each email */}
       <div className="flex justify-center py-2">
         <div className="flex flex-col items-center">
-          <div className="w-px h-4 bg-[#777]" />
-          <div className="h-1.5 w-1.5 rounded-full bg-[#777]" />
-          <div className="w-px h-4 bg-[#777]" />
+          <div className="w-px h-4 bg-[#999]" />
+          <div className="h-1.5 w-1.5 rounded-full bg-[#999]" />
+          <div className="w-px h-4 bg-[#999]" />
         </div>
       </div>
     </div>
@@ -531,9 +531,9 @@ bg-[size:10px_10px]">
             {/* Connector */}
             <div className="flex justify-center py-2">
               <div className="flex flex-col items-center">
-                <div className="w-px h-4 bg-[#777]" />
-                <div className="h-1.5 w-1.5 rounded-full bg-[#777]" />
-                <div className="w-px h-4 bg-[#777]" />
+                <div className="w-px h-4 bg-[#999]" />
+                <div className="h-1.5 w-1.5 rounded-full bg-[#999]" />
+                <div className="w-px h-4 bg-[#999]" />
               </div>
             </div>
 
@@ -675,9 +675,9 @@ bg-[size:10px_10px]">
             {/* Connector */}
             <div className="flex justify-center py-2">
               <div className="flex flex-col items-center">
-                <div className="w-px h-4 bg-[#777]" />
-                <div className="h-1.5 w-1.5 rounded-full bg-[#777]" />
-                <div className="w-px h-4 bg-[#777]" />
+                <div className="w-px h-4 bg-[#999]" />
+                <div className="h-1.5 w-1.5 rounded-full bg-[#999]" />
+                <div className="w-px h-4 bg-[#999]" />
               </div>
             </div>
 
