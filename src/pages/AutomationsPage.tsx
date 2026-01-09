@@ -483,11 +483,44 @@ export default function AutomationsPage() {
     }
   }, [isEditingTitle]);
 
-  const handleTitleKeyDown = (e: React.KeyboardEvent) => {
+  const handleTitleCommit = async (nextTitle: string) => {
+    if (!selectedWorkflow || nextTitle === selectedWorkflow.name) {
+      return;
+    }
+
+    try {
+      const response = await api(`/workflows/${selectedWorkflow.id}`, {
+        method: "PATCH",
+        body: {
+          name: nextTitle,
+        },
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        toast.error(error.detail || "Failed to update workflow name");
+        setAutomationTitle(selectedWorkflow.name);
+        return;
+      }
+
+      const updatedWorkflow: Workflow = await response.json();
+      setSelectedWorkflow(updatedWorkflow);
+      setAutomationTitle(updatedWorkflow.name);
+    } catch (error) {
+      toast.error("Failed to update workflow name");
+      setAutomationTitle(selectedWorkflow.name);
+    }
+  };
+
+  const handleTitleKeyDown = async (e: React.KeyboardEvent) => {
     if (e.key === "Enter") {
       setIsEditingTitle(false);
+      await handleTitleCommit(automationTitle);
     } else if (e.key === "Escape") {
       setIsEditingTitle(false);
+      if (selectedWorkflow) {
+        setAutomationTitle(selectedWorkflow.name);
+      }
     }
   };
 
@@ -981,7 +1014,10 @@ export default function AutomationsPage() {
               ref={titleInputRef}
               value={automationTitle}
               onChange={(e) => setAutomationTitle(e.target.value)}
-              onBlur={() => setIsEditingTitle(false)}
+              onBlur={async () => {
+                setIsEditingTitle(false);
+                await handleTitleCommit(automationTitle);
+              }}
               onFocus={(e) => e.target.select()}
               onKeyDown={handleTitleKeyDown}
               className="h-8 w-64 font-medium"
