@@ -838,24 +838,27 @@ bg-[size:10px_10px]">
                   <div className="flex flex-col items-center">
                     {/* Vertical line going down */}
                     <div className="w-px h-4 bg-[#999]" />
-                    {/* Horizontal split line with center node */}
+                    {/* Horizontal split line with center node and vertical connections */}
                     <div className="flex items-center gap-0">
-                      <div className="h-px w-[200px] bg-[#999]" />
+                      {/* Left horizontal line + node + vertical line */}
+                      <div className="flex flex-col items-end">
+                        <div className="h-px w-[200px] bg-[#999]" />
+                      </div>
                       <div className="h-1.5 w-1.5 rounded-full bg-[#999] -mx-[0.5px]" />
-                      <div className="h-px w-[200px] bg-[#999]" />
-                    </div>
-                    {/* Connection nodes at endpoints */}
-                    <div className="flex items-center w-[416px] justify-between">
-                      <div className="h-1.5 w-1.5 rounded-full bg-[#999]" />
-                      <div className="h-1.5 w-1.5 rounded-full bg-[#999]" />
+                      {/* Right horizontal line */}
+                      <div className="flex flex-col items-start">
+                        <div className="h-px w-[200px] bg-[#999]" />
+                      </div>
                     </div>
                   </div>
                 </div>
 
                 {/* YES and NO Branches side by side */}
-                <div className="grid grid-cols-2 gap-8 -mt-[6px]">
+                <div className="grid grid-cols-2 gap-8">
                   {/* YES Branch */}
                   <div className="flex flex-col items-center">
+                    {/* Node connecting horizontal to vertical line */}
+                    <div className="h-1.5 w-1.5 rounded-full bg-[#999] -mt-[3px]" />
                     {/* Vertical connector from horizontal line to YES block */}
                     <div className="w-px h-4 bg-[#999]" />
 
@@ -944,6 +947,8 @@ bg-[size:10px_10px]">
 
                   {/* NO Branch */}
                   <div className="flex flex-col items-center">
+                    {/* Node connecting horizontal to vertical line */}
+                    <div className="h-1.5 w-1.5 rounded-full bg-[#999] -mt-[3px]" />
                     {/* Vertical connector from horizontal line to NO block */}
                     <div className="w-px h-4 bg-[#999]" />
 
@@ -1032,20 +1037,28 @@ bg-[size:10px_10px]">
                 </div>
 
                 {/* Merge connector */}
-                <div className="flex justify-center pt-4 -mt-[6px]">
+                <div className="flex justify-center">
                   <div className="flex flex-col items-center">
-                    {/* Connection nodes at top endpoints */}
+                    {/* Connection nodes at top with vertical lines going down to horizontal merge */}
                     <div className="flex items-center w-[416px] justify-between">
-                      <div className="h-1.5 w-1.5 rounded-full bg-[#999]" />
-                      <div className="h-1.5 w-1.5 rounded-full bg-[#999]" />
+                      <div className="flex flex-col items-center">
+                        <div className="h-1.5 w-1.5 rounded-full bg-[#999]" />
+                        <div className="w-px h-4 bg-[#999]" />
+                      </div>
+                      <div className="flex flex-col items-center">
+                        <div className="h-1.5 w-1.5 rounded-full bg-[#999]" />
+                        <div className="w-px h-4 bg-[#999]" />
+                      </div>
                     </div>
                     {/* Horizontal merge line with center node */}
-                    <div className="flex items-center gap-0">
-                      <div className="w-[200px] h-px bg-[#999]" />
-                      <div className="h-1.5 w-1.5 rounded-full bg-[#999] -mx-[0.5px]" />
-                      <div className="w-[200px] h-px bg-[#999]" />
+                    <div className="flex items-center gap-0 -mt-[3px]">
+                      <div className="h-1.5 w-1.5 rounded-full bg-[#999]" />
+                      <div className="w-[200px] h-px bg-[#999] -mx-[0.5px]" />
+                      <div className="h-1.5 w-1.5 rounded-full bg-[#999]" />
+                      <div className="w-[200px] h-px bg-[#999] -mx-[0.5px]" />
+                      <div className="h-1.5 w-1.5 rounded-full bg-[#999]" />
                     </div>
-                    <div className="w-px h-4 bg-[#999]" />
+                    <div className="w-px h-4 bg-[#999] -mt-[3px]" />
                   </div>
                 </div>
               </div>
