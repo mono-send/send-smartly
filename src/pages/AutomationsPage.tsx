@@ -14,7 +14,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { X, ArrowRight, Clock, Mail, LogOut, Plus, Minus, Info, Pencil, Trash2, GripVertical } from "lucide-react";
+import { X, ArrowRight, Clock, Mail, LogOut, Plus, Minus, Info, Pencil, Trash2, GripVertical, GitBranch, Eye, EyeOff } from "lucide-react";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
 import {
@@ -68,6 +68,22 @@ interface EmailStep {
   waitUnit: string;
 }
 
+interface ConditionBranch {
+  id: string;
+  conditionType: 'opened' | 'clicked' | 'not_opened' | 'not_clicked';
+  targetEmailId: string; // Reference to which email to check
+  yesBranch: {
+    waitTime: number;
+    waitUnit: string;
+    email: EmailStep | null;
+  };
+  noBranch: {
+    waitTime: number;
+    waitUnit: string;
+    email: EmailStep | null;
+  };
+}
+
 interface SortableEmailStepProps {
   email: EmailStep;
   index: number;
@@ -75,6 +91,9 @@ interface SortableEmailStepProps {
   setEmailSteps: (steps: EmailStep[]) => void;
   handleEditEmail: (email: EmailStep) => void;
   handleDeleteEmail: (id: string) => void;
+  showAddCondition: boolean;
+  onAddCondition: (emailId: string) => void;
+  hasCondition: boolean;
 }
 
 function SortableEmailStep({
@@ -83,7 +102,10 @@ function SortableEmailStep({
   emailSteps,
   setEmailSteps,
   handleEditEmail,
-  handleDeleteEmail
+  handleDeleteEmail,
+  showAddCondition,
+  onAddCondition,
+  hasCondition
 }: SortableEmailStepProps) {
   const {
     attributes,
@@ -194,6 +216,17 @@ function SortableEmailStep({
             EMAIL {index + 1}
           </div>
           <div className="flex items-center gap-1">
+            {showAddCondition && !hasCondition && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                onClick={() => onAddCondition(email.id)}
+                title="Add condition branch"
+              >
+                <GitBranch className="h-3.5 w-3.5" />
+              </Button>
+            )}
             <Button
               variant="ghost"
               size="icon"
@@ -256,6 +289,7 @@ export default function AutomationsPage() {
 
   // Email steps
   const [emailSteps, setEmailSteps] = useState<EmailStep[]>([]);
+  const [conditionBranch, setConditionBranch] = useState<ConditionBranch | null>(null);
   const [emailDialogOpen, setEmailDialogOpen] = useState(false);
   const [editingEmailId, setEditingEmailId] = useState<string | null>(null);
   const [emailSubject, setEmailSubject] = useState("");
@@ -264,6 +298,9 @@ export default function AutomationsPage() {
   const [emailTemplateId, setEmailTemplateId] = useState<string | null>(null);
   const [emailWaitTime, setEmailWaitTime] = useState(5);
   const [emailWaitUnit, setEmailWaitUnit] = useState("day");
+  
+  // For editing branch emails
+  const [editingBranchType, setEditingBranchType] = useState<'yes' | 'no' | null>(null);
 
   // Drag and drop sensors
   const sensors = useSensors(
@@ -326,12 +363,104 @@ export default function AutomationsPage() {
 
   const handleDeleteEmail = (id: string) => {
     setEmailSteps(emailSteps.filter(e => e.id !== id));
+    // Also remove condition if it references this email
+    if (conditionBranch?.targetEmailId === id) {
+      setConditionBranch(null);
+    }
     toast.success("Email step removed");
+  };
+
+  const handleAddCondition = (emailId: string) => {
+    setConditionBranch({
+      id: crypto.randomUUID(),
+      conditionType: 'opened',
+      targetEmailId: emailId,
+      yesBranch: {
+        waitTime: 1,
+        waitUnit: 'day',
+        email: null,
+      },
+      noBranch: {
+        waitTime: 3,
+        waitUnit: 'day',
+        email: null,
+      },
+    });
+    toast.success("Condition added");
+  };
+
+  const handleRemoveCondition = () => {
+    setConditionBranch(null);
+    toast.success("Condition removed");
+  };
+
+  const handleAddBranchEmail = (branchType: 'yes' | 'no') => {
+    setEditingEmailId(null);
+    setEditingBranchType(branchType);
+    setEmailSender("");
+    setEmailSubject("");
+    setEmailContent("");
+    setEmailTemplateId(null);
+    setEmailWaitTime(5);
+    setEmailWaitUnit("day");
+    setEmailDialogOpen(true);
+  };
+
+  const handleEditBranchEmail = (branchType: 'yes' | 'no', email: EmailStep) => {
+    setEditingEmailId(email.id);
+    setEditingBranchType(branchType);
+    setEmailSender(email.sender);
+    setEmailSubject(email.subject);
+    setEmailContent(email.content);
+    setEmailTemplateId(email.templateId ?? null);
+    setEmailWaitTime(email.waitTime);
+    setEmailWaitUnit(email.waitUnit);
+    setEmailDialogOpen(true);
+  };
+
+  const handleDeleteBranchEmail = (branchType: 'yes' | 'no') => {
+    if (!conditionBranch) return;
+    if (branchType === 'yes') {
+      setConditionBranch({ ...conditionBranch, yesBranch: { ...conditionBranch.yesBranch, email: null } });
+    } else {
+      setConditionBranch({ ...conditionBranch, noBranch: { ...conditionBranch.noBranch, email: null } });
+    }
+    toast.success("Email removed from branch");
   };
 
   const handleSaveEmail = () => {
     if (!emailSubject.trim()) {
       toast.error("Email subject is required");
+      return;
+    }
+
+    // Handle branch email
+    if (editingBranchType && conditionBranch) {
+      const newEmail: EmailStep = {
+        id: editingEmailId || crypto.randomUUID(),
+        sender: emailSender,
+        subject: emailSubject,
+        content: emailContent,
+        templateId: emailTemplateId,
+        waitTime: emailWaitTime,
+        waitUnit: emailWaitUnit,
+      };
+      
+      if (editingBranchType === 'yes') {
+        setConditionBranch({
+          ...conditionBranch,
+          yesBranch: { ...conditionBranch.yesBranch, email: newEmail }
+        });
+      } else {
+        setConditionBranch({
+          ...conditionBranch,
+          noBranch: { ...conditionBranch.noBranch, email: newEmail }
+        });
+      }
+      
+      toast.success(editingEmailId ? "Branch email updated" : "Branch email added");
+      setEditingBranchType(null);
+      setEmailDialogOpen(false);
       return;
     }
 
@@ -556,23 +685,279 @@ bg-[size:10px_10px]">
                     setEmailSteps={setEmailSteps}
                     handleEditEmail={handleEditEmail}
                     handleDeleteEmail={handleDeleteEmail}
+                    showAddCondition={index === 0}
+                    onAddCondition={handleAddCondition}
+                    hasCondition={conditionBranch?.targetEmailId === email.id}
                   />
                 ))}
               </SortableContext>
             </DndContext>
 
-            {/* Add Email Block */}
-            <div className="flex justify-center">
-              <Button
-                variant="outline"
-                className="w-full max-w-xs justify-center gap-2 text-sm font-medium"
-                onClick={handleAddEmail}
-              >
-                <Mail className="h-4 w-4" />
-                ADD EMAIL
-                <Plus className="h-4 w-4" />
-              </Button>
-            </div>
+            {/* Condition Branch UI - shown after first email if condition exists */}
+            {conditionBranch && emailSteps.length > 0 && (
+              <div className="relative">
+                {/* IF Condition Block */}
+                <Card className="p-4 border-2 border-dashed border-primary/50 bg-primary/5">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                      <GitBranch className="h-4 w-4 text-primary" />
+                      IF CONDITION
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 text-destructive hover:text-destructive"
+                      onClick={handleRemoveCondition}
+                      title="Remove condition"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-foreground">
+                    <span>Contact</span>
+                    <Select
+                      value={conditionBranch.conditionType}
+                      onValueChange={(value: 'opened' | 'clicked' | 'not_opened' | 'not_clicked') => 
+                        setConditionBranch({ ...conditionBranch, conditionType: value })
+                      }
+                    >
+                      <SelectTrigger className="w-[140px] h-8">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="opened">
+                          <div className="flex items-center gap-2">
+                            <Eye className="h-3 w-3" />
+                            opened
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="not_opened">
+                          <div className="flex items-center gap-2">
+                            <EyeOff className="h-3 w-3" />
+                            didn't open
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="clicked">clicked</SelectItem>
+                        <SelectItem value="not_clicked">didn't click</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <span className="font-medium">EMAIL 1</span>
+                  </div>
+                </Card>
+
+                {/* Branch connector - splits into YES and NO */}
+                <div className="flex justify-center py-2">
+                  <div className="flex flex-col items-center">
+                    <div className="w-px h-4 bg-[#999]" />
+                    <div className="h-1.5 w-1.5 rounded-full bg-[#999]" />
+                  </div>
+                </div>
+
+                {/* YES and NO Branches side by side */}
+                <div className="grid grid-cols-2 gap-6">
+                  {/* YES Branch */}
+                  <div className="flex flex-col items-center">
+                    <div className="flex items-center gap-2 text-xs font-semibold text-green-600 mb-2">
+                      <div className="h-1.5 w-1.5 rounded-full bg-green-500" />
+                      YES
+                    </div>
+                    <div className="w-px h-4 bg-green-400" />
+                    
+                    {/* Wait time for YES branch */}
+                    <Card className="px-3 py-2 w-full max-w-[180px] border-green-200 bg-green-50/50">
+                      <div className="flex items-center gap-2 text-xs text-foreground">
+                        <Clock className="h-3 w-3" />
+                        <span>Wait</span>
+                        <Input
+                          type="number"
+                          value={conditionBranch.yesBranch.waitTime}
+                          onChange={(e) => setConditionBranch({
+                            ...conditionBranch,
+                            yesBranch: { ...conditionBranch.yesBranch, waitTime: parseInt(e.target.value) || 1 }
+                          })}
+                          className="h-6 w-12 text-center text-xs p-1"
+                        />
+                        <Select
+                          value={conditionBranch.yesBranch.waitUnit}
+                          onValueChange={(value) => setConditionBranch({
+                            ...conditionBranch,
+                            yesBranch: { ...conditionBranch.yesBranch, waitUnit: value }
+                          })}
+                        >
+                          <SelectTrigger className="h-6 w-16 text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="min">min</SelectItem>
+                            <SelectItem value="hour">hr</SelectItem>
+                            <SelectItem value="day">day</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </Card>
+                    
+                    <div className="w-px h-4 bg-green-400" />
+                    
+                    {/* Email for YES branch */}
+                    {conditionBranch.yesBranch.email ? (
+                      <Card className="p-3 w-full max-w-[180px] border-green-200 group relative">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-1 text-xs font-medium">
+                            <Mail className="h-3 w-3" />
+                            EMAIL 2
+                          </div>
+                          <div className="flex items-center gap-0.5">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-5 w-5 opacity-0 group-hover:opacity-100"
+                              onClick={() => handleEditBranchEmail('yes', conditionBranch.yesBranch.email!)}
+                            >
+                              <Pencil className="h-2.5 w-2.5" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-5 w-5 text-destructive opacity-0 group-hover:opacity-100"
+                              onClick={() => handleDeleteBranchEmail('yes')}
+                            >
+                              <Trash2 className="h-2.5 w-2.5" />
+                            </Button>
+                          </div>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1 truncate">
+                          {conditionBranch.yesBranch.email.subject}
+                        </p>
+                      </Card>
+                    ) : (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full max-w-[180px] text-xs h-8 border-green-200 hover:border-green-400"
+                        onClick={() => handleAddBranchEmail('yes')}
+                      >
+                        <Plus className="h-3 w-3 mr-1" />
+                        Add Email
+                      </Button>
+                    )}
+                  </div>
+
+                  {/* NO Branch */}
+                  <div className="flex flex-col items-center">
+                    <div className="flex items-center gap-2 text-xs font-semibold text-orange-600 mb-2">
+                      <div className="h-1.5 w-1.5 rounded-full bg-orange-500" />
+                      NO
+                    </div>
+                    <div className="w-px h-4 bg-orange-400" />
+                    
+                    {/* Wait time for NO branch */}
+                    <Card className="px-3 py-2 w-full max-w-[180px] border-orange-200 bg-orange-50/50">
+                      <div className="flex items-center gap-2 text-xs text-foreground">
+                        <Clock className="h-3 w-3" />
+                        <span>Wait</span>
+                        <Input
+                          type="number"
+                          value={conditionBranch.noBranch.waitTime}
+                          onChange={(e) => setConditionBranch({
+                            ...conditionBranch,
+                            noBranch: { ...conditionBranch.noBranch, waitTime: parseInt(e.target.value) || 1 }
+                          })}
+                          className="h-6 w-12 text-center text-xs p-1"
+                        />
+                        <Select
+                          value={conditionBranch.noBranch.waitUnit}
+                          onValueChange={(value) => setConditionBranch({
+                            ...conditionBranch,
+                            noBranch: { ...conditionBranch.noBranch, waitUnit: value }
+                          })}
+                        >
+                          <SelectTrigger className="h-6 w-16 text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="min">min</SelectItem>
+                            <SelectItem value="hour">hr</SelectItem>
+                            <SelectItem value="day">day</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </Card>
+                    
+                    <div className="w-px h-4 bg-orange-400" />
+                    
+                    {/* Email for NO branch */}
+                    {conditionBranch.noBranch.email ? (
+                      <Card className="p-3 w-full max-w-[180px] border-orange-200 group relative">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-1 text-xs font-medium">
+                            <Mail className="h-3 w-3" />
+                            EMAIL 2
+                          </div>
+                          <div className="flex items-center gap-0.5">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-5 w-5 opacity-0 group-hover:opacity-100"
+                              onClick={() => handleEditBranchEmail('no', conditionBranch.noBranch.email!)}
+                            >
+                              <Pencil className="h-2.5 w-2.5" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-5 w-5 text-destructive opacity-0 group-hover:opacity-100"
+                              onClick={() => handleDeleteBranchEmail('no')}
+                            >
+                              <Trash2 className="h-2.5 w-2.5" />
+                            </Button>
+                          </div>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1 truncate">
+                          {conditionBranch.noBranch.email.subject}
+                        </p>
+                      </Card>
+                    ) : (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full max-w-[180px] text-xs h-8 border-orange-200 hover:border-orange-400"
+                        onClick={() => handleAddBranchEmail('no')}
+                      >
+                        <Plus className="h-3 w-3 mr-1" />
+                        Add Email
+                      </Button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Merge connector */}
+                <div className="flex justify-center py-4">
+                  <div className="flex flex-col items-center">
+                    <div className="flex items-center gap-4">
+                      <div className="w-[calc(50%-8px)] h-px bg-[#999]" />
+                      <div className="h-1.5 w-1.5 rounded-full bg-[#999]" />
+                      <div className="w-[calc(50%-8px)] h-px bg-[#999]" />
+                    </div>
+                    <div className="w-px h-4 bg-[#999]" />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Add Email Block - shown when no condition or after condition */}
+            {!conditionBranch && (
+              <div className="flex justify-center">
+                <Button
+                  variant="outline"
+                  className="w-full max-w-xs justify-center gap-2 text-sm font-medium"
+                  onClick={handleAddEmail}
+                >
+                  <Mail className="h-4 w-4" />
+                  ADD EMAIL
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
 
             {/* Email Configuration Dialog */}
             <Dialog open={emailDialogOpen} onOpenChange={setEmailDialogOpen}>
