@@ -146,7 +146,8 @@ interface Workflow {
 }
 
 interface WorkflowsResponse {
-  data: WorkflowListItem[];
+  workloads?: WorkflowListItem[];
+  automations?: WorkflowListItem[];
   pagination: {
     page: number;
     limit: number;
@@ -717,7 +718,7 @@ export default function AutomationsPage() {
   const fetchWorkflowDetails = async (workflowId: string) => {
     setIsLoadingWorkflowDetails(true);
     try {
-      const response = await api(`/workflows/${workflowId}`);
+      const response = await api(`/v1.0/workflows/${workflowId}`);
       if (!response.ok) {
         toast.error("Failed to load workflow details");
         return;
@@ -736,17 +737,18 @@ export default function AutomationsPage() {
   const fetchWorkflows = async () => {
     setIsLoadingWorkflows(true);
     try {
-      const response = await api("/workflows");
+      const response = await api("/automations");
       if (!response.ok) {
         toast.error("Failed to load workflows");
         return;
       }
       const data: WorkflowsResponse = await response.json();
-      setWorkflows(data.data || []);
+      const workloads = data.workloads ?? data.automations ?? [];
+      setWorkflows(workloads);
 
       // Select first workflow if available
-      if (data.data && data.data.length > 0) {
-        fetchWorkflowDetails(data.data[0].id);
+      if (workloads.length > 0) {
+        fetchWorkflowDetails(workloads[0].id);
       }
     } catch (error) {
       toast.error("Failed to load workflows");
