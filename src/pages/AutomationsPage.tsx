@@ -748,7 +748,7 @@ bg-[size:10px_10px]">
                       <Trash2 className="h-3.5 w-3.5" />
                     </Button>
                   </div>
-                  <div className="flex items-center gap-2 text-sm text-foreground">
+                  <div className="flex items-center gap-2 text-sm text-foreground justify-center">
                     <span>Contact</span>
                     <Select
                       value={conditionBranch.conditionType}
