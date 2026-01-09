@@ -16,9 +16,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useState, useEffect } from "react";
 import { api } from "@/lib/api";
-import { Loader2 } from "lucide-react";
+import { Loader2, AlertTriangle } from "lucide-react";
 
 export interface SenderData {
   name: string;
@@ -31,6 +32,7 @@ interface Domain {
   id: string;
   domain: string;
   name?: string;
+  status?: "pending" | "unverified" | "verified" | "suspended";
 }
 
 interface SenderDialogProps {
@@ -106,6 +108,7 @@ export function SenderDialog({
             id: domain.id,
             domain: domain.domain || domain.name || "",
             name: domain.name,
+            status: domain.status,
           }))
           .filter((domain: Domain) => domain.domain);
         setDomains(normalizedDomains);
@@ -128,6 +131,9 @@ export function SenderDialog({
 
   const isEdit = mode === "edit";
   const isFormValid = name.trim() !== "" && from.trim() !== "" && domainId !== "";
+
+  // Get the selected domain to check its status
+  const selectedDomain = domains.find((d) => d.id === domainId);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -197,6 +203,17 @@ export function SenderDialog({
                   Enter the local part of the email (before @)
                 </p>
               </div>
+
+              {selectedDomain && selectedDomain.status === "unverified" && (
+                <Alert variant="warning">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertTitle>Unverified domain</AlertTitle>
+                  <AlertDescription>
+                    This domain has not been verified yet. Emails sent from this sender may have lower
+                    deliverability or be marked as spam. Please verify your domain to ensure optimal email delivery.
+                  </AlertDescription>
+                </Alert>
+              )}
 
               <div className="space-y-2">
                 <Label htmlFor="replyTo">Reply-to (optional)</Label>
