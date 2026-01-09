@@ -839,21 +839,24 @@ bg-[size:10px_10px]">
                     {/* Vertical line going down */}
                     <div className="w-px h-4 bg-[#999]" />
                     {/* Horizontal split line with center node */}
-                    <div className="flex items-center">
+                    <div className="flex items-center gap-0">
                       <div className="h-px w-[200px] bg-[#999]" />
+                      <div className="h-1.5 w-1.5 rounded-full bg-[#999] -mx-[0.5px]" />
+                      <div className="h-px w-[200px] bg-[#999]" />
+                    </div>
+                    {/* Connection nodes at endpoints */}
+                    <div className="flex items-center w-[416px] justify-between">
                       <div className="h-1.5 w-1.5 rounded-full bg-[#999]" />
-                      <div className="h-px w-[200px] bg-[#999]" />
+                      <div className="h-1.5 w-1.5 rounded-full bg-[#999]" />
                     </div>
                   </div>
                 </div>
 
                 {/* YES and NO Branches side by side */}
-                <div className="grid grid-cols-2 gap-8">
+                <div className="grid grid-cols-2 gap-8 -mt-[6px]">
                   {/* YES Branch */}
                   <div className="flex flex-col items-center">
                     {/* Vertical connector from horizontal line to YES block */}
-                    <div className="w-px h-4 bg-[#999]" />
-                    <div className="h-1.5 w-1.5 rounded-full bg-[#999]" />
                     <div className="w-px h-4 bg-[#999]" />
 
                     <div className="flex flex-col items-center rounded-lg text-card-foreground shadow-sm p-4 w-full border border-dashed border-primary/50 bg-card">
@@ -920,8 +923,6 @@ bg-[size:10px_10px]">
                         </Card>
                         {/* Connector after YES branch email */}
                         <div className="w-px h-4 bg-green-400" />
-                        <div className="h-1.5 w-1.5 rounded-full bg-[#999]" />
-                        <div className="w-px h-4 bg-[#999]" />
                       </>
                     ) : (
                       <>
@@ -936,8 +937,6 @@ bg-[size:10px_10px]">
                         </Button>
                         {/* Connector when no email */}
                         <div className="w-px h-4 bg-green-400" />
-                        <div className="h-1.5 w-1.5 rounded-full bg-[#999]" />
-                        <div className="w-px h-4 bg-[#999]" />
                       </>
                     )}
                     </div>
@@ -946,8 +945,6 @@ bg-[size:10px_10px]">
                   {/* NO Branch */}
                   <div className="flex flex-col items-center">
                     {/* Vertical connector from horizontal line to NO block */}
-                    <div className="w-px h-4 bg-[#999]" />
-                    <div className="h-1.5 w-1.5 rounded-full bg-[#999]" />
                     <div className="w-px h-4 bg-[#999]" />
 
                     <div className="flex flex-col items-center rounded-lg text-card-foreground shadow-sm p-4 w-full border border-dashed border-primary/50 bg-card">
@@ -1014,8 +1011,6 @@ bg-[size:10px_10px]">
                         </Card>
                         {/* Connector after NO branch email */}
                         <div className="w-px h-4 bg-orange-400" />
-                        <div className="h-1.5 w-1.5 rounded-full bg-[#999]" />
-                        <div className="w-px h-4 bg-[#999]" />
                       </>
                     ) : (
                       <>
@@ -1030,8 +1025,6 @@ bg-[size:10px_10px]">
                         </Button>
                         {/* Connector when no email */}
                         <div className="w-px h-4 bg-orange-400" />
-                        <div className="h-1.5 w-1.5 rounded-full bg-[#999]" />
-                        <div className="w-px h-4 bg-[#999]" />
                       </>
                     )}
                     </div>
@@ -1039,11 +1032,17 @@ bg-[size:10px_10px]">
                 </div>
 
                 {/* Merge connector */}
-                <div className="flex justify-center py-4">
+                <div className="flex justify-center pt-4 -mt-[6px]">
                   <div className="flex flex-col items-center">
-                    <div className="flex items-center">
-                      <div className="w-[200px] h-px bg-[#999]" />
+                    {/* Connection nodes at top endpoints */}
+                    <div className="flex items-center w-[416px] justify-between">
                       <div className="h-1.5 w-1.5 rounded-full bg-[#999]" />
+                      <div className="h-1.5 w-1.5 rounded-full bg-[#999]" />
+                    </div>
+                    {/* Horizontal merge line with center node */}
+                    <div className="flex items-center gap-0">
+                      <div className="w-[200px] h-px bg-[#999]" />
+                      <div className="h-1.5 w-1.5 rounded-full bg-[#999] -mx-[0.5px]" />
                       <div className="w-[200px] h-px bg-[#999]" />
                     </div>
                     <div className="w-px h-4 bg-[#999]" />
