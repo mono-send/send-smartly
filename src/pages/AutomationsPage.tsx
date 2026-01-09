@@ -1042,11 +1042,11 @@ bg-[size:10px_10px]">
                     {/* Connection nodes at top with vertical lines going down to horizontal merge */}
                     <div className="flex items-center w-[416px] justify-between">
                       <div className="flex flex-col items-center">
-                        <div className="h-1.5 w-1.5 rounded-full bg-[#999]" />
+                        <div className="h-1.5 w-1.5" />
                         <div className="w-px h-4 bg-[#999]" />
                       </div>
                       <div className="flex flex-col items-center">
-                        <div className="h-1.5 w-1.5 rounded-full bg-[#999]" />
+                        <div className="h-1.5 w-1.5" />
                         <div className="w-px h-4 bg-[#999]" />
                       </div>
                     </div>
