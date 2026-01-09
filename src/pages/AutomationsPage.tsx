@@ -733,7 +733,7 @@ bg-[size:10px_10px]">
               <div className="relative">
                 {/* IF Condition Block */}
                 <Card className="p-4 border-2 border-dashed border-primary/50 bg-card">
-                  <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2 mb-3 justify-center">
                     <div className="flex items-center gap-2 text-sm font-medium text-foreground">
                       <GitBranch className="h-4 w-4 text-primary" />
                       IF CONDITION
