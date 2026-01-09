@@ -96,6 +96,82 @@ interface SortableEmailStepProps {
   hasCondition: boolean;
 }
 
+interface WaitForControlProps {
+  waitTime: number;
+  waitUnit: string;
+  onWaitTimeChange: (value: number) => void;
+  onWaitUnitChange: (value: string) => void;
+  size?: "default" | "compact";
+}
+
+function WaitForControl({
+  waitTime,
+  waitUnit,
+  onWaitTimeChange,
+  onWaitUnitChange,
+  size = "default",
+}: WaitForControlProps) {
+  const isCompact = size === "compact";
+  const segmentClassName = isCompact
+    ? "flex h-7 items-stretch rounded-md border bg-background overflow-hidden divide-x divide-border"
+    : "flex h-9 items-stretch rounded-md border bg-background overflow-hidden divide-x divide-border";
+  const buttonClassName = isCompact ? "h-full w-8 rounded-none" : "h-full w-10 rounded-none";
+  const inputClassName = isCompact
+    ? "h-full w-12 border-0 rounded-none text-center focus-visible:ring-0 focus-visible:ring-offset-0 text-xs"
+    : "h-full w-16 border-0 rounded-none text-center focus-visible:ring-0 focus-visible:ring-offset-0";
+  const selectClassName = isCompact ? "w-20 h-7 text-xs" : "w-24 h-9";
+
+  return (
+    <div className="flex items-center gap-2">
+      <div className={segmentClassName}>
+        <Button
+          variant="ghost"
+          size="icon"
+          className={buttonClassName}
+          onClick={() => {
+            onWaitTimeChange(Math.max(0, waitTime - 1));
+          }}
+        >
+          <Minus className="h-3 w-3" />
+        </Button>
+        <Input
+          type="number"
+          value={waitTime}
+          onChange={(e) => {
+            onWaitTimeChange(parseInt(e.target.value) || 1);
+          }}
+          className={inputClassName}
+        />
+        <Button
+          variant="ghost"
+          size="icon"
+          className={buttonClassName}
+          onClick={() => {
+            onWaitTimeChange(waitTime + 1);
+          }}
+        >
+          <Plus className="h-3 w-3" />
+        </Button>
+      </div>
+      <Select
+        value={waitUnit}
+        onValueChange={(value) => {
+          onWaitUnitChange(value);
+        }}
+      >
+        <SelectTrigger className={selectClassName}>
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="min">min(s)</SelectItem>
+          <SelectItem value="hour">hour(s)</SelectItem>
+          <SelectItem value="day">day(s)</SelectItem>
+        </SelectContent>
+      </Select>
+    </div>
+  );
+}
+
 function SortableEmailStep({
   email,
   index,
@@ -131,61 +207,20 @@ function SortableEmailStep({
             <Clock className="h-4 w-4" />
             WAIT FOR
           </div>
-          <div className="flex items-center gap-2">
-            <div className="flex h-9 items-stretch rounded-md border bg-background overflow-hidden divide-x divide-border">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-full w-10 rounded-none"
-                onClick={() => {
-                  const updatedSteps = [...emailSteps];
-                  updatedSteps[index] = { ...email, waitTime: Math.max(0, email.waitTime - 1) };
-                  setEmailSteps(updatedSteps);
-                }}
-              >
-                <Minus className="h-3 w-3" />
-              </Button>
-              <Input
-                type="number"
-                value={email.waitTime}
-                onChange={(e) => {
-                  const updatedSteps = [...emailSteps];
-                  updatedSteps[index] = { ...email, waitTime: parseInt(e.target.value) || 1 };
-                  setEmailSteps(updatedSteps);
-                }}
-                className="h-full w-16 border-0 rounded-none text-center focus-visible:ring-0 focus-visible:ring-offset-0"
-              />
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-full w-10 rounded-none"
-                onClick={() => {
-                  const updatedSteps = [...emailSteps];
-                  updatedSteps[index] = { ...email, waitTime: email.waitTime + 1 };
-                  setEmailSteps(updatedSteps);
-                }}
-              >
-                <Plus className="h-3 w-3" />
-              </Button>
-            </div>
-            <Select
-              value={email.waitUnit}
-              onValueChange={(value) => {
-                const updatedSteps = [...emailSteps];
-                updatedSteps[index] = { ...email, waitUnit: value };
-                setEmailSteps(updatedSteps);
-              }}
-            >
-              <SelectTrigger className="w-24 h-9">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="min">min(s)</SelectItem>
-                <SelectItem value="hour">hour(s)</SelectItem>
-                <SelectItem value="day">day(s)</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          <WaitForControl
+            waitTime={email.waitTime}
+            waitUnit={email.waitUnit}
+            onWaitTimeChange={(value) => {
+              const updatedSteps = [...emailSteps];
+              updatedSteps[index] = { ...email, waitTime: value };
+              setEmailSteps(updatedSteps);
+            }}
+            onWaitUnitChange={(value) => {
+              const updatedSteps = [...emailSteps];
+              updatedSteps[index] = { ...email, waitUnit: value };
+              setEmailSteps(updatedSteps);
+            }}
+          />
         </div>
       </Card>
 
@@ -765,34 +800,22 @@ bg-[size:10px_10px]">
                     
                     {/* Wait time for YES branch */}
                     <Card className="px-3 py-2 w-full max-w-[180px] border-green-200 bg-green-50/50">
-                      <div className="flex items-center gap-2 text-xs text-foreground">
+                      <div className="flex flex-wrap items-center gap-2 text-xs text-foreground">
                         <Clock className="h-3 w-3" />
                         <span>Wait</span>
-                        <Input
-                          type="number"
-                          value={conditionBranch.yesBranch.waitTime}
-                          onChange={(e) => setConditionBranch({
+                        <WaitForControl
+                          size="compact"
+                          waitTime={conditionBranch.yesBranch.waitTime}
+                          waitUnit={conditionBranch.yesBranch.waitUnit}
+                          onWaitTimeChange={(value) => setConditionBranch({
                             ...conditionBranch,
-                            yesBranch: { ...conditionBranch.yesBranch, waitTime: parseInt(e.target.value) || 1 }
+                            yesBranch: { ...conditionBranch.yesBranch, waitTime: value }
                           })}
-                          className="h-6 w-12 text-center text-xs p-1"
-                        />
-                        <Select
-                          value={conditionBranch.yesBranch.waitUnit}
-                          onValueChange={(value) => setConditionBranch({
+                          onWaitUnitChange={(value) => setConditionBranch({
                             ...conditionBranch,
                             yesBranch: { ...conditionBranch.yesBranch, waitUnit: value }
                           })}
-                        >
-                          <SelectTrigger className="h-6 w-16 text-xs">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="min">min</SelectItem>
-                            <SelectItem value="hour">hr</SelectItem>
-                            <SelectItem value="day">day</SelectItem>
-                          </SelectContent>
-                        </Select>
+                        />
                       </div>
                     </Card>
                     
@@ -852,34 +875,22 @@ bg-[size:10px_10px]">
                     
                     {/* Wait time for NO branch */}
                     <Card className="px-3 py-2 w-full max-w-[180px] border-orange-200 bg-orange-50/50">
-                      <div className="flex items-center gap-2 text-xs text-foreground">
+                      <div className="flex flex-wrap items-center gap-2 text-xs text-foreground">
                         <Clock className="h-3 w-3" />
                         <span>Wait</span>
-                        <Input
-                          type="number"
-                          value={conditionBranch.noBranch.waitTime}
-                          onChange={(e) => setConditionBranch({
+                        <WaitForControl
+                          size="compact"
+                          waitTime={conditionBranch.noBranch.waitTime}
+                          waitUnit={conditionBranch.noBranch.waitUnit}
+                          onWaitTimeChange={(value) => setConditionBranch({
                             ...conditionBranch,
-                            noBranch: { ...conditionBranch.noBranch, waitTime: parseInt(e.target.value) || 1 }
+                            noBranch: { ...conditionBranch.noBranch, waitTime: value }
                           })}
-                          className="h-6 w-12 text-center text-xs p-1"
-                        />
-                        <Select
-                          value={conditionBranch.noBranch.waitUnit}
-                          onValueChange={(value) => setConditionBranch({
+                          onWaitUnitChange={(value) => setConditionBranch({
                             ...conditionBranch,
                             noBranch: { ...conditionBranch.noBranch, waitUnit: value }
                           })}
-                        >
-                          <SelectTrigger className="h-6 w-16 text-xs">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="min">min</SelectItem>
-                            <SelectItem value="hour">hr</SelectItem>
-                            <SelectItem value="day">day</SelectItem>
-                          </SelectContent>
-                        </Select>
+                        />
                       </div>
                     </Card>
                     
