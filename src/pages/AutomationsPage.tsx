@@ -239,7 +239,7 @@ function SortableEmailStep({
           <div
             {...attributes}
             {...listeners}
-            className="flex w-10 items-center justify-center border-r bg-muted/40 cursor-grab active:cursor-grabbing"
+            className="flex w-10 items-center justify-center border-r cursor-grab active:cursor-grabbing"
           >
             <GripVertical className="h-4 w-4 text-muted-foreground" />
           </div>
