@@ -823,7 +823,7 @@ bg-[size:10px_10px]">
                     
                     {/* Email for YES branch */}
                     {conditionBranch.yesBranch.email ? (
-                      <Card className="p-3 w-full max-w-[220px] border-green-200 group relative">
+                      <Card className="p-3 w-full max-w-[180px] border-green-200 group relative">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-1 text-xs font-medium">
                             <Mail className="h-3 w-3" />
