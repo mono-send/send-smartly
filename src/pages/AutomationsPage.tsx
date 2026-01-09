@@ -71,7 +71,9 @@ interface Template {
 
 interface EmailStep {
   id: string;
-  sender: string;
+  senderId: string;
+  senderFrom?: string;
+  senderEmail?: string;
   subject: string;
   content: string;
   templateId: string | null;
@@ -178,7 +180,7 @@ interface SortableEmailStepProps {
   setEmailSteps: (steps: EmailStep[]) => void;
   handleEditEmail: (email: EmailStep) => void;
   handleDeleteEmail: (id: string) => void;
-  getSenderLabel: (from?: string) => string;
+  getSenderLabel: (email: EmailStep) => string;
 }
 
 interface WaitForControlProps {
@@ -367,7 +369,7 @@ function SortableEmailStep({
                 </div>
                 <div className="truncate">
                   <span className="font-medium text-foreground">Sender:</span>{" "}
-                  {getSenderLabel(email.sender)}
+                  {getSenderLabel(email)}
                 </div>
               </div>
             </div>
@@ -415,13 +417,23 @@ export default function AutomationsPage() {
   const [isLoadingTemplates, setIsLoadingTemplates] = useState(false);
 
   const formatSenderLabel = (sender: Sender) => `${sender.name} <${sender.from}@${sender.domain.name}>`;
-  const getSenderLabel = (from?: string) => {
-    if (!from) {
+  const getSenderLabel = (email: EmailStep) => {
+    if (!email.senderId) {
+      if (email.senderEmail) {
+        return email.senderEmail;
+      }
+      if (email.senderFrom) {
+        return email.senderFrom;
+      }
       return "Not set";
     }
 
-    const sender = senders.find((entry) => entry.from === from);
-    return sender ? formatSenderLabel(sender) : from;
+    const sender = senders.find((entry) => entry.id === email.senderId);
+    if (sender) {
+      return formatSenderLabel(sender);
+    }
+
+    return email.senderEmail || email.senderFrom || "Not set";
   };
 
 
@@ -544,7 +556,7 @@ export default function AutomationsPage() {
 
   const handleEditEmail = (email: EmailStep, source: 'main' | 'post') => {
     setEditingEmailId(email.id);
-    setEmailSender(email.sender);
+    setEmailSender(email.senderId);
     setEmailSubject(email.subject);
     setEmailContent(email.content);
     setEmailTemplateId(email.templateId ?? null);
@@ -614,7 +626,7 @@ export default function AutomationsPage() {
     setEditingEmailId(email.id);
     setEditingBranchType(branchType);
     setEditingEmailSource(null);
-    setEmailSender(email.sender);
+    setEmailSender(email.senderId);
     setEmailSubject(email.subject);
     setEmailContent(email.content);
     setEmailTemplateId(email.templateId ?? null);
@@ -649,17 +661,21 @@ export default function AutomationsPage() {
       return;
     }
 
-    const selectedSender = senders.find((sender) => sender.from === emailSender);
+    const selectedSender = senders.find((sender) => sender.id === emailSender);
     if (!selectedSender) {
       toast.error("Sender is required");
       return;
     }
 
+    const selectedSenderEmail = `${selectedSender.from}@${selectedSender.domain.name}`;
+
     // Handle branch email
     if (editingBranchType && conditionBranch) {
       const newEmail: EmailStep = {
         id: editingEmailId || crypto.randomUUID(),
-        sender: emailSender,
+        senderId: emailSender,
+        senderFrom: selectedSender.from,
+        senderEmail: selectedSenderEmail,
         subject: emailSubject,
         content: emailContent,
         templateId: emailTemplateId,
@@ -689,13 +705,13 @@ export default function AutomationsPage() {
       if (editingEmailSource === 'post') {
         setPostConditionEmailSteps(postConditionEmailSteps.map(e =>
           e.id === editingEmailId
-            ? { ...e, sender: emailSender, subject: emailSubject, content: emailContent, templateId: emailTemplateId, waitTime: emailWaitTime, waitUnit: emailWaitUnit }
+            ? { ...e, senderId: emailSender, senderFrom: selectedSender.from, senderEmail: selectedSenderEmail, subject: emailSubject, content: emailContent, templateId: emailTemplateId, waitTime: emailWaitTime, waitUnit: emailWaitUnit }
             : e
         ));
       } else {
         setEmailSteps(emailSteps.map(e =>
           e.id === editingEmailId
-            ? { ...e, sender: emailSender, subject: emailSubject, content: emailContent, templateId: emailTemplateId, waitTime: emailWaitTime, waitUnit: emailWaitUnit }
+            ? { ...e, senderId: emailSender, senderFrom: selectedSender.from, senderEmail: selectedSenderEmail, subject: emailSubject, content: emailContent, templateId: emailTemplateId, waitTime: emailWaitTime, waitUnit: emailWaitUnit }
             : e
         ));
       }
@@ -716,7 +732,7 @@ export default function AutomationsPage() {
               position,
               parent_step_id: null,
               branch: null,
-              sender_id: selectedSender.id,
+              sender_id: emailSender,
               template_id: emailTemplateId,
               subject_override: emailSubject,
               content_override: emailContent,
@@ -733,7 +749,9 @@ export default function AutomationsPage() {
           const createdConfig = createdStep.config ?? {};
           const newEmail: EmailStep = {
             id: createdStep.id,
-            sender: createdConfig.sender_email ?? emailSender,
+            senderId: createdConfig.sender_id ?? emailSender,
+            senderEmail: createdConfig.sender_email ?? selectedSenderEmail,
+            senderFrom: selectedSender.from,
             subject: createdConfig.subject_override ?? emailSubject,
             content: createdConfig.content_override ?? emailContent,
             templateId: createdConfig.template_id ?? emailTemplateId,
@@ -755,7 +773,9 @@ export default function AutomationsPage() {
 
       const newEmail: EmailStep = {
         id: crypto.randomUUID(),
-        sender: emailSender,
+        senderId: emailSender,
+        senderFrom: selectedSender.from,
+        senderEmail: selectedSenderEmail,
         subject: emailSubject,
         content: emailContent,
         templateId: emailTemplateId,
@@ -788,7 +808,8 @@ export default function AutomationsPage() {
 
         emailSteps.push({
           id: step.id,
-          sender: step.config.sender_email || '',
+          senderId: step.config.sender_id || '',
+          senderEmail: step.config.sender_email || '',
           subject: step.config.subject_override || '',
           content: step.config.content_override || '',
           templateId: step.config.template_id || null,
@@ -1632,7 +1653,7 @@ bg-[size:10px_10px] relative">
                           </SelectItem>
                         ) : senders.length ? (
                           senders.map((sender) => (
-                            <SelectItem key={sender.id} value={sender.from}>
+                            <SelectItem key={sender.id} value={sender.id}>
                               {formatSenderLabel(sender)}
                             </SelectItem>
                           ))
