@@ -754,9 +754,9 @@ bg-[size:10px_10px]">
                 </div>
 
                 {/* YES and NO Branches side by side */}
-                <div className="grid grid-cols-2 gap-6">
+                <div className="grid grid-cols-2 gap-8">
                   {/* YES Branch */}
-                  <div className="flex flex-col items-center rounded-lg text-card-foreground shadow-sm p-4 border-2 border-dashed border-primary/50 bg-card">
+                  <div className="flex flex-col items-center rounded-lg text-card-foreground shadow-sm p-4 m-4 border-2 border-dashed border-primary/50 bg-card">
                     <div className="flex items-center gap-2 text-xs font-semibold text-green-600 mb-2">
                       <div className="h-1.5 w-1.5 rounded-full bg-green-500" />
                       YES
@@ -843,7 +843,7 @@ bg-[size:10px_10px]">
                   </div>
 
                   {/* NO Branch */}
-                  <div className="flex flex-col items-center rounded-lg text-card-foreground shadow-sm p-4 border-2 border-dashed border-primary/50 bg-card">
+                  <div className="flex flex-col items-center rounded-lg text-card-foreground shadow-sm p-4 m-4 border-2 border-dashed border-primary/50 bg-card">
                     <div className="flex items-center gap-2 text-xs font-semibold text-orange-600 mb-2">
                       <div className="h-1.5 w-1.5 rounded-full bg-orange-500" />
                       NO
