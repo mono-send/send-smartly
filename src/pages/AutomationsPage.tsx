@@ -147,7 +147,6 @@ interface Workflow {
 
 interface WorkflowsResponse {
   workloads?: WorkflowListItem[];
-  automations?: WorkflowListItem[];
   pagination: {
     page: number;
     limit: number;
@@ -770,13 +769,13 @@ export default function AutomationsPage() {
   const fetchWorkflows = async () => {
     setIsLoadingWorkflows(true);
     try {
-      const response = await api("/automations");
+      const response = await api("/workflows");
       if (!response.ok) {
         toast.error("Failed to load workflows");
         return;
       }
       const data: WorkflowsResponse = await response.json();
-      const workloads = data.workloads ?? data.automations ?? [];
+      const workloads = data.workloads ?? [];
       setWorkflows(workloads);
 
       // Select first workflow if available
