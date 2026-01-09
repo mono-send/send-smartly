@@ -835,14 +835,14 @@ bg-[size:10px_10px]">
 
                 {/* Branch connector - splits into YES and NO */}
                 <div className="flex justify-center">
-                  <div className="flex flex-col items-center w-full">
+                  <div className="flex flex-col items-center">
                     {/* Vertical line going down */}
                     <div className="w-px h-4 bg-[#999]" />
                     {/* Horizontal split line with center node */}
-                    <div className="flex w-full items-center px-6">
-                      <div className="h-px flex-1 bg-[#999]" />
+                    <div className="flex items-center">
+                      <div className="h-px w-[200px] bg-[#999]" />
                       <div className="h-1.5 w-1.5 rounded-full bg-[#999]" />
-                      <div className="h-px flex-1 bg-[#999]" />
+                      <div className="h-px w-[200px] bg-[#999]" />
                     </div>
                   </div>
                 </div>
@@ -1041,10 +1041,10 @@ bg-[size:10px_10px]">
                 {/* Merge connector */}
                 <div className="flex justify-center py-4">
                   <div className="flex flex-col items-center">
-                    <div className="flex items-center gap-4">
-                      <div className="w-[calc(50%-8px)] h-px bg-[#999]" />
+                    <div className="flex items-center">
+                      <div className="w-[200px] h-px bg-[#999]" />
                       <div className="h-1.5 w-1.5 rounded-full bg-[#999]" />
-                      <div className="w-[calc(50%-8px)] h-px bg-[#999]" />
+                      <div className="w-[200px] h-px bg-[#999]" />
                     </div>
                     <div className="w-px h-4 bg-[#999]" />
                   </div>
