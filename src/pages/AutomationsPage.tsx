@@ -943,6 +943,7 @@ export default function AutomationsPage() {
               value={automationTitle}
               onChange={(e) => setAutomationTitle(e.target.value)}
               onBlur={() => setIsEditingTitle(false)}
+              onFocus={(e) => e.target.select()}
               onKeyDown={handleTitleKeyDown}
               className="h-8 w-64 font-medium"
             />
