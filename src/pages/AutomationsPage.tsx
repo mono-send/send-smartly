@@ -978,34 +978,14 @@ bg-[size:10px_10px]">
             {/* Add Email Block - shown when no condition or after condition */}
             {!conditionBranch && (
               <div className="flex justify-center">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className="w-full max-w-xs justify-center gap-2 text-sm font-medium"
-                    >
-                      <Mail className="h-4 w-4" />
-                      ADD EMAIL
-                      <ChevronDown className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="center">
-                    <DropdownMenuItem onClick={handleAddEmail}>
-                      Add Email
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => {
-                        if (emailSteps.length === 0) {
-                          handleAddEmail();
-                          return;
-                        }
-                        handleAddCondition(emailSteps[0].id);
-                      }}
-                    >
-                      Add Condition Branch
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                <Button
+                  variant="outline"
+                  className="w-full max-w-xs justify-center gap-2 text-sm font-medium"
+                  onClick={handleAddEmail}
+                >
+                  <Mail className="h-4 w-4" />
+                  Add Email
+                </Button>
               </div>
             )}
 
