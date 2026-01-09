@@ -1032,7 +1032,7 @@ bg-[size:10px_10px]">
                           </p>
                         </Card>
                         {/* Connector after NO branch email */}
-                        <div className="w-px h-4 bg-orange-400" />
+                        {/* <div className="w-px h-4 bg-orange-400" /> */}
                       </>
                     ) : (
                       <>
@@ -1049,7 +1049,7 @@ bg-[size:10px_10px]">
                           Add Email
                         </Button>
                         {/* Connector when no email */}
-                        <div className="w-px h-4 bg-orange-400" />
+                        {/* <div className="w-px h-4 bg-orange-400" /> */}
                       </>
                     )}
                     </div>
