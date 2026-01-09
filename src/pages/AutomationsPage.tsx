@@ -918,6 +918,43 @@ export default function AutomationsPage() {
     fetchWorkflows();
   }, []);
 
+  // Auto-save workflow when segment is selected
+  useEffect(() => {
+    const updateWorkflowSegment = async () => {
+      if (!selectedWorkflow || !selectedSegment) {
+        return;
+      }
+
+      // Don't update if the segment hasn't actually changed
+      if (selectedWorkflow.trigger_segment?.id === selectedSegment) {
+        return;
+      }
+
+      try {
+        const response = await api(`/workflows/${selectedWorkflow.id}`, {
+          method: "PATCH",
+          body: {
+            trigger_segment_id: selectedSegment,
+          },
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          toast.error(error.detail || "Failed to update workflow segment");
+          return;
+        }
+
+        const updatedWorkflow: Workflow = await response.json();
+        setSelectedWorkflow(updatedWorkflow);
+        toast.success("Workflow trigger updated");
+      } catch (error) {
+        toast.error("Failed to update workflow segment");
+      }
+    };
+
+    updateWorkflowSegment();
+  }, [selectedSegment]);
+
   const showPostConditionActions = !conditionBranch
     || Boolean(conditionBranch.yesBranch.email || conditionBranch.noBranch.email);
 
