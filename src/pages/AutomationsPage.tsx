@@ -656,7 +656,7 @@ export default function AutomationsPage() {
 bg-[size:10px_10px]">
           <div className="max-w-2xl mx-auto space-y-0">
             {/* Entry Block */}
-            <Card className="p-4">
+            <Card className="p-4 max-w-[400px] mx-auto">
               <div className="flex items-center gap-2 text-sm font-medium text-foreground mb-3">
                 <ArrowRight className="h-4 w-4" />
                 TRIGGER
