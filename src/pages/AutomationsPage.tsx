@@ -51,11 +51,19 @@ interface Sender {
   from: string;
 }
 
+interface Template {
+  id: string;
+  name: string;
+  subject: string;
+  body: string;
+}
+
 interface EmailStep {
   id: string;
   sender: string;
   subject: string;
   content: string;
+  templateId: string | null;
   waitTime: number;
   waitUnit: string;
 }
@@ -238,6 +246,8 @@ export default function AutomationsPage() {
   const [isLoadingCategories, setIsLoadingCategories] = useState(false);
   const [senders, setSenders] = useState<Sender[]>([]);
   const [isLoadingSenders, setIsLoadingSenders] = useState(false);
+  const [templates, setTemplates] = useState<Template[]>([]);
+  const [isLoadingTemplates, setIsLoadingTemplates] = useState(false);
 
   // Inline title editing
   const [automationTitle, setAutomationTitle] = useState("Untitled Automation");
@@ -251,6 +261,7 @@ export default function AutomationsPage() {
   const [emailSubject, setEmailSubject] = useState("");
   const [emailContent, setEmailContent] = useState("");
   const [emailSender, setEmailSender] = useState("");
+  const [emailTemplateId, setEmailTemplateId] = useState<string | null>(null);
   const [emailWaitTime, setEmailWaitTime] = useState(5);
   const [emailWaitUnit, setEmailWaitUnit] = useState("day");
 
@@ -296,6 +307,7 @@ export default function AutomationsPage() {
     setEmailSender("");
     setEmailSubject("");
     setEmailContent("");
+    setEmailTemplateId(null);
     setEmailWaitTime(5);
     setEmailWaitUnit("day");
     setEmailDialogOpen(true);
@@ -306,6 +318,7 @@ export default function AutomationsPage() {
     setEmailSender(email.sender);
     setEmailSubject(email.subject);
     setEmailContent(email.content);
+    setEmailTemplateId(email.templateId ?? null);
     setEmailWaitTime(email.waitTime);
     setEmailWaitUnit(email.waitUnit);
     setEmailDialogOpen(true);
@@ -326,7 +339,7 @@ export default function AutomationsPage() {
       // Update existing
       setEmailSteps(emailSteps.map(e =>
         e.id === editingEmailId
-          ? { ...e, sender: emailSender, subject: emailSubject, content: emailContent, waitTime: emailWaitTime, waitUnit: emailWaitUnit }
+          ? { ...e, sender: emailSender, subject: emailSubject, content: emailContent, templateId: emailTemplateId, waitTime: emailWaitTime, waitUnit: emailWaitUnit }
           : e
       ));
       toast.success("Email step updated");
@@ -337,6 +350,7 @@ export default function AutomationsPage() {
         sender: emailSender,
         subject: emailSubject,
         content: emailContent,
+        templateId: emailTemplateId,
         waitTime: emailWaitTime,
         waitUnit: emailWaitUnit,
       };
@@ -401,9 +415,28 @@ export default function AutomationsPage() {
       }
     };
 
+    const fetchTemplates = async () => {
+      setIsLoadingTemplates(true);
+      try {
+        const response = await api("/templates");
+        if (!response.ok) {
+          toast.error("Failed to load templates");
+          return;
+        }
+
+        const data = await response.json();
+        setTemplates(data.items || data || []);
+      } catch (error) {
+        toast.error("Failed to load templates");
+      } finally {
+        setIsLoadingTemplates(false);
+      }
+    };
+
     fetchSegments();
     fetchContactCategories();
     fetchSenders();
+    fetchTemplates();
   }, []);
 
   return (
@@ -572,6 +605,37 @@ bg-[size:10px_10px]">
                         ) : (
                           <SelectItem value="no-senders" disabled>
                             No senders available
+                          </SelectItem>
+                        )}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="email-template">Template</Label>
+                    <Select
+                      value={emailTemplateId ?? ""}
+                      onValueChange={(value) => {
+                        setEmailTemplateId(value || null);
+                      }}
+                      disabled={isLoadingTemplates}
+                    >
+                      <SelectTrigger id="email-template">
+                        <SelectValue placeholder={isLoadingTemplates ? "Loading templates..." : "Select a template"} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {isLoadingTemplates ? (
+                          <SelectItem value="loading" disabled>
+                            Loading...
+                          </SelectItem>
+                        ) : templates.length ? (
+                          templates.map((template) => (
+                            <SelectItem key={template.id} value={template.id}>
+                              {template.name}
+                            </SelectItem>
+                          ))
+                        ) : (
+                          <SelectItem value="no-templates" disabled>
+                            No templates available
                           </SelectItem>
                         )}
                       </SelectContent>
