@@ -45,6 +45,12 @@ interface ContactCategory {
   name: string;
 }
 
+interface Sender {
+  id: string;
+  name: string;
+  from: string;
+}
+
 interface EmailStep {
   id: string;
   sender: string;
@@ -230,6 +236,8 @@ export default function AutomationsPage() {
   const [contactCategories, setContactCategories] = useState<ContactCategory[]>([]);
   const [selectedCategory, setSelectedCategory] = useState("");
   const [isLoadingCategories, setIsLoadingCategories] = useState(false);
+  const [senders, setSenders] = useState<Sender[]>([]);
+  const [isLoadingSenders, setIsLoadingSenders] = useState(false);
 
   // Inline title editing
   const [automationTitle, setAutomationTitle] = useState("Untitled Automation");
@@ -375,8 +383,27 @@ export default function AutomationsPage() {
       }
     };
 
+    const fetchSenders = async () => {
+      setIsLoadingSenders(true);
+      try {
+        const response = await api("/senders");
+        if (!response.ok) {
+          toast.error("Failed to load senders");
+          return;
+        }
+
+        const data = await response.json();
+        setSenders(data || []);
+      } catch (error) {
+        toast.error("Failed to load senders");
+      } finally {
+        setIsLoadingSenders(false);
+      }
+    };
+
     fetchSegments();
     fetchContactCategories();
+    fetchSenders();
   }, []);
 
   return (
@@ -523,12 +550,32 @@ bg-[size:10px_10px]">
                 <div className="space-y-4 py-4">
                   <div className="space-y-2">
                     <Label htmlFor="email-sender">Sender</Label>
-                    <Input
-                      id="email-sender"
-                      placeholder="noreply@yourdomain.com"
+                    <Select
                       value={emailSender}
-                      onChange={(e) => setEmailSender(e.target.value)}
-                    />
+                      onValueChange={setEmailSender}
+                      disabled={isLoadingSenders}
+                    >
+                      <SelectTrigger id="email-sender">
+                        <SelectValue placeholder={isLoadingSenders ? "Loading senders..." : "Select a sender"} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {isLoadingSenders ? (
+                          <SelectItem value="loading" disabled>
+                            Loading...
+                          </SelectItem>
+                        ) : senders.length ? (
+                          senders.map((sender) => (
+                            <SelectItem key={sender.id} value={sender.from}>
+                              {sender.name} ({sender.from})
+                            </SelectItem>
+                          ))
+                        ) : (
+                          <SelectItem value="no-senders" disabled>
+                            No senders available
+                          </SelectItem>
+                        )}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="email-subject">Subject <span className="text-destructive">*</span></Label>
