@@ -625,6 +625,9 @@ export default function AutomationsPage() {
     fetchTemplates();
   }, []);
 
+  const showPostConditionActions = !conditionBranch
+    || Boolean(conditionBranch.yesBranch.email || conditionBranch.noBranch.email);
+
   return (
     <div className="min-h-screen bg-muted/30 flex flex-col">
       {/* Top Bar */}
@@ -975,8 +978,8 @@ bg-[size:10px_10px]">
               </div>
             )}
 
-            {/* Add Email Block - shown when no condition or after condition */}
-            {!conditionBranch && (
+            {/* Add Email Block - shown when no condition or after at least one branch email */}
+            {showPostConditionActions && (
               <div className="flex justify-center">
                 {emailSteps.length > 0 ? (
                   <div className="flex w-full max-w-xs overflow-hidden rounded-md border divide-x divide-border bg-background">
