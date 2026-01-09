@@ -20,7 +20,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { X, ArrowRight, Clock, Mail, LogOut, Plus, Minus, Info, Pencil, Trash2, GripVertical, GitBranch, Eye, EyeOff, MoreVertical, ChevronDown } from "lucide-react";
+import { X, ArrowRight, Clock, Mail, LogOut, Plus, Minus, Info, Pencil, Trash2, GripVertical, GitBranch, Eye, EyeOff, MoreVertical, ChevronDown, Loader2 } from "lucide-react";
 import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -77,6 +77,82 @@ interface EmailStep {
   templateId: string | null;
   waitTime: number;
   waitUnit: string;
+}
+
+// Workflow API types
+interface WorkflowStats {
+  total_enrollments: number;
+  active_enrollments: number;
+  completed_enrollments: number;
+  exited_enrollments: number;
+}
+
+interface WorkflowStepConfig {
+  wait_duration?: number;
+  wait_unit?: string;
+  sender_id?: string;
+  sender_name?: string;
+  sender_email?: string;
+  template_id?: string;
+  template_name?: string;
+  subject_override?: string | null;
+  content_override?: string | null;
+}
+
+interface WorkflowStep {
+  id: string;
+  workflow_id: string;
+  step_type: 'wait' | 'email' | 'condition';
+  position: number;
+  label: string | null;
+  parent_step_id: string | null;
+  branch: string | null;
+  config: WorkflowStepConfig;
+  created_at: string;
+  updated_at: string;
+}
+
+interface WorkflowListItem {
+  id: string;
+  name: string;
+  status: 'draft' | 'active' | 'paused' | 'archived';
+  trigger_segment: { id: string; name: string } | null;
+  active_version: number | null;
+  draft_version: number;
+  stats: WorkflowStats;
+  has_unsaved_changes: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+interface Workflow {
+  id: string;
+  name: string;
+  status: 'draft' | 'active' | 'paused' | 'archived';
+  trigger_segment: { id: string; name: string } | null;
+  unsubscribe_category: { id: string; name: string } | null;
+  track_opens: boolean;
+  track_clicks: boolean;
+  exit_on_all_emails: boolean;
+  exit_on_segment_leave: boolean;
+  active_version: number | null;
+  draft_version: number;
+  has_unsaved_changes: boolean;
+  steps: WorkflowStep[];
+  stats: WorkflowStats;
+  created_at: string;
+  updated_at: string;
+  created_by: string;
+}
+
+interface WorkflowsResponse {
+  data: WorkflowListItem[];
+  pagination: {
+    page: number;
+    limit: number;
+    total_items: number;
+    total_pages: number;
+  };
 }
 
 interface ConditionBranch {
@@ -313,6 +389,15 @@ function SortableEmailStep({
 
 export default function AutomationsPage() {
   const navigate = useNavigate();
+
+  // Workflow state
+  const [workflows, setWorkflows] = useState<WorkflowListItem[]>([]);
+  const [selectedWorkflow, setSelectedWorkflow] = useState<Workflow | null>(null);
+  const [isLoadingWorkflows, setIsLoadingWorkflows] = useState(false);
+  const [isLoadingWorkflowDetails, setIsLoadingWorkflowDetails] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isActivating, setIsActivating] = useState(false);
+
   const [waitTime, setWaitTime] = useState(1);
   const [waitUnit, setWaitUnit] = useState("min");
   const [exitCondition, setExitCondition] = useState("completed");
@@ -587,6 +672,172 @@ export default function AutomationsPage() {
     setEmailDialogOpen(false);
   };
 
+  // Helper to convert workflow steps to UI email steps
+  const convertWorkflowStepsToEmailSteps = (steps: WorkflowStep[]): EmailStep[] => {
+    const emailSteps: EmailStep[] = [];
+    const sortedSteps = [...steps].sort((a, b) => a.position - b.position);
+
+    for (let i = 0; i < sortedSteps.length; i++) {
+      const step = sortedSteps[i];
+      if (step.step_type === 'email') {
+        // Find the wait step before this email (if any)
+        const prevStep = i > 0 ? sortedSteps[i - 1] : null;
+        const waitTime = prevStep?.step_type === 'wait' ? prevStep.config.wait_duration || 5 : 5;
+        const waitUnit = prevStep?.step_type === 'wait' ? prevStep.config.wait_unit || 'day' : 'day';
+
+        emailSteps.push({
+          id: step.id,
+          sender: step.config.sender_email || '',
+          subject: step.config.subject_override || '',
+          content: step.config.content_override || '',
+          templateId: step.config.template_id || null,
+          waitTime,
+          waitUnit,
+        });
+      }
+    }
+    return emailSteps;
+  };
+
+  // Populate UI from workflow data
+  const populateFromWorkflow = (workflow: Workflow) => {
+    setAutomationTitle(workflow.name);
+    setSelectedSegment(workflow.trigger_segment?.id || '');
+    setSelectedCategory(workflow.unsubscribe_category?.id || '');
+    setTrackOpens(workflow.track_opens);
+    setTrackClicks(workflow.track_clicks);
+    setExitCondition(workflow.exit_on_all_emails ? 'completed' : 'removed');
+
+    // Convert and set email steps
+    const convertedSteps = convertWorkflowStepsToEmailSteps(workflow.steps);
+    setEmailSteps(convertedSteps);
+  };
+
+  // Fetch workflow details by ID
+  const fetchWorkflowDetails = async (workflowId: string) => {
+    setIsLoadingWorkflowDetails(true);
+    try {
+      const response = await api(`/workflows/${workflowId}`);
+      if (!response.ok) {
+        toast.error("Failed to load workflow details");
+        return;
+      }
+      const workflow: Workflow = await response.json();
+      setSelectedWorkflow(workflow);
+      populateFromWorkflow(workflow);
+    } catch (error) {
+      toast.error("Failed to load workflow details");
+    } finally {
+      setIsLoadingWorkflowDetails(false);
+    }
+  };
+
+  // Fetch all workflows
+  const fetchWorkflows = async () => {
+    setIsLoadingWorkflows(true);
+    try {
+      const response = await api("/workflows");
+      if (!response.ok) {
+        toast.error("Failed to load workflows");
+        return;
+      }
+      const data: WorkflowsResponse = await response.json();
+      setWorkflows(data.data || []);
+
+      // Select first workflow if available
+      if (data.data && data.data.length > 0) {
+        fetchWorkflowDetails(data.data[0].id);
+      }
+    } catch (error) {
+      toast.error("Failed to load workflows");
+    } finally {
+      setIsLoadingWorkflows(false);
+    }
+  };
+
+  // Save workflow draft
+  const handleSaveWorkflow = async () => {
+    if (!selectedWorkflow) {
+      toast.error("No workflow selected");
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      // First update the workflow settings
+      const updateResponse = await api(`/workflows/${selectedWorkflow.id}`, {
+        method: "PATCH",
+        body: {
+          name: automationTitle,
+          trigger_segment_id: selectedSegment || undefined,
+          unsubscribe_category_id: selectedCategory || undefined,
+          track_opens: trackOpens,
+          track_clicks: trackClicks,
+          exit_on_all_emails: exitCondition === 'completed',
+          exit_on_segment_leave: exitCondition === 'removed',
+        },
+      });
+
+      if (!updateResponse.ok) {
+        const error = await updateResponse.json();
+        toast.error(error.detail || "Failed to update workflow");
+        return;
+      }
+
+      // Then save as a new version
+      const saveResponse = await api(`/workflows/${selectedWorkflow.id}/save`, {
+        method: "POST",
+      });
+
+      if (!saveResponse.ok) {
+        const error = await saveResponse.json();
+        toast.error(error.detail || "Failed to save workflow version");
+        return;
+      }
+
+      const updatedWorkflow: Workflow = await saveResponse.json();
+      setSelectedWorkflow(updatedWorkflow);
+      toast.success("Workflow saved successfully");
+    } catch (error) {
+      toast.error("Failed to save workflow");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Activate workflow
+  const handleActivateWorkflow = async () => {
+    if (!selectedWorkflow) {
+      toast.error("No workflow selected");
+      return;
+    }
+
+    setIsActivating(true);
+    try {
+      // First save the workflow
+      await handleSaveWorkflow();
+
+      // Then activate it
+      const response = await api(`/workflows/${selectedWorkflow.id}/activate?version_number=${selectedWorkflow.draft_version}`, {
+        method: "POST",
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        toast.error(error.detail || "Failed to activate workflow");
+        return;
+      }
+
+      const updatedWorkflow: Workflow = await response.json();
+      setSelectedWorkflow(updatedWorkflow);
+      toast.success("Workflow activated successfully");
+    } catch (error) {
+      toast.error("Failed to activate workflow");
+    } finally {
+      setIsActivating(false);
+    }
+  };
+
   useEffect(() => {
     const fetchSegments = async () => {
       setIsLoadingSegments(true);
@@ -664,6 +915,7 @@ export default function AutomationsPage() {
     fetchContactCategories();
     fetchSenders();
     fetchTemplates();
+    fetchWorkflows();
   }, []);
 
   const showPostConditionActions = !conditionBranch
@@ -705,15 +957,66 @@ export default function AutomationsPage() {
           )}
         </div>
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 text-muted-foreground text-xs">
-            <div className="h-2 w-2 rounded-full bg-muted-foreground" />
-            DRAFT
-          </div>
-          <Button variant="secondary" className="h-9 text-xs">
-            Save
+          {isLoadingWorkflows || isLoadingWorkflowDetails ? (
+            <div className="flex items-center gap-2 text-muted-foreground text-xs">
+              <Loader2 className="h-3 w-3 animate-spin" />
+              Loading...
+            </div>
+          ) : selectedWorkflow ? (
+            <div className="flex items-center gap-2 text-xs">
+              <div className={cn(
+                "h-2 w-2 rounded-full",
+                selectedWorkflow.status === 'active' && "bg-green-500",
+                selectedWorkflow.status === 'paused' && "bg-yellow-500",
+                selectedWorkflow.status === 'draft' && "bg-muted-foreground",
+                selectedWorkflow.status === 'archived' && "bg-gray-400"
+              )} />
+              <span className={cn(
+                selectedWorkflow.status === 'active' && "text-green-600",
+                selectedWorkflow.status === 'paused' && "text-yellow-600",
+                selectedWorkflow.status === 'draft' && "text-muted-foreground",
+                selectedWorkflow.status === 'archived' && "text-gray-500"
+              )}>
+                {selectedWorkflow.status.toUpperCase()}
+              </span>
+              {selectedWorkflow.has_unsaved_changes && (
+                <span className="text-muted-foreground">(unsaved changes)</span>
+              )}
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 text-muted-foreground text-xs">
+              <div className="h-2 w-2 rounded-full bg-muted-foreground" />
+              NO WORKFLOW
+            </div>
+          )}
+          <Button
+            variant="secondary"
+            className="h-9 text-xs"
+            onClick={handleSaveWorkflow}
+            disabled={isSaving || !selectedWorkflow}
+          >
+            {isSaving ? (
+              <>
+                <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              "Save"
+            )}
           </Button>
-          <Button className="h-9 text-xs">
-            Activate
+          <Button
+            className="h-9 text-xs"
+            onClick={handleActivateWorkflow}
+            disabled={isActivating || !selectedWorkflow}
+          >
+            {isActivating ? (
+              <>
+                <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                Activating...
+              </>
+            ) : (
+              "Activate"
+            )}
           </Button>
         </div>
       </div>
@@ -721,8 +1024,16 @@ export default function AutomationsPage() {
       {/* Main Content */}
       <div className="flex-1 flex">
         {/* Flow Builder */}
-        <div className="flex-1 overflow-auto p-8 bg-[radial-gradient(circle,#73737350_1px,transparent_1px)] 
-bg-[size:10px_10px]">
+        <div className="flex-1 overflow-auto p-8 bg-[radial-gradient(circle,#73737350_1px,transparent_1px)]
+bg-[size:10px_10px] relative">
+          {isLoadingWorkflowDetails && (
+            <div className="absolute inset-0 bg-background/50 flex items-center justify-center z-10">
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Loader2 className="h-5 w-5 animate-spin" />
+                Loading workflow...
+              </div>
+            </div>
+          )}
           <div className="max-w-2xl mx-auto space-y-0">
             {/* Entry Block */}
             <Card className="p-4 max-w-[400px] mx-auto">
