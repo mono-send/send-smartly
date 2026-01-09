@@ -979,7 +979,7 @@ bg-[size:10px_10px]">
             {!conditionBranch && (
               <div className="flex justify-center">
                 {emailSteps.length > 0 ? (
-                  <div className="flex w-full max-w-xs overflow-hidden rounded-md border divide-x divide-border">
+                  <div className="flex w-full max-w-xs overflow-hidden rounded-md border divide-x divide-border bg-background">
                     <Button
                       variant="ghost"
                       className="flex-1 rounded-none justify-center gap-2 text-sm font-medium"
