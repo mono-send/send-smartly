@@ -366,11 +366,11 @@ export default function EmailsPage() {
                     disabled={isLoading || emails.length === 0}
                   />
                 </TableHead> */}
-                <TableHead className="h-10">To</TableHead>
+                <TableHead className="h-10 rounded-tl-2xl">To</TableHead>
                 <TableHead className="h-10">Status</TableHead>
                 <TableHead className="h-10">Subject</TableHead>
                 <TableHead className="h-10">Sent</TableHead>
-                <TableHead className="w-[50px] h-10"></TableHead>
+                <TableHead className="w-[50px] h-10 rounded-tr-2xl"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
