@@ -181,6 +181,7 @@ interface SortableEmailStepProps {
   handleEditEmail: (email: EmailStep) => void;
   handleDeleteEmail: (id: string) => void;
   getSenderLabel: (email: EmailStep) => string;
+  handleUpdateWaitStep: (emailStepId: string, waitTime: number, waitUnit: string) => Promise<void>;
 }
 
 interface WaitForControlProps {
@@ -267,6 +268,7 @@ function SortableEmailStep({
   handleEditEmail,
   handleDeleteEmail,
   getSenderLabel,
+  handleUpdateWaitStep,
 }: SortableEmailStepProps) {
   const {
     attributes,
@@ -295,15 +297,21 @@ function SortableEmailStep({
           <WaitForControl
             waitTime={email.waitTime}
             waitUnit={email.waitUnit}
-            onWaitTimeChange={(value) => {
+            onWaitTimeChange={async (value) => {
+              // Update local state immediately for responsiveness
               const updatedSteps = [...emailSteps];
               updatedSteps[index] = { ...email, waitTime: value };
               setEmailSteps(updatedSteps);
+              // Persist to backend
+              await handleUpdateWaitStep(email.id, value, email.waitUnit);
             }}
-            onWaitUnitChange={(value) => {
+            onWaitUnitChange={async (value) => {
+              // Update local state immediately for responsiveness
               const updatedSteps = [...emailSteps];
               updatedSteps[index] = { ...email, waitUnit: value };
               setEmailSteps(updatedSteps);
+              // Persist to backend
+              await handleUpdateWaitStep(email.id, email.waitTime, value);
             }}
           />
         </div>
@@ -987,6 +995,89 @@ export default function AutomationsPage() {
     return emailSteps;
   };
 
+  // Helper to update wait step duration/unit via API
+  const handleUpdateWaitStep = async (emailStepId: string, waitTime: number, waitUnit: string) => {
+    if (!selectedWorkflow) {
+      toast.error("No workflow selected");
+      return;
+    }
+
+    try {
+      // Find the email step in the workflow
+      const sortedSteps = [...selectedWorkflow.steps].sort((a, b) => a.position - b.position);
+      const emailStepIndex = sortedSteps.findIndex(s => s.id === emailStepId);
+
+      if (emailStepIndex === -1) {
+        toast.error("Email step not found");
+        return;
+      }
+
+      const emailStep = sortedSteps[emailStepIndex];
+
+      // Check if there's a wait step before this email
+      const prevStep = emailStepIndex > 0 ? sortedSteps[emailStepIndex - 1] : null;
+
+      if (prevStep && prevStep.step_type === 'wait') {
+        // Update existing wait step
+        const response = await api(`/workflows/${selectedWorkflow.id}/steps/${prevStep.id}`, {
+          method: "PATCH",
+          body: {
+            step_type: "wait",
+            position: prevStep.position,
+            parent_step_id: prevStep.parent_step_id,
+            branch: prevStep.branch,
+            wait_duration: waitTime,
+            wait_unit: waitUnit,
+          },
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          toast.error(error.detail || "Failed to update wait step");
+          return;
+        }
+
+        const updatedStep: WorkflowStep = await response.json();
+
+        // Update selectedWorkflow with the new wait step
+        setSelectedWorkflow({
+          ...selectedWorkflow,
+          steps: selectedWorkflow.steps.map(s => s.id === prevStep.id ? updatedStep : s)
+        });
+      } else {
+        // Create a new wait step before this email
+        const response = await api(`/workflows/${selectedWorkflow.id}/steps`, {
+          method: "POST",
+          body: {
+            step_type: "wait",
+            position: emailStep.position - 1,
+            parent_step_id: emailStep.parent_step_id,
+            branch: emailStep.branch,
+            wait_duration: waitTime,
+            wait_unit: waitUnit,
+          },
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          toast.error(error.detail || "Failed to create wait step");
+          return;
+        }
+
+        const createdStep: WorkflowStep = await response.json();
+
+        // Add the new wait step to selectedWorkflow
+        setSelectedWorkflow({
+          ...selectedWorkflow,
+          steps: [...selectedWorkflow.steps, createdStep]
+        });
+      }
+    } catch (error) {
+      console.error("Error updating wait step:", error);
+      toast.error("Failed to update wait step");
+    }
+  };
+
   // Populate UI from workflow data
   const populateFromWorkflow = (workflow: Workflow) => {
     setAutomationTitle(workflow.name);
@@ -1431,6 +1522,7 @@ bg-[size:10px_10px] relative">
                     handleEditEmail={(step) => handleEditEmail(step, 'main')}
                     handleDeleteEmail={(id) => handleDeleteEmail(id, 'main')}
                     getSenderLabel={getSenderLabel}
+                    handleUpdateWaitStep={handleUpdateWaitStep}
                   />
                 ))}
               </SortableContext>
@@ -1748,6 +1840,7 @@ bg-[size:10px_10px] relative">
                       handleEditEmail={(step) => handleEditEmail(step, 'post')}
                       handleDeleteEmail={(id) => handleDeleteEmail(id, 'post')}
                       getSenderLabel={getSenderLabel}
+                      handleUpdateWaitStep={handleUpdateWaitStep}
                     />
                   ))}
                 </SortableContext>
