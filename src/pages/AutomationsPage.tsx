@@ -915,14 +915,11 @@ export default function AutomationsPage() {
 
       const isMainBranch = editingEmailSource === 'main';
       const currentSteps = isMainBranch ? emailSteps : postConditionEmailSteps;
-      const position = currentSteps.length + 1;
-
       try {
         const response = await api(`/workflows/${selectedWorkflow.id}/steps`, {
           method: "POST",
           body: {
             step_type: "email",
-            position,
             parent_step_id: null,
             branch: null,
             sender_id: emailSender,
@@ -1053,7 +1050,6 @@ export default function AutomationsPage() {
           method: "POST",
           body: {
             step_type: "wait",
-            position: emailStep.position - 1,
             parent_step_id: emailStep.parent_step_id,
             branch: emailStep.branch,
             wait_duration: waitTime,
