@@ -673,7 +673,7 @@ export default function AudiencePage() {
 
           <TabsContent value="contacts" className="space-y-6">
             {/* Metrics */}
-            <div className="grid overflow-hidden rounded-xl border bg-card text-card-foreground shadow-sm md:grid-cols-5 md:divide-x">
+            <div className="grid overflow-hidden rounded-tl-2xl border bg-card text-card-foreground shadow-sm md:grid-cols-5 md:divide-x">
               <div className="border-b md:border-b-0">
                 <CardContent className="flex flex-col items-center gap-4 py-6">
                   <div className="flex items-center gap-5">
@@ -795,15 +795,15 @@ export default function AudiencePage() {
             </div>
 
             {/* Table */}
-            <div className="rounded-lg border border-border bg-card">
+            <div className="rounded-2xl border border-border bg-card">
               <Table>
                 <TableHeader>
                   <TableRow className="uppercase text-xs">
-                    <TableHead className="h-10">Email</TableHead>
+                    <TableHead className="h-10 rounded-tl-2xl">Email</TableHead>
                     <TableHead className="h-10">Status</TableHead>
                     <TableHead className="h-10">Segment</TableHead>
                     <TableHead className="h-10">Added</TableHead>
-                    <TableHead className="w-[50px] h-10"></TableHead>
+                    <TableHead className="w-[50px] h-10 rounded-tr-2xl"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -892,13 +892,13 @@ export default function AudiencePage() {
                 Add segment
               </Button>
             </div>
-            <div className="rounded-lg border border-border bg-card">
+            <div className="rounded-2xl border border-border bg-card">
               <Table>
                 <TableHeader>
                   <TableRow className="uppercase text-xs">
-                    <TableHead className="h-10">Name</TableHead>
+                    <TableHead className="h-10 rounded-tl-2xl">Name</TableHead>
                     <TableHead className="h-10">Created</TableHead>
-                    <TableHead className="w-[50px] h-10"></TableHead>
+                    <TableHead className="w-[50px] h-10 rounded-tr-2xl"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -958,15 +958,15 @@ export default function AudiencePage() {
                 Add category
               </Button>
             </div>
-            <div className="rounded-lg border border-border bg-card">
+            <div className="rounded-tl-2xl border border-border bg-card">
               <Table>
                 <TableHeader>
                   <TableRow className="uppercase text-xs">
-                    <TableHead className="h-10">Name</TableHead>
+                    <TableHead className="h-10 rounded-tl-2xl">Name</TableHead>
                     <TableHead className="h-10">Type</TableHead>
                     <TableHead className="h-10">Visibility</TableHead>
                     <TableHead className="h-10">Created</TableHead>
-                    <TableHead className="w-[50px] h-10"></TableHead>
+                    <TableHead className="w-[50px] h-10 rounded-tr-2xl"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
