@@ -222,16 +222,16 @@ export default function ApiKeysPage() {
         </div>
 
         {/* Table */}
-        <div className="rounded-lg border border-border bg-card">
+        <div className="rounded-2xl border border-border bg-card">
           <Table>
             <TableHeader>
               <TableRow className="uppercase text-xs">
-                <TableHead className="h-10">Name</TableHead>
+                <TableHead className="h-10 rounded-tl-2xl">Name</TableHead>
                 <TableHead className="h-10">Token</TableHead>
                 <TableHead className="h-10">Permission</TableHead>
                 <TableHead className="h-10">Last used</TableHead>
                 <TableHead className="h-10">Created</TableHead>
-                <TableHead className="w-[50px] h-10"></TableHead>
+                <TableHead className="w-[50px] h-10 rounded-tr-2xl"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
