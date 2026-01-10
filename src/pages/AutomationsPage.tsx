@@ -1014,26 +1014,11 @@ export default function AutomationsPage() {
 
       const emailStep = sortedSteps[emailStepIndex];
 
-      // Find the wait step for this email
-      // First check if the immediately previous step is a wait step
-      let waitStep = null;
-      if (emailStepIndex > 0 && sortedSteps[emailStepIndex - 1].step_type === 'wait') {
-        waitStep = sortedSteps[emailStepIndex - 1];
-      } else {
-        // Search for a wait step that belongs to this email
-        // (same parent_step_id and branch, positioned before this email)
-        const candidateWaitSteps = sortedSteps.filter(s =>
-          s.step_type === 'wait' &&
-          s.parent_step_id === emailStep.parent_step_id &&
-          s.branch === emailStep.branch &&
-          s.position < emailStep.position
-        );
-
-        // Find the wait step with position closest to this email
-        if (candidateWaitSteps.length > 0) {
-          waitStep = candidateWaitSteps.sort((a, b) => b.position - a.position)[0];
-        }
-      }
+      // Find the wait step that directly precedes this email in order
+      const waitStep =
+        emailStepIndex > 0 && sortedSteps[emailStepIndex - 1].step_type === 'wait'
+          ? sortedSteps[emailStepIndex - 1]
+          : null;
 
       if (waitStep) {
         // Update existing wait step
