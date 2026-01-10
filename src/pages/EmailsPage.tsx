@@ -353,7 +353,7 @@ export default function EmailsPage() {
         )}
 
         {/* Table */}
-        <div className="rounded-lg border border-border bg-card">
+        <div className="rounded-2xl border border-border bg-card">
           <Table>
             <TableHeader>
               <TableRow className="uppercase text-xs">
