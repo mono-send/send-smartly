@@ -1014,18 +1014,36 @@ export default function AutomationsPage() {
 
       const emailStep = sortedSteps[emailStepIndex];
 
-      // Check if there's a wait step before this email
-      const prevStep = emailStepIndex > 0 ? sortedSteps[emailStepIndex - 1] : null;
+      // Find the wait step for this email
+      // First check if the immediately previous step is a wait step
+      let waitStep = null;
+      if (emailStepIndex > 0 && sortedSteps[emailStepIndex - 1].step_type === 'wait') {
+        waitStep = sortedSteps[emailStepIndex - 1];
+      } else {
+        // Search for a wait step that belongs to this email
+        // (same parent_step_id and branch, positioned before this email)
+        const candidateWaitSteps = sortedSteps.filter(s =>
+          s.step_type === 'wait' &&
+          s.parent_step_id === emailStep.parent_step_id &&
+          s.branch === emailStep.branch &&
+          s.position < emailStep.position
+        );
 
-      if (prevStep && prevStep.step_type === 'wait') {
+        // Find the wait step with position closest to this email
+        if (candidateWaitSteps.length > 0) {
+          waitStep = candidateWaitSteps.sort((a, b) => b.position - a.position)[0];
+        }
+      }
+
+      if (waitStep) {
         // Update existing wait step
-        const response = await api(`/workflows/${selectedWorkflow.id}/steps/${prevStep.id}`, {
+        const response = await api(`/workflows/${selectedWorkflow.id}/steps/${waitStep.id}`, {
           method: "PATCH",
           body: {
             step_type: "wait",
-            position: prevStep.position,
-            parent_step_id: prevStep.parent_step_id,
-            branch: prevStep.branch,
+            position: waitStep.position,
+            parent_step_id: waitStep.parent_step_id,
+            branch: waitStep.branch,
             wait_duration: waitTime,
             wait_unit: waitUnit,
           },
@@ -1042,7 +1060,7 @@ export default function AutomationsPage() {
         // Update selectedWorkflow with the new wait step
         setSelectedWorkflow({
           ...selectedWorkflow,
-          steps: selectedWorkflow.steps.map(s => s.id === prevStep.id ? updatedStep : s)
+          steps: selectedWorkflow.steps.map(s => s.id === waitStep.id ? updatedStep : s)
         });
       } else {
         // Create a new wait step before this email
