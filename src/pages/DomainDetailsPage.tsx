@@ -132,17 +132,17 @@ function CopyableValue({ value, truncate }: { value: string; truncate?: boolean 
 
 function DNSRecordsTable({ records }: { records: DNSRecord[] }) {
   return (
-    <div className="rounded-lg border border-border overflow-hidden">
+    <div className="rounded-2xl border border-border overflow-hidden">
       <TooltipProvider>
         <Table>
           <TableHeader>
             <TableRow className="bg-muted/50 uppercase text-xs">
-              <TableHead className="w-[80px] h-10">Type</TableHead>
+              <TableHead className="w-[80px] h-10 rounded-tl-2xl">Type</TableHead>
               <TableHead className="w-[180px] h-10">Name</TableHead>
               <TableHead>Content</TableHead>
               <TableHead className="w-[80px] h-10">TTL</TableHead>
               <TableHead className="w-[80px] h-10">Priority</TableHead>
-              <TableHead className="w-[100px] h-10">Status</TableHead>
+              <TableHead className="w-[100px] h-10 rounded-tr-2xl">Status</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -502,7 +502,7 @@ export default function DomainDetailsPage() {
         )}
 
         {/* DNS Records Card */}
-        <div className="rounded-lg border border-border bg-card p-6">
+        <div className="rounded-2xl border border-border bg-card p-6">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-lg font-semibold text-foreground">DNS Records</h2>
             {shouldShowButtons && (
