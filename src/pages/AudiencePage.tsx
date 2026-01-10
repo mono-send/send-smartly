@@ -673,7 +673,7 @@ export default function AudiencePage() {
 
           <TabsContent value="contacts" className="space-y-6">
             {/* Metrics */}
-            <div className="grid overflow-hidden rounded-tl-2xl border bg-card text-card-foreground shadow-sm md:grid-cols-5 md:divide-x">
+            <div className="grid overflow-hidden rounded-2xl border bg-card text-card-foreground shadow-sm md:grid-cols-5 md:divide-x">
               <div className="border-b md:border-b-0">
                 <CardContent className="flex flex-col items-center gap-4 py-6">
                   <div className="flex items-center gap-5">
@@ -958,7 +958,7 @@ export default function AudiencePage() {
                 Add category
               </Button>
             </div>
-            <div className="rounded-tl-2xl border border-border bg-card">
+            <div className="rounded-2xl border border-border bg-card">
               <Table>
                 <TableHeader>
                   <TableRow className="uppercase text-xs">
