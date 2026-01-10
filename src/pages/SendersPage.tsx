@@ -153,14 +153,14 @@ export default function SendersPage() {
           ensure emails are legitimate, not spoofed, and can be trusted by recipients and mail servers.
         </p>
         {/* Table */}
-        <div className="rounded-lg border border-border bg-card">
+        <div className="rounded-2xl border border-border bg-card">
           <Table>
             <TableHeader>
               <TableRow className="uppercase text-xs">
-                <TableHead className="h-10">Sender Name</TableHead>
+                <TableHead className="h-10 rounded-tl-2xl">Sender Name</TableHead>
                 <TableHead className="h-10">From Email</TableHead>
                 <TableHead className="h-10">Reply-To</TableHead>
-                <TableHead className="w-[50px] h-10"></TableHead>
+                <TableHead className="w-[50px] h-10 rounded-tr-2xl"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
