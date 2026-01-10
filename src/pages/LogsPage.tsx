@@ -322,15 +322,15 @@ export default function LogsPage() {
         </div>
 
         {/* Table */}
-        <div className="rounded-lg border border-border bg-card">
+        <div className="rounded-2xl border border-border bg-card">
           <Table>
             <TableHeader>
               <TableRow className="uppercase text-xs">
-                <TableHead className="h-10">Endpoint</TableHead>
+                <TableHead className="h-10 rounded-tl-2xl">Endpoint</TableHead>
                 <TableHead className="h-10">Source</TableHead>
                 <TableHead className="h-10">Status</TableHead>
                 <TableHead className="h-10">Method</TableHead>
-                <TableHead className="h-10">Created</TableHead>
+                <TableHead className="h-10 rounded-tr-2xl">Created</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
