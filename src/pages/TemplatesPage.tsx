@@ -212,14 +212,14 @@ export default function TemplatesPage() {
         </div>
 
         {/* Table */}
-        <div className="rounded-lg border border-border bg-card">
+        <div className="rounded-2xl border border-border bg-card">
           <Table>
             <TableHeader>
               <TableRow className="uppercase text-xs">
-                <TableHead className="h-10">Email template</TableHead>
+                <TableHead className="h-10 rounded-tl-2xl">Email template</TableHead>
                 <TableHead className="h-10">Created</TableHead>
                 <TableHead className="h-10">Updated</TableHead>
-                <TableHead className="w-[50px] h-10"></TableHead>
+                <TableHead className="w-[50px] h-10 rounded-tr-2xl"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
