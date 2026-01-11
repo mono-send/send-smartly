@@ -195,6 +195,7 @@ interface SortableEmailStepProps {
   handleDeleteEmail: (id: string) => void;
   getSenderLabel: (email: EmailStep) => string;
   handleUpdateWaitStep: (emailStepId: string, waitTime: number, waitUnit: string) => Promise<void>;
+  isActive: boolean;
 }
 
 interface WaitForControlProps {
@@ -203,6 +204,7 @@ interface WaitForControlProps {
   onWaitTimeChange: (value: number) => void;
   onWaitUnitChange: (value: string) => void;
   size?: "default" | "compact";
+  disabled?: boolean;
 }
 
 function WaitForControl({
@@ -211,6 +213,7 @@ function WaitForControl({
   onWaitTimeChange,
   onWaitUnitChange,
   size = "default",
+  disabled = false,
 }: WaitForControlProps) {
   const isCompact = size === "compact";
   const segmentClassName = isCompact
@@ -229,7 +232,11 @@ function WaitForControl({
           variant="ghost"
           size="icon"
           className={buttonClassName}
+          disabled={disabled}
           onClick={() => {
+            if (disabled) {
+              return;
+            }
             onWaitTimeChange(Math.max(0, waitTime - 1));
           }}
         >
@@ -238,7 +245,11 @@ function WaitForControl({
         <Input
           type="number"
           value={waitTime}
+          disabled={disabled}
           onChange={(e) => {
+            if (disabled) {
+              return;
+            }
             onWaitTimeChange(parseInt(e.target.value) || 1);
           }}
           className={inputClassName}
@@ -247,7 +258,11 @@ function WaitForControl({
           variant="ghost"
           size="icon"
           className={buttonClassName}
+          disabled={disabled}
           onClick={() => {
+            if (disabled) {
+              return;
+            }
             onWaitTimeChange(waitTime + 1);
           }}
         >
@@ -256,7 +271,11 @@ function WaitForControl({
       </div>
       <Select
         value={waitUnit}
+        disabled={disabled}
         onValueChange={(value) => {
+          if (disabled) {
+            return;
+          }
           onWaitUnitChange(value);
         }}
       >
@@ -282,6 +301,7 @@ function SortableEmailStep({
   handleDeleteEmail,
   getSenderLabel,
   handleUpdateWaitStep,
+  isActive,
 }: SortableEmailStepProps) {
   const {
     attributes,
@@ -290,7 +310,7 @@ function SortableEmailStep({
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: email.id });
+  } = useSortable({ id: email.id, disabled: isActive });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -310,7 +330,11 @@ function SortableEmailStep({
           <WaitForControl
             waitTime={email.waitTime}
             waitUnit={email.waitUnit}
+            disabled={isActive}
             onWaitTimeChange={async (value) => {
+              if (isActive) {
+                return;
+              }
               // Update local state immediately for responsiveness
               const updatedSteps = [...emailSteps];
               updatedSteps[index] = { ...email, waitTime: value };
@@ -319,6 +343,9 @@ function SortableEmailStep({
               await handleUpdateWaitStep(email.id, value, email.waitUnit);
             }}
             onWaitUnitChange={async (value) => {
+              if (isActive) {
+                return;
+              }
               // Update local state immediately for responsiveness
               const updatedSteps = [...emailSteps];
               updatedSteps[index] = { ...email, waitUnit: value };
@@ -345,7 +372,10 @@ function SortableEmailStep({
           <div
             {...attributes}
             {...listeners}
-            className="flex w-10 items-center justify-center border-r cursor-grab active:cursor-grabbing"
+            className={cn(
+              "flex w-10 items-center justify-center border-r",
+              isActive ? "cursor-not-allowed text-muted-foreground" : "cursor-grab active:cursor-grabbing"
+            )}
           >
             <GripVertical className="h-4 w-4 text-muted-foreground" />
           </div>
@@ -366,17 +396,19 @@ function SortableEmailStep({
                         size="icon"
                         className="h-7 w-7"
                         title="Email actions"
+                        disabled={isActive}
                       >
                         <MoreVertical className="h-4 w-4 mt-12" />
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => handleEditEmail(email)}>
+                      <DropdownMenuItem onClick={() => handleEditEmail(email)} disabled={isActive}>
                         Edit
                       </DropdownMenuItem>
                       <DropdownMenuItem
                         className="text-destructive focus:text-destructive"
                         onClick={() => handleDeleteEmail(email.id)}
+                        disabled={isActive}
                       >
                         Delete
                       </DropdownMenuItem>
@@ -420,6 +452,7 @@ export default function AutomationsPage() {
   const [isLoadingWorkflowDetails, setIsLoadingWorkflowDetails] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isActivating, setIsActivating] = useState(false);
+  const isActive = selectedWorkflow?.status === "active";
 
   const [waitTime, setWaitTime] = useState(1);
   const [waitUnit, setWaitUnit] = useState("min");
@@ -481,6 +514,14 @@ export default function AutomationsPage() {
   // For editing branch emails
   const [editingBranchType, setEditingBranchType] = useState<'yes' | 'no' | null>(null);
 
+  const handleActiveGuard = () => {
+    if (isActive) {
+      toast.warning("Active workflows cannot be edited.");
+      return true;
+    }
+    return false;
+  };
+
   // Drag and drop sensors
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -494,6 +535,9 @@ export default function AutomationsPage() {
     successMessage: string
   ) => {
     return async (event: DragEndEvent) => {
+      if (isActive) {
+        return;
+      }
       const { active, over } = event;
 
       if (over && active.id !== over.id) {
@@ -663,6 +707,9 @@ export default function AutomationsPage() {
   };
 
   const handleAddEmail = (source: 'main' | 'post') => {
+    if (handleActiveGuard()) {
+      return;
+    }
     if (!selectedSegment) {
       toast.warning("Segment should be selected before adding an email.");
       setAddEmailBounce(true);
@@ -682,6 +729,9 @@ export default function AutomationsPage() {
   };
 
   const handleEditEmail = (email: EmailStep, source: 'main' | 'post') => {
+    if (handleActiveGuard()) {
+      return;
+    }
     setEditingEmailId(email.id);
     setEmailSender(email.senderId);
     setEmailSubject(email.subject);
@@ -695,6 +745,9 @@ export default function AutomationsPage() {
   };
 
   const handleDeleteEmail = async (id: string, source: 'main' | 'post') => {
+    if (handleActiveGuard()) {
+      return;
+    }
     if (!selectedWorkflow) {
       toast.error("No workflow selected");
       return;
@@ -727,6 +780,9 @@ export default function AutomationsPage() {
   };
 
   const handleAddCondition = (emailId: string) => {
+    if (handleActiveGuard()) {
+      return;
+    }
     setConditionBranch({
       id: crypto.randomUUID(),
       conditionType: 'opened',
@@ -746,11 +802,17 @@ export default function AutomationsPage() {
   };
 
   const handleRemoveCondition = () => {
+    if (handleActiveGuard()) {
+      return;
+    }
     setConditionBranch(null);
     toast.success("Condition removed");
   };
 
   const handleAddBranchEmail = (branchType: 'yes' | 'no') => {
+    if (handleActiveGuard()) {
+      return;
+    }
     if (!selectedSegment) {
       toast.warning("Segment should be selected before adding an email.");
       setAddEmailBounce(true);
@@ -770,6 +832,9 @@ export default function AutomationsPage() {
   };
 
   const handleEditBranchEmail = (branchType: 'yes' | 'no', email: EmailStep) => {
+    if (handleActiveGuard()) {
+      return;
+    }
     setEditingEmailId(email.id);
     setEditingBranchType(branchType);
     setEditingEmailSource(null);
@@ -783,6 +848,9 @@ export default function AutomationsPage() {
   };
 
   const handleDeleteBranchEmail = (branchType: 'yes' | 'no') => {
+    if (handleActiveGuard()) {
+      return;
+    }
     if (!conditionBranch) return;
     if (branchType === 'yes') {
       setConditionBranch({ ...conditionBranch, yesBranch: { ...conditionBranch.yesBranch, email: null } });
@@ -1007,6 +1075,9 @@ export default function AutomationsPage() {
 
   // Helper to update wait step duration/unit via API
   const handleUpdateWaitStep = async (emailStepId: string, waitTime: number, waitUnit: string) => {
+    if (handleActiveGuard()) {
+      return;
+    }
     if (!selectedWorkflow) {
       toast.error("No workflow selected");
       return;
@@ -1328,6 +1399,9 @@ export default function AutomationsPage() {
       if (!selectedWorkflow || !selectedSegment) {
         return;
       }
+      if (isActive) {
+        return;
+      }
 
       // Don't update if the segment hasn't actually changed
       if (selectedWorkflow.trigger_segment?.id === selectedSegment) {
@@ -1357,7 +1431,7 @@ export default function AutomationsPage() {
     };
 
     updateWorkflowSegment();
-  }, [selectedSegment]);
+  }, [selectedSegment, isActive]);
 
   useEffect(() => {
     const updateWorkflowUnsubscribeGroup = async () => {
@@ -1450,6 +1524,9 @@ export default function AutomationsPage() {
       if (!selectedWorkflow) {
         return;
       }
+      if (isActive) {
+        return;
+      }
 
       const exitSettings = {
         exit_on_all_emails: exitCondition === "completed",
@@ -1484,7 +1561,7 @@ export default function AutomationsPage() {
     };
 
     updateWorkflowExitCondition();
-  }, [exitCondition, selectedWorkflow]);
+  }, [exitCondition, selectedWorkflow, isActive]);
 
   const showPostConditionActions = !conditionBranch
     || Boolean(conditionBranch.yesBranch.email || conditionBranch.noBranch.email);
@@ -1658,7 +1735,7 @@ bg-[size:10px_10px] relative">
                 <Select
                   value={selectedSegment}
                   onValueChange={setSelectedSegment}
-                  disabled={isLoadingSegments}
+                  disabled={isLoadingSegments || isActive}
                 >
                   <SelectTrigger className="bg-background">
                     <SelectValue placeholder={isLoadingSegments ? "Loading segments..." : "Select a List or Segment"} />
@@ -1713,6 +1790,7 @@ bg-[size:10px_10px] relative">
                       handleDeleteEmail={(id) => handleDeleteEmail(id, 'main')}
                       getSenderLabel={getSenderLabel}
                       handleUpdateWaitStep={handleUpdateWaitStep}
+                      isActive={isActive}
                     />
                   ))}
                 </SortableContext>
@@ -1734,6 +1812,7 @@ bg-[size:10px_10px] relative">
                         className="h-7 w-7 text-destructive hover:text-destructive"
                         onClick={handleRemoveCondition}
                         title="Remove condition"
+                        disabled={isActive}
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
@@ -1745,6 +1824,7 @@ bg-[size:10px_10px] relative">
                         onValueChange={(value: 'opened' | 'clicked' | 'not_opened' | 'not_clicked') => 
                           setConditionBranch({ ...conditionBranch, conditionType: value })
                         }
+                        disabled={isActive}
                       >
                         <SelectTrigger className="w-[140px] h-8">
                           <SelectValue />
@@ -1815,6 +1895,7 @@ bg-[size:10px_10px] relative">
                           size="compact"
                           waitTime={conditionBranch.yesBranch.waitTime}
                           waitUnit={conditionBranch.yesBranch.waitUnit}
+                          disabled={isActive}
                           onWaitTimeChange={(value) => setConditionBranch({
                             ...conditionBranch,
                             yesBranch: { ...conditionBranch.yesBranch, waitTime: value }
@@ -1844,6 +1925,7 @@ bg-[size:10px_10px] relative">
                                 size="icon"
                                 className="h-5 w-5 opacity-0 group-hover:opacity-100"
                                 onClick={() => handleEditBranchEmail('yes', conditionBranch.yesBranch.email!)}
+                                disabled={isActive}
                               >
                                 <Pencil className="h-2.5 w-2.5" />
                               </Button>
@@ -1852,6 +1934,7 @@ bg-[size:10px_10px] relative">
                                 size="icon"
                                 className="h-5 w-5 text-destructive opacity-0 group-hover:opacity-100"
                                 onClick={() => handleDeleteBranchEmail('yes')}
+                                disabled={isActive}
                               >
                                 <Trash2 className="h-2.5 w-2.5" />
                               </Button>
@@ -1874,6 +1957,7 @@ bg-[size:10px_10px] relative">
                             addEmailBounce && "animate-bounce"
                           )}
                           onClick={() => handleAddBranchEmail('yes')}
+                          disabled={isActive}
                         >
                           <Plus className="h-3 w-3 mr-1" />
                           Add Email
@@ -1908,6 +1992,7 @@ bg-[size:10px_10px] relative">
                           size="compact"
                           waitTime={conditionBranch.noBranch.waitTime}
                           waitUnit={conditionBranch.noBranch.waitUnit}
+                          disabled={isActive}
                           onWaitTimeChange={(value) => setConditionBranch({
                             ...conditionBranch,
                             noBranch: { ...conditionBranch.noBranch, waitTime: value }
@@ -1937,6 +2022,7 @@ bg-[size:10px_10px] relative">
                                 size="icon"
                                 className="h-5 w-5 opacity-0 group-hover:opacity-100"
                                 onClick={() => handleEditBranchEmail('no', conditionBranch.noBranch.email!)}
+                                disabled={isActive}
                               >
                                 <Pencil className="h-2.5 w-2.5" />
                               </Button>
@@ -1945,6 +2031,7 @@ bg-[size:10px_10px] relative">
                                 size="icon"
                                 className="h-5 w-5 text-destructive opacity-0 group-hover:opacity-100"
                                 onClick={() => handleDeleteBranchEmail('no')}
+                                disabled={isActive}
                               >
                                 <Trash2 className="h-2.5 w-2.5" />
                               </Button>
@@ -1967,6 +2054,7 @@ bg-[size:10px_10px] relative">
                             addEmailBounce && "animate-bounce"
                           )}
                           onClick={() => handleAddBranchEmail('no')}
+                          disabled={isActive}
                         >
                           <Plus className="h-3 w-3 mr-1" />
                           Add Email
@@ -2031,6 +2119,7 @@ bg-[size:10px_10px] relative">
                       handleDeleteEmail={(id) => handleDeleteEmail(id, 'post')}
                       getSenderLabel={getSenderLabel}
                       handleUpdateWaitStep={handleUpdateWaitStep}
+                      isActive={isActive}
                     />
                   ))}
                 </SortableContext>
@@ -2049,6 +2138,7 @@ bg-[size:10px_10px] relative">
                         addEmailBounce && "animate-bounce"
                       )}
                       onClick={() => handleAddEmail(conditionBranch ? 'post' : 'main')}
+                      disabled={isActive}
                     >
                       <Mail className="h-4 w-4" />
                       Add Email
@@ -2057,23 +2147,25 @@ bg-[size:10px_10px] relative">
                       variant="ghost"
                       className="flex-1 rounded-none justify-center gap-2 text-sm font-medium"
                       onClick={() => handleAddCondition(emailSteps[0].id)}
+                      disabled={isActive}
                     >
                       <GitBranch className="h-4 w-4" />
                       Add Condition
                     </Button>
                   </div>
                 ) : (
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "max-w-xs justify-center gap-2 text-sm font-medium",
-                      addEmailBounce && "animate-bounce"
-                    )}
-                    onClick={() => handleAddEmail('main')}
-                  >
-                    <Mail className="h-4 w-4" />
-                    Add Email
-                  </Button>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "max-w-xs justify-center gap-2 text-sm font-medium",
+                        addEmailBounce && "animate-bounce"
+                      )}
+                      onClick={() => handleAddEmail('main')}
+                      disabled={isActive}
+                    >
+                      <Mail className="h-4 w-4" />
+                      Add Email
+                    </Button>
                 )}
               </div>
             )}
@@ -2193,10 +2285,16 @@ bg-[size:10px_10px] relative">
               </div>
               <div className="space-y-3">
                 <label 
-                  className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                  className={`flex items-center gap-3 p-3 rounded-lg border transition-colors ${
                     exitCondition === "completed" ? "border-primary bg-primary/5" : "border-border"
-                  }`}
-                  onClick={() => setExitCondition("completed")}
+                  } ${isActive ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}
+                  onClick={() => {
+                    if (isActive) {
+                      handleActiveGuard();
+                      return;
+                    }
+                    setExitCondition("completed");
+                  }}
                 >
                   <div className={`h-4 w-4 rounded-full border-2 flex items-center justify-center ${
                     exitCondition === "completed" ? "border-primary" : "border-muted-foreground"
@@ -2208,10 +2306,16 @@ bg-[size:10px_10px] relative">
                   <span className="text-sm text-foreground">When the contact has received all the automation emails</span>
                 </label>
                 <label 
-                  className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                  className={`flex items-center gap-3 p-3 rounded-lg border transition-colors ${
                     exitCondition === "removed" ? "border-primary bg-primary/5" : "border-border"
-                  }`}
-                  onClick={() => setExitCondition("removed")}
+                  } ${isActive ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}
+                  onClick={() => {
+                    if (isActive) {
+                      handleActiveGuard();
+                      return;
+                    }
+                    setExitCondition("removed");
+                  }}
                 >
                   <div className={`h-4 w-4 rounded-full border-2 flex items-center justify-center ${
                     exitCondition === "removed" ? "border-primary" : "border-muted-foreground"
