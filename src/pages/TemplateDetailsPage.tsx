@@ -328,7 +328,7 @@ export default function TemplateDetailsPage() {
               <Input
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
-                className="h-8 w-64 text-sm"
+                className="h-8 w-64 text-sm bg-white"
                 placeholder="Email subject"
               />
             </div>
