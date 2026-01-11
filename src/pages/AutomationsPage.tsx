@@ -1445,6 +1445,47 @@ export default function AutomationsPage() {
     return () => window.clearTimeout(timeoutId);
   }, [trackClicks, trackOpens, selectedWorkflow]);
 
+  useEffect(() => {
+    const updateWorkflowExitCondition = async () => {
+      if (!selectedWorkflow) {
+        return;
+      }
+
+      const exitSettings = {
+        exit_on_all_emails: exitCondition === "completed",
+        exit_on_segment_leave: exitCondition === "removed",
+      };
+
+      if (
+        exitSettings.exit_on_all_emails === selectedWorkflow.exit_on_all_emails
+        && exitSettings.exit_on_segment_leave === selectedWorkflow.exit_on_segment_leave
+      ) {
+        return;
+      }
+
+      try {
+        const response = await api(`/workflows/${selectedWorkflow.id}`, {
+          method: "PATCH",
+          body: exitSettings,
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          toast.error(error.detail || "Failed to update workflow exit condition");
+          return;
+        }
+
+        const updatedWorkflow: Workflow = await response.json();
+        setSelectedWorkflow(updatedWorkflow);
+        toast.success("Workflow exit condition updated");
+      } catch (error) {
+        toast.error("Failed to update workflow exit condition");
+      }
+    };
+
+    updateWorkflowExitCondition();
+  }, [exitCondition, selectedWorkflow]);
+
   const showPostConditionActions = !conditionBranch
     || Boolean(conditionBranch.yesBranch.email || conditionBranch.noBranch.email);
 
