@@ -148,6 +148,18 @@ interface Workflow {
   created_by: string;
 }
 
+type WorkflowExitSettings =
+  | { exit_on_all_emails: true; exit_on_segment_leave: false }
+  | { exit_on_all_emails: false; exit_on_segment_leave: true };
+
+type WorkflowUpdateWithExitSettings = {
+  name?: string;
+  trigger_segment_id?: string;
+  unsubscribe_category_id?: string;
+  track_opens?: boolean;
+  track_clicks?: boolean;
+} & WorkflowExitSettings;
+
 interface WorkflowsResponse {
   data?: WorkflowListItem[];
   pagination: {
@@ -1144,18 +1156,30 @@ export default function AutomationsPage() {
 
     setIsSaving(true);
     try {
+      const exitSettings = {
+        exit_on_all_emails: exitCondition === 'completed',
+        exit_on_segment_leave: exitCondition === 'removed',
+      };
+
+      if (exitSettings.exit_on_all_emails === exitSettings.exit_on_segment_leave) {
+        toast.error("Select exactly one exit condition: completed emails or segment removal.");
+        return;
+      }
+
       // First update the workflow settings
+      const updatePayload: WorkflowUpdateWithExitSettings = {
+        name: automationTitle,
+        trigger_segment_id: selectedSegment || undefined,
+        unsubscribe_category_id: selectedCategory || undefined,
+        track_opens: trackOpens,
+        track_clicks: trackClicks,
+        exit_on_all_emails: exitSettings.exit_on_all_emails,
+        exit_on_segment_leave: exitSettings.exit_on_segment_leave,
+      };
+
       const updateResponse = await api(`/workflows/${selectedWorkflow.id}`, {
         method: "PATCH",
-        body: {
-          name: automationTitle,
-          trigger_segment_id: selectedSegment || undefined,
-          unsubscribe_category_id: selectedCategory || undefined,
-          track_opens: trackOpens,
-          track_clicks: trackClicks,
-          exit_on_all_emails: exitCondition === 'completed',
-          exit_on_segment_leave: exitCondition === 'removed',
-        },
+        body: updatePayload,
       });
 
       if (!updateResponse.ok) {
