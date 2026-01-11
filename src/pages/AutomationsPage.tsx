@@ -1383,13 +1383,21 @@ export default function AutomationsPage() {
 
     const timeoutId = window.setTimeout(() => {
       const updateWorkflowTracking = async () => {
+        const trackingUpdates: { track_opens?: boolean; track_clicks?: boolean } = {};
+        if (trackOpens !== selectedWorkflow.track_opens) {
+          trackingUpdates.track_opens = trackOpens;
+        } else if (trackClicks !== selectedWorkflow.track_clicks) {
+          trackingUpdates.track_clicks = trackClicks;
+        }
+
+        if (Object.keys(trackingUpdates).length === 0) {
+          return;
+        }
+
         try {
           const response = await api(`/workflows/${selectedWorkflow.id}`, {
             method: "PATCH",
-            body: {
-              track_opens: trackOpens,
-              track_clicks: trackClicks,
-            },
+            body: trackingUpdates,
           });
 
           if (!response.ok) {
