@@ -953,36 +953,9 @@ export default function AutomationsPage() {
           return;
         }
 
-        const updatedStep: WorkflowStep = await response.json();
-        const updatedConfig = updatedStep.config ?? {};
-        const updatedEmail: EmailStep = {
-          id: updatedStep.id,
-          senderId: updatedConfig.sender_id ?? emailSender,
-          senderEmail: updatedConfig.sender_email ?? selectedSenderEmail,
-          senderFrom: selectedSender.from,
-          subject: updatedConfig.subject_override ?? emailSubject,
-          content: updatedConfig.content_override ?? emailContent,
-          templateId: updatedConfig.template_id ?? emailTemplateId,
-          waitTime: emailWaitTime,
-          waitUnit: emailWaitUnit,
-        };
-
-        // Update local state
-        if (editingEmailSource === 'post') {
-          setPostConditionEmailSteps(postConditionEmailSteps.map(e =>
-            e.id === editingEmailId ? updatedEmail : e
-          ));
-        } else {
-          setEmailSteps(emailSteps.map(e =>
-            e.id === editingEmailId ? updatedEmail : e
-          ));
-        }
-
-        // Update workflow steps in selectedWorkflow
-        setSelectedWorkflow({
-          ...selectedWorkflow,
-          steps: selectedWorkflow.steps.map(s => s.id === editingEmailId ? updatedStep : s)
-        });
+        const updatedWorkflow: Workflow = await response.json();
+        setSelectedWorkflow(updatedWorkflow);
+        populateFromWorkflow(updatedWorkflow);
 
         toast.success("Email step updated");
       } catch (error) {
@@ -1018,25 +991,9 @@ export default function AutomationsPage() {
           return;
         }
 
-        const createdStep: WorkflowStep = await response.json();
-        const createdConfig = createdStep.config ?? {};
-        const newEmail: EmailStep = {
-          id: createdStep.id,
-          senderId: createdConfig.sender_id ?? emailSender,
-          senderEmail: createdConfig.sender_email ?? selectedSenderEmail,
-          senderFrom: selectedSender.from,
-          subject: createdConfig.subject_override ?? emailSubject,
-          content: createdConfig.content_override ?? emailContent,
-          templateId: createdConfig.template_id ?? emailTemplateId,
-          waitTime: emailWaitTime,
-          waitUnit: emailWaitUnit,
-        };
-
-        if (editingEmailSource === 'post') {
-          setPostConditionEmailSteps([...postConditionEmailSteps, newEmail]);
-        } else {
-          setEmailSteps([...emailSteps, newEmail]);
-        }
+        const updatedWorkflow: Workflow = await response.json();
+        setSelectedWorkflow(updatedWorkflow);
+        populateFromWorkflow(updatedWorkflow);
         toast.success("Email step added");
       } catch (error) {
         toast.error("Failed to add email step");
@@ -1123,13 +1080,9 @@ export default function AutomationsPage() {
           return;
         }
 
-        const updatedStep: WorkflowStep = await response.json();
-
-        // Update selectedWorkflow with the new wait step
-        setSelectedWorkflow({
-          ...selectedWorkflow,
-          steps: selectedWorkflow.steps.map(s => s.id === waitStep.id ? updatedStep : s)
-        });
+        const updatedWorkflow: Workflow = await response.json();
+        setSelectedWorkflow(updatedWorkflow);
+        populateFromWorkflow(updatedWorkflow);
       } else {
         // Create a new wait step before this email
         const response = await api(`/workflows/${selectedWorkflow.id}/steps`, {
@@ -1149,13 +1102,9 @@ export default function AutomationsPage() {
           return;
         }
 
-        const createdStep: WorkflowStep = await response.json();
-
-        // Add the new wait step to selectedWorkflow
-        setSelectedWorkflow({
-          ...selectedWorkflow,
-          steps: [...selectedWorkflow.steps, createdStep]
-        });
+        const updatedWorkflow: Workflow = await response.json();
+        setSelectedWorkflow(updatedWorkflow);
+        populateFromWorkflow(updatedWorkflow);
       }
     } catch (error) {
       console.error("Error updating wait step:", error);
