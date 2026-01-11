@@ -1105,6 +1105,7 @@ export default function AutomationsPage() {
         const updatedWorkflow: Workflow = await response.json();
         setSelectedWorkflow(updatedWorkflow);
         populateFromWorkflow(updatedWorkflow);
+        toast.success("Wait step updated");
       } else {
         // Create a new wait step before this email
         const response = await api(`/workflows/${selectedWorkflow.id}/steps`, {
@@ -1127,6 +1128,7 @@ export default function AutomationsPage() {
         const updatedWorkflow: Workflow = await response.json();
         setSelectedWorkflow(updatedWorkflow);
         populateFromWorkflow(updatedWorkflow);
+        toast.success("Wait step added");
       }
     } catch (error) {
       console.error("Error updating wait step:", error);
