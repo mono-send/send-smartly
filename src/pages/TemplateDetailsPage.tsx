@@ -78,7 +78,7 @@ export default function TemplateDetailsPage() {
     setIsSaving(true);
     try {
       const response = await api(`/templates/${template.id}`, {
-        method: "PATCH",
+        method: "PUT",
         body: { name, subject, body },
       });
 
