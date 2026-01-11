@@ -286,6 +286,7 @@ function WaitForControl({
           <SelectItem value="min">min(s)</SelectItem>
           <SelectItem value="hour">hour(s)</SelectItem>
           <SelectItem value="day">day(s)</SelectItem>
+          <SelectItem value="week">week(s)</SelectItem>
         </SelectContent>
       </Select>
     </div>
