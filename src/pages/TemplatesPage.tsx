@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { TopBar } from "@/components/layout/TopBar";
 import { MoreVertical, Copy, Trash2, Search, Loader2 } from "lucide-react";
 import { api } from "@/lib/api";
@@ -42,6 +43,7 @@ interface Template {
 }
 
 export default function TemplatesPage() {
+  const navigate = useNavigate();
   const { toast } = useToast();
   const [templates, setTemplates] = useState<Template[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -240,7 +242,11 @@ export default function TemplatesPage() {
                 </TableRow>
               ) : (
                 templates.map((template) => (
-                  <TableRow key={template.id}>
+                  <TableRow 
+                    key={template.id}
+                    className="cursor-pointer hover:bg-muted/50"
+                    onClick={() => navigate(`/templates/${template.id}`)}
+                  >
                     <TableCell className="px-4 py-2">
                       <div className="space-y-1">
                         <div className="font-medium">{template.name}</div>

@@ -1215,15 +1215,17 @@ export default function AutomationsPage() {
       }
 
       // First update the workflow settings
-      const updatePayload: WorkflowUpdateWithExitSettings = {
+      const updatePayload = {
         name: automationTitle,
         trigger_segment_id: selectedSegment || undefined,
         unsubscribe_category_id: selectedCategory || undefined,
         track_opens: trackOpens,
         track_clicks: trackClicks,
-        exit_on_all_emails: exitSettings.exit_on_all_emails,
-        exit_on_segment_leave: exitSettings.exit_on_segment_leave,
-      };
+        ...(exitCondition === 'completed' 
+          ? { exit_on_all_emails: true as const, exit_on_segment_leave: false as const }
+          : { exit_on_all_emails: false as const, exit_on_segment_leave: true as const }
+        ),
+      } satisfies WorkflowUpdateWithExitSettings;
 
       const updateResponse = await api(`/workflows/${selectedWorkflow.id}`, {
         method: "PATCH",
