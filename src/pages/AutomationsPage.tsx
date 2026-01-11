@@ -1598,138 +1598,177 @@ export default function AutomationsPage() {
         {/* Flow Builder */}
         <div className="flex-1 overflow-auto p-8 bg-[radial-gradient(circle,#73737350_1px,transparent_1px)]
 bg-[size:10px_10px] relative">
-          {isLoadingWorkflowDetails && (
-            <div className="absolute inset-0 bg-background/50 flex items-center justify-center z-10">
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Loader2 className="h-5 w-5 animate-spin" />
-                Loading workflow...
+          {isLoadingWorkflowDetails ? (
+            <div className="max-w-2xl mx-auto space-y-6">
+              <Card className="p-4 max-w-[400px] mx-auto space-y-3">
+                <Skeleton className="h-4 w-24 mx-auto" />
+                <Skeleton className="h-4 w-48 mx-auto" />
+                <Skeleton className="h-10 w-full rounded-md" />
+              </Card>
+
+              <div className="flex justify-center">
+                <div className="flex flex-col items-center">
+                  <div className="w-px h-4 bg-muted-foreground/30" />
+                  <div className="h-1.5 w-1.5 rounded-full bg-muted-foreground/30" />
+                  <div className="w-px h-4 bg-muted-foreground/30" />
+                </div>
               </div>
+
+              <Card className="p-4 space-y-4">
+                <div className="flex items-center gap-3">
+                  <Skeleton className="h-10 w-10 rounded-md" />
+                  <div className="space-y-2 flex-1">
+                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-3 w-40" />
+                  </div>
+                  <Skeleton className="h-6 w-6 rounded-md" />
+                </div>
+                <Skeleton className="h-10 w-48" />
+              </Card>
+
+              <div className="flex justify-center">
+                <div className="flex flex-col items-center">
+                  <div className="w-px h-4 bg-muted-foreground/30" />
+                  <div className="h-1.5 w-1.5 rounded-full bg-muted-foreground/30" />
+                  <div className="w-px h-4 bg-muted-foreground/30" />
+                </div>
+              </div>
+
+              <Card className="p-4">
+                <div className="flex items-center gap-2 mb-4 justify-center">
+                  <Skeleton className="h-4 w-16" />
+                </div>
+                <div className="space-y-3">
+                  <Skeleton className="h-10 w-full rounded-lg" />
+                  <Skeleton className="h-10 w-full rounded-lg" />
+                </div>
+              </Card>
             </div>
-          )}
-          <div className="max-w-2xl mx-auto space-y-0">
-            {/* Entry Block */}
-            <Card className="p-4 max-w-[400px] mx-auto">
-              <div className="flex items-center gap-2 text-sm font-medium text-foreground mb-3 justify-center">
-                <ArrowRight className="h-4 w-4" />
-                TRIGGER
-              </div>
-              <p className="text-sm text-foreground mb-2 flex justify-center items-center">
-                When the contact enters <span className="text-destructive">*</span>
-              </p>
-              <Select
-                value={selectedSegment}
-                onValueChange={setSelectedSegment}
-                disabled={isLoadingSegments}
-              >
-                <SelectTrigger className="bg-background">
-                  <SelectValue placeholder={isLoadingSegments ? "Loading segments..." : "Select a List or Segment"} />
-                </SelectTrigger>
-                <SelectContent>
-                  {isLoadingSegments ? (
-                    <SelectItem value="loading" disabled>
-                      Loading...
-                    </SelectItem>
-                  ) : segments.length ? (
-                    segments.map((segment) => (
-                      <SelectItem key={segment.id} value={segment.id}>
-                        {segment.name}
+          ) : (
+            <div className="max-w-2xl mx-auto space-y-0">
+              {/* Entry Block */}
+              <Card className="p-4 max-w-[400px] mx-auto">
+                <div className="flex items-center gap-2 text-sm font-medium text-foreground mb-3 justify-center">
+                  <ArrowRight className="h-4 w-4" />
+                  TRIGGER
+                </div>
+                <p className="text-sm text-foreground mb-2 flex justify-center items-center">
+                  When the contact enters <span className="text-destructive">*</span>
+                </p>
+                <Select
+                  value={selectedSegment}
+                  onValueChange={setSelectedSegment}
+                  disabled={isLoadingSegments}
+                >
+                  <SelectTrigger className="bg-background">
+                    <SelectValue placeholder={isLoadingSegments ? "Loading segments..." : "Select a List or Segment"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {isLoadingSegments ? (
+                      <SelectItem value="loading" disabled>
+                        Loading...
                       </SelectItem>
-                    ))
-                  ) : (
-                    <SelectItem value="no-segments" disabled>
-                      No segments available
-                    </SelectItem>
-                  )}
-                </SelectContent>
-              </Select>
-            </Card>
+                    ) : segments.length ? (
+                      segments.map((segment) => (
+                        <SelectItem key={segment.id} value={segment.id}>
+                          {segment.name}
+                        </SelectItem>
+                      ))
+                    ) : (
+                      <SelectItem value="no-segments" disabled>
+                        No segments available
+                      </SelectItem>
+                    )}
+                  </SelectContent>
+                </Select>
+              </Card>
 
-            {/* Connector */}
-            <div className="flex justify-center py-2">
-              <div className="flex flex-col items-center">
-                <div className="w-px h-4 bg-[#999]" />
-                <div className="h-1.5 w-1.5 rounded-full bg-[#999]" />
-                <div className="w-px h-4 bg-[#999]" />
+              {/* Connector */}
+              <div className="flex justify-center py-2">
+                <div className="flex flex-col items-center">
+                  <div className="w-px h-4 bg-[#999]" />
+                  <div className="h-1.5 w-1.5 rounded-full bg-[#999]" />
+                  <div className="w-px h-4 bg-[#999]" />
+                </div>
               </div>
-            </div>
 
-            {/* Email Steps with Drag and Drop */}
-            <DndContext
-              sensors={sensors}
-              collisionDetection={closestCenter}
-              onDragEnd={handleEmailDragEnd}
-            >
-              <SortableContext
-                items={emailSteps.map(email => email.id)}
-                strategy={verticalListSortingStrategy}
+              {/* Email Steps with Drag and Drop */}
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleEmailDragEnd}
               >
-                {emailSteps.map((email, index) => (
-                  <SortableEmailStep
-                    key={email.id}
-                    email={email}
-                    index={index}
-                    emailSteps={emailSteps}
-                    setEmailSteps={setEmailSteps}
-                    handleEditEmail={(step) => handleEditEmail(step, 'main')}
-                    handleDeleteEmail={(id) => handleDeleteEmail(id, 'main')}
-                    getSenderLabel={getSenderLabel}
-                    handleUpdateWaitStep={handleUpdateWaitStep}
-                  />
-                ))}
-              </SortableContext>
-            </DndContext>
+                <SortableContext
+                  items={emailSteps.map(email => email.id)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  {emailSteps.map((email, index) => (
+                    <SortableEmailStep
+                      key={email.id}
+                      email={email}
+                      index={index}
+                      emailSteps={emailSteps}
+                      setEmailSteps={setEmailSteps}
+                      handleEditEmail={(step) => handleEditEmail(step, 'main')}
+                      handleDeleteEmail={(id) => handleDeleteEmail(id, 'main')}
+                      getSenderLabel={getSenderLabel}
+                      handleUpdateWaitStep={handleUpdateWaitStep}
+                    />
+                  ))}
+                </SortableContext>
+              </DndContext>
 
-            {/* Condition Branch UI - shown after first email if condition exists */}
-            {conditionBranch && emailSteps.length > 0 && (
-              <div className="relative">
-                {/* IF Condition Block */}
-                <Card className="p-4 border border-dashed border-primary/50 bg-card">
-                  <div className="flex items-center gap-2 mb-3 justify-center">
-                    <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-                      <GitBranch className="h-4 w-4 text-primary" />
-                      IF CONDITION
+              {/* Condition Branch UI - shown after first email if condition exists */}
+              {conditionBranch && emailSteps.length > 0 && (
+                <div className="relative">
+                  {/* IF Condition Block */}
+                  <Card className="p-4 border border-dashed border-primary/50 bg-card">
+                    <div className="flex items-center gap-2 mb-3 justify-center">
+                      <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                        <GitBranch className="h-4 w-4 text-primary" />
+                        IF CONDITION
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-destructive hover:text-destructive"
+                        onClick={handleRemoveCondition}
+                        title="Remove condition"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7 text-destructive hover:text-destructive"
-                      onClick={handleRemoveCondition}
-                      title="Remove condition"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-foreground justify-center">
-                    <span>Contact</span>
-                    <Select
-                      value={conditionBranch.conditionType}
-                      onValueChange={(value: 'opened' | 'clicked' | 'not_opened' | 'not_clicked') => 
-                        setConditionBranch({ ...conditionBranch, conditionType: value })
-                      }
-                    >
-                      <SelectTrigger className="w-[140px] h-8">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="opened">
-                          <div className="flex items-center gap-2">
-                            <Eye className="h-3 w-3" />
-                            opened
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="not_opened">
-                          <div className="flex items-center gap-2">
-                            <EyeOff className="h-3 w-3" />
-                            didn't open
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="clicked">clicked</SelectItem>
-                        <SelectItem value="not_clicked">didn't click</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <span className="font-medium">EMAIL 1</span>
-                  </div>
-                </Card>
+                    <div className="flex items-center gap-2 text-sm text-foreground justify-center">
+                      <span>Contact</span>
+                      <Select
+                        value={conditionBranch.conditionType}
+                        onValueChange={(value: 'opened' | 'clicked' | 'not_opened' | 'not_clicked') => 
+                          setConditionBranch({ ...conditionBranch, conditionType: value })
+                        }
+                      >
+                        <SelectTrigger className="w-[140px] h-8">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="opened">
+                            <div className="flex items-center gap-2">
+                              <Eye className="h-3 w-3" />
+                              opened
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="not_opened">
+                            <div className="flex items-center gap-2">
+                              <EyeOff className="h-3 w-3" />
+                              didn't open
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="clicked">clicked</SelectItem>
+                          <SelectItem value="not_clicked">didn't click</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <span className="font-medium">EMAIL 1</span>
+                    </div>
+                  </Card>
 
                 {/* Branch connector - splits into YES and NO */}
                 <div className="flex justify-center">
@@ -2186,6 +2225,7 @@ bg-[size:10px_10px] relative">
               </div>
             </Card>
           </div>
+          )}
         </div>
 
         {/* Right Sidebar */}
