@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { api } from "@/lib/api";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { Loader2, ExternalLink } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
@@ -31,7 +31,6 @@ export function SendTestEmailDialog({
   subject,
   body,
 }: SendTestEmailDialogProps) {
-  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<"emails" | "variables">("emails");
   const [emails, setEmails] = useState("");
   const [variablesJson, setVariablesJson] = useState("");
@@ -67,12 +66,12 @@ export function SendTestEmailDialog({
       .filter((e) => e.length > 0);
 
     if (emailList.length === 0) {
-      toast.error({ title: "Please add at least one email address" });
+      toast.error("Please add at least one email address");
       return;
     }
 
     if (emailList.length > 10) {
-      toast.error({ title: "Maximum 10 email addresses allowed" });
+      toast.error("Maximum 10 email addresses allowed");
       return;
     }
 
@@ -81,7 +80,7 @@ export function SendTestEmailDialog({
       try {
         parsedVariables = JSON.parse(variablesJson);
       } catch {
-        toast.error({ title: "Invalid JSON in variables" });
+        toast.error("Invalid JSON in variables");
         setActiveTab("variables");
         return;
       }
@@ -100,21 +99,19 @@ export function SendTestEmailDialog({
       });
 
       if (response.ok) {
-        toast.success({
-          title: "Test email sent",
+        toast.success("Test email sent", {
           description: `Sent to ${emailList.length} recipient(s)`,
         });
         onOpenChange(false);
         setEmails("");
       } else {
         const error = await response.json();
-        toast.error({
-          title: "Failed to send test email",
+        toast.error("Failed to send test email", {
           description: error.detail,
         });
       }
     } catch (error) {
-      toast.error({ title: "Failed to send test email" });
+      toast.error("Failed to send test email");
     } finally {
       setIsSending(false);
     }

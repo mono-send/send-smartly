@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { TopBar } from "@/components/layout/TopBar";
 import { MoreVertical, Copy, Trash2, Search, Loader2 } from "lucide-react";
 import { api } from "@/lib/api";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import {
   Dialog,
   DialogContent,
@@ -44,7 +44,6 @@ interface Template {
 
 export default function TemplatesPage() {
   const navigate = useNavigate();
-  const { toast } = useToast();
   const [templates, setTemplates] = useState<Template[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -107,22 +106,18 @@ export default function TemplatesPage() {
         const newTemplate = await response.json();
         setTemplates((prev) => [newTemplate, ...prev]);
         setIsDialogOpen(false);
-        toast.success({
-          title: "Template created",
+        toast.success("Template created", {
           description: "Your template has been created successfully.",
         });
       } else if (response.status === 400) {
         const error = await response.json();
-        toast.error({
-          title: "Error",
+        toast.error("Error", {
           description: error.detail || "Failed to create template",
         });
       }
     } catch (error) {
-      toast({
-        title: "Error",
+      toast.error("Error", {
         description: "Failed to create template",
-        variant: "destructive",
       });
     } finally {
       setIsCreating(false);
@@ -144,16 +139,13 @@ export default function TemplatesPage() {
       if (response.ok) {
         const newTemplate = await response.json();
         setTemplates((prev) => [newTemplate, ...prev]);
-        toast.success({
-          title: "Template duplicated",
+        toast.success("Template duplicated", {
           description: "Your template has been duplicated successfully.",
         });
       }
     } catch (error) {
-      toast({
-        title: "Error",
+      toast.error("Error", {
         description: "Failed to duplicate template",
-        variant: "destructive",
       });
     } finally {
       setIsDuplicating(null);
@@ -171,16 +163,13 @@ export default function TemplatesPage() {
 
       if (response.ok) {
         setTemplates((prev) => prev.filter((t) => t.id !== templateToDelete.id));
-        toast.success({
-          title: "Template deleted",
+        toast.success("Template deleted", {
           description: "Your template has been deleted successfully.",
         });
       }
     } catch (error) {
-      toast({
-        title: "Error",
+      toast.error("Error", {
         description: "Failed to delete template",
-        variant: "destructive",
       });
     } finally {
       setIsDeleting(false);

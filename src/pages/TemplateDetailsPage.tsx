@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { X, Copy, Loader2, Monitor, Smartphone, Send, MoreVertical } from "lucide-react";
 import { api } from "@/lib/api";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { TemplateCodeEditor } from "@/components/templates/TemplateCodeEditor";
 import { SendTestEmailDialog } from "@/components/templates/SendTestEmailDialog";
@@ -34,7 +34,6 @@ interface Domain {
 export default function TemplateDetailsPage() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
-  const { toast } = useToast();
   
   const [template, setTemplate] = useState<Template | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -78,12 +77,12 @@ export default function TemplateDetailsPage() {
         setSubject(data.subject);
         setBody(data.body);
       } else if (response.status === 404) {
-        toast.error({ title: "Template not found" });
+        toast.error("Template not found");
         navigate("/templates");
       }
     } catch (error) {
       console.error("Failed to fetch template:", error);
-      toast.error({ title: "Failed to load template" });
+      toast.error("Failed to load template");
     } finally {
       setIsLoading(false);
     }
@@ -122,13 +121,13 @@ export default function TemplateDetailsPage() {
       if (response.ok) {
         const updated = await response.json();
         setTemplate(updated);
-        toast.success({ title: "Template updated" });
+        toast.success("Template updated");
       } else {
         const error = await response.json();
-        toast.error({ title: "Failed to update", description: error.detail });
+        toast.error("Failed to update", { description: error.detail });
       }
     } catch (error) {
-      toast.error({ title: "Failed to update template" });
+      toast.error("Failed to update template");
     } finally {
       setIsSaving(false);
     }
@@ -143,16 +142,16 @@ export default function TemplateDetailsPage() {
 
       if (response.ok) {
         const duplicated = await response.json();
-        toast.success({ title: "Template duplicated" });
+        toast.success("Template duplicated");
         if (duplicated?.id) {
           navigate(`/templates/${duplicated.id}`);
         }
       } else {
         const error = await response.json();
-        toast.error({ title: "Failed to duplicate", description: error.detail });
+        toast.error("Failed to duplicate", { description: error.detail });
       }
     } catch (error) {
-      toast.error({ title: "Failed to duplicate template" });
+      toast.error("Failed to duplicate template");
     }
   };
 
@@ -164,27 +163,27 @@ export default function TemplateDetailsPage() {
       });
 
       if (response.ok) {
-        toast.success({ title: "Template deleted" });
+        toast.success("Template deleted");
         navigate("/templates");
       } else {
         const error = await response.json();
-        toast.error({ title: "Failed to delete", description: error.detail });
+        toast.error("Failed to delete", { description: error.detail });
       }
     } catch (error) {
-      toast.error({ title: "Failed to delete template" });
+      toast.error("Failed to delete template");
     }
   };
 
   const handleCopyId = () => {
     if (template) {
       navigator.clipboard.writeText(template.id);
-      toast.success({ title: "Template ID copied" });
+      toast.success("Template ID copied");
     }
   };
 
   const handleCopyBody = () => {
     navigator.clipboard.writeText(body);
-    toast.success({ title: "Template body copied" });
+    toast.success("Template body copied");
   };
 
   const handleNameKeyDown = (e: React.KeyboardEvent) => {
