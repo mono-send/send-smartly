@@ -3,12 +3,18 @@ import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { X, Copy, Loader2, Monitor, Smartphone, Send } from "lucide-react";
+import { X, Copy, Loader2, Monitor, Smartphone, Send, MoreVertical } from "lucide-react";
 import { api } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { TemplateCodeEditor } from "@/components/templates/TemplateCodeEditor";
 import { SendTestEmailDialog } from "@/components/templates/SendTestEmailDialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface Template {
   id: string;
@@ -97,6 +103,47 @@ export default function TemplateDetailsPage() {
     }
   };
 
+  const handleDuplicate = async () => {
+    if (!template) return;
+    try {
+      const response = await api(`/templates/${template.id}/duplicate`, {
+        method: "POST",
+      });
+
+      if (response.ok) {
+        const duplicated = await response.json();
+        toast.success({ title: "Template duplicated" });
+        if (duplicated?.id) {
+          navigate(`/templates/${duplicated.id}`);
+        }
+      } else {
+        const error = await response.json();
+        toast.error({ title: "Failed to duplicate", description: error.detail });
+      }
+    } catch (error) {
+      toast.error({ title: "Failed to duplicate template" });
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!template) return;
+    try {
+      const response = await api(`/templates/${template.id}`, {
+        method: "DELETE",
+      });
+
+      if (response.ok) {
+        toast.success({ title: "Template deleted" });
+        navigate("/templates");
+      } else {
+        const error = await response.json();
+        toast.error({ title: "Failed to delete", description: error.detail });
+      }
+    } catch (error) {
+      toast.error({ title: "Failed to delete template" });
+    }
+  };
+
   const handleCopyId = () => {
     if (template) {
       navigator.clipboard.writeText(template.id);
@@ -182,20 +229,40 @@ export default function TemplateDetailsPage() {
           </div>
         </div>
 
-        <Button 
-          onClick={handleUpdate} 
-          disabled={isSaving}
-          className="h-9"
-        >
-          {isSaving ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              SAVING...
-            </>
-          ) : (
-            "UPDATE"
-          )}
-        </Button>
+        <div className="flex items-center gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="icon" className="h-9 w-9">
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={handleDuplicate}>
+                Duplicate
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setShowSendTestDialog(true)}>
+                Test email
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleDelete}>
+                Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Button 
+            onClick={handleUpdate} 
+            disabled={isSaving}
+            className="h-9"
+          >
+            {isSaving ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                SAVING...
+              </>
+            ) : (
+              "UPDATE"
+            )}
+          </Button>
+        </div>
       </header>
 
       {/* Main Content */}
