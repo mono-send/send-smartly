@@ -271,6 +271,7 @@ export default function TemplateDetailsPage() {
                 Duplicate
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setShowSendTestDialog(true)}>
+                <Send className="h-4 w-4" />
                 Test email
               </DropdownMenuItem>
               <DropdownMenuItem onClick={handleDelete}>
@@ -350,7 +351,7 @@ export default function TemplateDetailsPage() {
               >
                 <Smartphone className="h-4 w-4" />
               </Button>
-              <Button 
+              {/* <Button 
                 variant="outline" 
                 size="sm" 
                 className="h-8 gap-2"
@@ -358,7 +359,7 @@ export default function TemplateDetailsPage() {
               >
                 <Send className="h-4 w-4" />
                 SEND TEST
-              </Button>
+              </Button> */}
             </div>
           </div>
 
