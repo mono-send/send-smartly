@@ -452,6 +452,7 @@ export default function AutomationsPage() {
   const [isLoadingWorkflowDetails, setIsLoadingWorkflowDetails] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isActivating, setIsActivating] = useState(false);
+  const [isPausing, setIsPausing] = useState(false);
   const isActive = selectedWorkflow?.status === "active";
 
   const [waitTime, setWaitTime] = useState(1);
@@ -1313,6 +1314,34 @@ export default function AutomationsPage() {
     }
   };
 
+  const handlePauseWorkflow = async () => {
+    if (!selectedWorkflow) {
+      toast.error("No workflow selected");
+      return;
+    }
+
+    setIsPausing(true);
+    try {
+      const response = await api(`/workflows/${selectedWorkflow.id}/pause`, {
+        method: "POST",
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        toast.error(error.detail || "Failed to pause workflow");
+        return;
+      }
+
+      const updatedWorkflow: Workflow = await response.json();
+      setSelectedWorkflow(updatedWorkflow);
+      toast.success("Workflow paused successfully");
+    } catch (error) {
+      toast.error("Failed to pause workflow");
+    } finally {
+      setIsPausing(false);
+    }
+  };
+
   useEffect(() => {
     const fetchSegments = async () => {
       setIsLoadingSegments(true);
@@ -1653,20 +1682,37 @@ export default function AutomationsPage() {
               "Save"
             )}
           </Button>
-          <Button
-            className="h-9 text-xs"
-            onClick={handleActivateWorkflow}
-            disabled={isActivating || !selectedWorkflow}
-          >
-            {isActivating ? (
-              <>
-                <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                Activating...
-              </>
-            ) : (
-              "Activate"
-            )}
-          </Button>
+          {selectedWorkflow?.status === "active" ? (
+            <Button
+              className="h-9 text-xs"
+              onClick={handlePauseWorkflow}
+              disabled={isPausing || isActivating || !selectedWorkflow}
+            >
+              {isPausing ? (
+                <>
+                  <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                  Pausing...
+                </>
+              ) : (
+                "Pause"
+              )}
+            </Button>
+          ) : (
+            <Button
+              className="h-9 text-xs"
+              onClick={handleActivateWorkflow}
+              disabled={isActivating || isPausing || !selectedWorkflow}
+            >
+              {isActivating ? (
+                <>
+                  <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                  Activating...
+                </>
+              ) : (
+                "Activate"
+              )}
+            </Button>
+          )}
         </div>
       </div>
 
