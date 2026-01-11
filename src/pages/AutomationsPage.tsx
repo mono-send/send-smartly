@@ -1369,6 +1369,49 @@ export default function AutomationsPage() {
     updateWorkflowUnsubscribeGroup();
   }, [selectedCategory]);
 
+  useEffect(() => {
+    if (!selectedWorkflow) {
+      return;
+    }
+
+    if (
+      trackOpens === selectedWorkflow.track_opens
+      && trackClicks === selectedWorkflow.track_clicks
+    ) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      const updateWorkflowTracking = async () => {
+        try {
+          const response = await api(`/workflows/${selectedWorkflow.id}`, {
+            method: "PATCH",
+            body: {
+              track_opens: trackOpens,
+              track_clicks: trackClicks,
+            },
+          });
+
+          if (!response.ok) {
+            const error = await response.json();
+            toast.error(error.detail || "Failed to update workflow tracking");
+            return;
+          }
+
+          const updatedWorkflow: Workflow = await response.json();
+          setSelectedWorkflow(updatedWorkflow);
+          toast.success("Workflow tracking updated");
+        } catch (error) {
+          toast.error("Failed to update workflow tracking");
+        }
+      };
+
+      updateWorkflowTracking();
+    }, 300);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [trackClicks, trackOpens, selectedWorkflow]);
+
   const showPostConditionActions = !conditionBranch
     || Boolean(conditionBranch.yesBranch.email || conditionBranch.noBranch.email);
 
