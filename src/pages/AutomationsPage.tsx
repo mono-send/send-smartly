@@ -1334,6 +1334,41 @@ export default function AutomationsPage() {
     updateWorkflowSegment();
   }, [selectedSegment]);
 
+  useEffect(() => {
+    const updateWorkflowUnsubscribeGroup = async () => {
+      if (!selectedWorkflow) {
+        return;
+      }
+
+      if ((selectedWorkflow.unsubscribe_category?.id ?? "") === selectedCategory) {
+        return;
+      }
+
+      try {
+        const response = await api(`/workflows/${selectedWorkflow.id}`, {
+          method: "PATCH",
+          body: {
+            unsubscribe_category_id: selectedCategory,
+          },
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          toast.error(error.detail || "Failed to update unsubscribe group");
+          return;
+        }
+
+        const updatedWorkflow: Workflow = await response.json();
+        setSelectedWorkflow(updatedWorkflow);
+        toast.success("Unsubscribe group updated");
+      } catch (error) {
+        toast.error("Failed to update unsubscribe group");
+      }
+    };
+
+    updateWorkflowUnsubscribeGroup();
+  }, [selectedCategory]);
+
   const showPostConditionActions = !conditionBranch
     || Boolean(conditionBranch.yesBranch.email || conditionBranch.noBranch.email);
 
