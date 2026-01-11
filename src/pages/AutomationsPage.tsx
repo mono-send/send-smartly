@@ -196,6 +196,7 @@ interface SortableEmailStepProps {
   getSenderLabel: (email: EmailStep) => string;
   handleUpdateWaitStep: (emailStepId: string, waitTime: number, waitUnit: string) => Promise<void>;
   isActive: boolean;
+  isMutatingSteps: boolean;
 }
 
 interface WaitForControlProps {
@@ -303,7 +304,9 @@ function SortableEmailStep({
   getSenderLabel,
   handleUpdateWaitStep,
   isActive,
+  isMutatingSteps,
 }: SortableEmailStepProps) {
+  const isLocked = isActive || isMutatingSteps;
   const {
     attributes,
     listeners,
@@ -311,7 +314,7 @@ function SortableEmailStep({
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: email.id, disabled: isActive });
+  } = useSortable({ id: email.id, disabled: isLocked });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -331,9 +334,9 @@ function SortableEmailStep({
           <WaitForControl
             waitTime={email.waitTime}
             waitUnit={email.waitUnit}
-            disabled={isActive}
+            disabled={isLocked}
             onWaitTimeChange={async (value) => {
-              if (isActive) {
+              if (isLocked) {
                 return;
               }
               // Update local state immediately for responsiveness
@@ -344,7 +347,7 @@ function SortableEmailStep({
               await handleUpdateWaitStep(email.id, value, email.waitUnit);
             }}
             onWaitUnitChange={async (value) => {
-              if (isActive) {
+              if (isLocked) {
                 return;
               }
               // Update local state immediately for responsiveness
@@ -375,7 +378,7 @@ function SortableEmailStep({
             {...listeners}
             className={cn(
               "flex w-10 items-center justify-center border-r",
-              isActive ? "cursor-not-allowed text-muted-foreground" : "cursor-grab active:cursor-grabbing"
+              isLocked ? "cursor-not-allowed text-muted-foreground" : "cursor-grab active:cursor-grabbing"
             )}
           >
             <GripVertical className="h-4 w-4 text-muted-foreground" />
@@ -397,19 +400,19 @@ function SortableEmailStep({
                         size="icon"
                         className="h-7 w-7"
                         title="Email actions"
-                        disabled={isActive}
+                        disabled={isLocked}
                       >
                         <MoreVertical className="h-4 w-4 mt-12" />
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => handleEditEmail(email)} disabled={isActive}>
+                      <DropdownMenuItem onClick={() => handleEditEmail(email)} disabled={isLocked}>
                         Edit
                       </DropdownMenuItem>
                       <DropdownMenuItem
                         className="text-destructive focus:text-destructive"
                         onClick={() => handleDeleteEmail(email.id)}
-                        disabled={isActive}
+                        disabled={isLocked}
                       >
                         Delete
                       </DropdownMenuItem>
@@ -454,7 +457,9 @@ export default function AutomationsPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [isActivating, setIsActivating] = useState(false);
   const [isPausing, setIsPausing] = useState(false);
+  const [isMutatingSteps, setIsMutatingSteps] = useState(false);
   const isActive = selectedWorkflow?.status === "active";
+  const isWorkflowLocked = isActive || isMutatingSteps;
 
   const [waitTime, setWaitTime] = useState(1);
   const [waitUnit, setWaitUnit] = useState("min");
@@ -537,7 +542,7 @@ export default function AutomationsPage() {
     successMessage: string
   ) => {
     return async (event: DragEndEvent) => {
-      if (isActive) {
+      if (isWorkflowLocked) {
         return;
       }
       const { active, over } = event;
@@ -863,6 +868,13 @@ export default function AutomationsPage() {
   };
 
   const handleSaveEmail = async () => {
+    if (handleActiveGuard()) {
+      return;
+    }
+    if (isMutatingSteps) {
+      toast.warning("Please wait until the workflow steps finish updating.");
+      return;
+    }
     if (!emailSender) {
       toast.error("Sender is required");
       return;
@@ -933,6 +945,7 @@ export default function AutomationsPage() {
       }
 
       try {
+        setIsMutatingSteps(true);
         const response = await api(`/workflows/${selectedWorkflow.id}/steps/${editingEmailId}`, {
           method: "PATCH",
           body: {
@@ -961,6 +974,8 @@ export default function AutomationsPage() {
       } catch (error) {
         toast.error("Failed to update email step");
         return;
+      } finally {
+        setIsMutatingSteps(false);
       }
     } else {
       // Adding a new email step - use API for all email steps
@@ -969,9 +984,8 @@ export default function AutomationsPage() {
         return;
       }
 
-      const isMainBranch = editingEmailSource === 'main';
-      const currentSteps = isMainBranch ? emailSteps : postConditionEmailSteps;
       try {
+        setIsMutatingSteps(true);
         const response = await api(`/workflows/${selectedWorkflow.id}/steps`, {
           method: "POST",
           body: {
@@ -998,6 +1012,8 @@ export default function AutomationsPage() {
       } catch (error) {
         toast.error("Failed to add email step");
         return;
+      } finally {
+        setIsMutatingSteps(false);
       }
     }
     setEditingEmailSource(null);
@@ -1037,6 +1053,10 @@ export default function AutomationsPage() {
     if (handleActiveGuard()) {
       return;
     }
+    if (isMutatingSteps) {
+      toast.warning("Please wait until the workflow steps finish updating.");
+      return;
+    }
     if (!selectedWorkflow) {
       toast.error("No workflow selected");
       return;
@@ -1059,6 +1079,8 @@ export default function AutomationsPage() {
         emailStepIndex > 0 && sortedSteps[emailStepIndex - 1].step_type === 'wait'
           ? sortedSteps[emailStepIndex - 1]
           : null;
+
+      setIsMutatingSteps(true);
 
       if (waitStep) {
         // Update existing wait step
@@ -1109,6 +1131,8 @@ export default function AutomationsPage() {
     } catch (error) {
       console.error("Error updating wait step:", error);
       toast.error("Failed to update wait step");
+    } finally {
+      setIsMutatingSteps(false);
     }
   };
 
@@ -1621,7 +1645,7 @@ export default function AutomationsPage() {
             variant="secondary"
             className="h-9 text-xs"
             onClick={handleSaveWorkflow}
-            disabled={isSaving || !selectedWorkflow}
+            disabled={isSaving || !selectedWorkflow || isMutatingSteps}
           >
             {isSaving ? (
               <>
@@ -1636,7 +1660,7 @@ export default function AutomationsPage() {
             <Button
               className="h-9 text-xs"
               onClick={handlePauseWorkflow}
-              disabled={isPausing || isActivating || !selectedWorkflow}
+              disabled={isPausing || isActivating || !selectedWorkflow || isMutatingSteps}
             >
               {isPausing ? (
                 <>
@@ -1651,7 +1675,7 @@ export default function AutomationsPage() {
             <Button
               className="h-9 text-xs"
               onClick={handleActivateWorkflow}
-              disabled={isActivating || isPausing || !selectedWorkflow}
+              disabled={isActivating || isPausing || !selectedWorkflow || isMutatingSteps}
             >
               {isActivating ? (
                 <>
@@ -1731,7 +1755,7 @@ bg-[size:10px_10px] relative">
                 <Select
                   value={selectedSegment}
                   onValueChange={setSelectedSegment}
-                  disabled={isLoadingSegments || isActive}
+                  disabled={isLoadingSegments || isWorkflowLocked}
                 >
                   <SelectTrigger className="bg-background">
                     <SelectValue placeholder={isLoadingSegments ? "Loading segments..." : "Select a List or Segment"} />
@@ -1787,6 +1811,7 @@ bg-[size:10px_10px] relative">
                       getSenderLabel={getSenderLabel}
                       handleUpdateWaitStep={handleUpdateWaitStep}
                       isActive={isActive}
+                      isMutatingSteps={isMutatingSteps}
                     />
                   ))}
                 </SortableContext>
@@ -1808,7 +1833,7 @@ bg-[size:10px_10px] relative">
                         className="h-7 w-7 text-destructive hover:text-destructive"
                         onClick={handleRemoveCondition}
                         title="Remove condition"
-                        disabled={isActive}
+                        disabled={isWorkflowLocked}
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
@@ -1820,7 +1845,7 @@ bg-[size:10px_10px] relative">
                         onValueChange={(value: 'opened' | 'clicked' | 'not_opened' | 'not_clicked') => 
                           setConditionBranch({ ...conditionBranch, conditionType: value })
                         }
-                        disabled={isActive}
+                        disabled={isWorkflowLocked}
                       >
                         <SelectTrigger className="w-[140px] h-8">
                           <SelectValue />
@@ -1891,7 +1916,7 @@ bg-[size:10px_10px] relative">
                           size="compact"
                           waitTime={conditionBranch.yesBranch.waitTime}
                           waitUnit={conditionBranch.yesBranch.waitUnit}
-                          disabled={isActive}
+                          disabled={isWorkflowLocked}
                           onWaitTimeChange={(value) => setConditionBranch({
                             ...conditionBranch,
                             yesBranch: { ...conditionBranch.yesBranch, waitTime: value }
@@ -1921,7 +1946,7 @@ bg-[size:10px_10px] relative">
                                 size="icon"
                                 className="h-5 w-5 opacity-0 group-hover:opacity-100"
                                 onClick={() => handleEditBranchEmail('yes', conditionBranch.yesBranch.email!)}
-                                disabled={isActive}
+                                disabled={isWorkflowLocked}
                               >
                                 <Pencil className="h-2.5 w-2.5" />
                               </Button>
@@ -1930,7 +1955,7 @@ bg-[size:10px_10px] relative">
                                 size="icon"
                                 className="h-5 w-5 text-destructive opacity-0 group-hover:opacity-100"
                                 onClick={() => handleDeleteBranchEmail('yes')}
-                                disabled={isActive}
+                                disabled={isWorkflowLocked}
                               >
                                 <Trash2 className="h-2.5 w-2.5" />
                               </Button>
@@ -1953,7 +1978,7 @@ bg-[size:10px_10px] relative">
                             addEmailBounce && "animate-bounce"
                           )}
                           onClick={() => handleAddBranchEmail('yes')}
-                          disabled={isActive}
+                          disabled={isWorkflowLocked}
                         >
                           <Plus className="h-3 w-3 mr-1" />
                           Add Email
@@ -1988,7 +2013,7 @@ bg-[size:10px_10px] relative">
                           size="compact"
                           waitTime={conditionBranch.noBranch.waitTime}
                           waitUnit={conditionBranch.noBranch.waitUnit}
-                          disabled={isActive}
+                          disabled={isWorkflowLocked}
                           onWaitTimeChange={(value) => setConditionBranch({
                             ...conditionBranch,
                             noBranch: { ...conditionBranch.noBranch, waitTime: value }
@@ -2018,7 +2043,7 @@ bg-[size:10px_10px] relative">
                                 size="icon"
                                 className="h-5 w-5 opacity-0 group-hover:opacity-100"
                                 onClick={() => handleEditBranchEmail('no', conditionBranch.noBranch.email!)}
-                                disabled={isActive}
+                                disabled={isWorkflowLocked}
                               >
                                 <Pencil className="h-2.5 w-2.5" />
                               </Button>
@@ -2027,7 +2052,7 @@ bg-[size:10px_10px] relative">
                                 size="icon"
                                 className="h-5 w-5 text-destructive opacity-0 group-hover:opacity-100"
                                 onClick={() => handleDeleteBranchEmail('no')}
-                                disabled={isActive}
+                                disabled={isWorkflowLocked}
                               >
                                 <Trash2 className="h-2.5 w-2.5" />
                               </Button>
@@ -2050,7 +2075,7 @@ bg-[size:10px_10px] relative">
                             addEmailBounce && "animate-bounce"
                           )}
                           onClick={() => handleAddBranchEmail('no')}
-                          disabled={isActive}
+                          disabled={isWorkflowLocked}
                         >
                           <Plus className="h-3 w-3 mr-1" />
                           Add Email
@@ -2116,6 +2141,7 @@ bg-[size:10px_10px] relative">
                       getSenderLabel={getSenderLabel}
                       handleUpdateWaitStep={handleUpdateWaitStep}
                       isActive={isActive}
+                      isMutatingSteps={isMutatingSteps}
                     />
                   ))}
                 </SortableContext>
@@ -2134,7 +2160,7 @@ bg-[size:10px_10px] relative">
                         addEmailBounce && "animate-bounce"
                       )}
                       onClick={() => handleAddEmail(conditionBranch ? 'post' : 'main')}
-                      disabled={isActive}
+                      disabled={isWorkflowLocked}
                     >
                       <Mail className="h-4 w-4" />
                       Add Email
@@ -2143,7 +2169,7 @@ bg-[size:10px_10px] relative">
                       variant="ghost"
                       className="flex-1 rounded-none justify-center gap-2 text-sm font-medium"
                       onClick={() => handleAddCondition(emailSteps[0].id)}
-                      disabled={isActive}
+                      disabled={isWorkflowLocked}
                     >
                       <GitBranch className="h-4 w-4" />
                       Add Condition
@@ -2157,7 +2183,7 @@ bg-[size:10px_10px] relative">
                         addEmailBounce && "animate-bounce"
                       )}
                       onClick={() => handleAddEmail('main')}
-                      disabled={isActive}
+                      disabled={isWorkflowLocked}
                     >
                       <Mail className="h-4 w-4" />
                       Add Email
@@ -2257,7 +2283,7 @@ bg-[size:10px_10px] relative">
                   <Button variant="outline" onClick={() => setEmailDialogOpen(false)} className="h-9">
                     Cancel
                   </Button>
-                  <Button onClick={handleSaveEmail} className="h-9">
+                  <Button onClick={handleSaveEmail} className="h-9" disabled={isWorkflowLocked}>
                     {editingEmailId ? "Save Changes" : "Add Email"}
                   </Button>
                 </DialogFooter>
@@ -2283,10 +2309,14 @@ bg-[size:10px_10px] relative">
                 <label 
                   className={`flex items-center gap-3 p-3 rounded-lg border transition-colors ${
                     exitCondition === "completed" ? "border-primary bg-primary/5" : "border-border"
-                  } ${isActive ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}
+                  } ${isWorkflowLocked ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}
                   onClick={() => {
-                    if (isActive) {
-                      handleActiveGuard();
+                    if (isWorkflowLocked) {
+                      if (isActive) {
+                        handleActiveGuard();
+                      } else {
+                        toast.warning("Please wait until the workflow steps finish updating.");
+                      }
                       return;
                     }
                     setExitCondition("completed");
@@ -2304,10 +2334,14 @@ bg-[size:10px_10px] relative">
                 <label 
                   className={`flex items-center gap-3 p-3 rounded-lg border transition-colors ${
                     exitCondition === "removed" ? "border-primary bg-primary/5" : "border-border"
-                  } ${isActive ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}
+                  } ${isWorkflowLocked ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}
                   onClick={() => {
-                    if (isActive) {
-                      handleActiveGuard();
+                    if (isWorkflowLocked) {
+                      if (isActive) {
+                        handleActiveGuard();
+                      } else {
+                        toast.warning("Please wait until the workflow steps finish updating.");
+                      }
                       return;
                     }
                     setExitCondition("removed");
