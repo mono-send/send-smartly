@@ -7,6 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -2124,76 +2125,109 @@ bg-[size:10px_10px] relative">
 
         {/* Right Sidebar */}
         <div className="w-80 border-l bg-background p-6 space-y-6">
-          {/* Unsubscribe Group */}
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <label className="text-sm font-medium text-foreground">
-                Unsubscribe Group <span className="text-destructive">*</span>
-              </label>
-              <Info className="h-4 w-4 text-muted-foreground" />
-            </div>
-            <Select
-              value={selectedCategory}
-              onValueChange={setSelectedCategory}
-              disabled={isLoadingCategories}
-            >
-              <SelectTrigger className="bg-white">
-                <SelectValue placeholder={isLoadingCategories ? "Loading unsubscribe groups..." : "Select a group"} />
-              </SelectTrigger>
-              <SelectContent>
-                {isLoadingCategories ? (
-                  <SelectItem value="loading" disabled>
-                    Loading...
-                  </SelectItem>
-                ) : contactCategories.length ? (
-                  contactCategories.map((category) => (
-                    <SelectItem key={category.id} value={category.id}>
-                      {category.name}
-                    </SelectItem>
-                  ))
-                ) : (
-                  <SelectItem value="no-categories" disabled>
-                    No unsubscribe groups available
-                  </SelectItem>
-                )}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Tracking */}
-          <div>
-            <h3 className="text-sm font-medium text-foreground mb-4">Tracking</h3>
-            
-            <div className="space-y-4">
-              <div className="flex items-start gap-3">
-                <Switch 
-                  checked={trackOpens} 
-                  onCheckedChange={setTrackOpens}
-                  className="mt-0.5"
-                />
-                <div>
-                  <p className="text-sm font-medium text-foreground">Open rate</p>
-                  <p className="text-xs text-muted-foreground">
-                    An invisible image is being appended to HTML emails to track if they have been opened.
-                  </p>
+          {isLoadingWorkflowDetails || isLoadingCategories ? (
+            <div className="space-y-6">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className="h-4 w-4 rounded-full" />
                 </div>
+                <Skeleton className="h-10 w-full rounded-md" />
               </div>
-
-              <div className="flex items-start gap-3">
-                <Switch 
-                  checked={trackClicks} 
-                  onCheckedChange={setTrackClicks}
-                  className="mt-0.5"
-                />
-                <div>
-                  <p className="text-sm font-medium text-foreground">Clicks</p>
-                  <p className="text-xs text-muted-foreground">
-                    MonoSend track clicks by rewriting links in your email. When clicked, they pass through a MonoSend server before redirecting to the original URL.
-                  </p>
+              <div className="space-y-4">
+                <Skeleton className="h-4 w-20" />
+                <div className="space-y-4">
+                  <div className="flex items-start gap-3">
+                    <Skeleton className="h-6 w-10 rounded-full" />
+                    <div className="space-y-2 flex-1">
+                      <Skeleton className="h-4 w-24" />
+                      <Skeleton className="h-3 w-full" />
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <Skeleton className="h-6 w-10 rounded-full" />
+                    <div className="space-y-2 flex-1">
+                      <Skeleton className="h-4 w-20" />
+                      <Skeleton className="h-3 w-full" />
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
+          ) : (
+            <>
+              {/* Unsubscribe Group */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-sm font-medium text-foreground">
+                    Unsubscribe Group <span className="text-destructive">*</span>
+                  </label>
+                  <Info className="h-4 w-4 text-muted-foreground" />
+                </div>
+                <Select
+                  value={selectedCategory}
+                  onValueChange={setSelectedCategory}
+                  disabled={isLoadingCategories}
+                >
+                  <SelectTrigger className="bg-white">
+                    <SelectValue placeholder={isLoadingCategories ? "Loading unsubscribe groups..." : "Select a group"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {isLoadingCategories ? (
+                      <SelectItem value="loading" disabled>
+                        Loading...
+                      </SelectItem>
+                    ) : contactCategories.length ? (
+                      contactCategories.map((category) => (
+                        <SelectItem key={category.id} value={category.id}>
+                          {category.name}
+                        </SelectItem>
+                      ))
+                    ) : (
+                      <SelectItem value="no-categories" disabled>
+                        No unsubscribe groups available
+                      </SelectItem>
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Tracking */}
+              <div>
+                <h3 className="text-sm font-medium text-foreground mb-4">Tracking</h3>
+                
+                <div className="space-y-4">
+                  <div className="flex items-start gap-3">
+                    <Switch 
+                      checked={trackOpens} 
+                      onCheckedChange={setTrackOpens}
+                      className="mt-0.5"
+                    />
+                    <div>
+                      <p className="text-sm font-medium text-foreground">Open rate</p>
+                      <p className="text-xs text-muted-foreground">
+                        An invisible image is being appended to HTML emails to track if they have been opened.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3">
+                    <Switch 
+                      checked={trackClicks} 
+                      onCheckedChange={setTrackClicks}
+                      className="mt-0.5"
+                    />
+                    <div>
+                      <p className="text-sm font-medium text-foreground">Clicks</p>
+                      <p className="text-xs text-muted-foreground">
+                        MonoSend track clicks by rewriting links in your email. When clicked, they pass through a MonoSend server before redirecting to the original URL.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>
