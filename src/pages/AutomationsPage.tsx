@@ -1677,7 +1677,7 @@ export default function AutomationsPage() {
             <Button
               className="h-9 text-xs"
               onClick={handleActivateWorkflow}
-              disabled={isActivating || isPausing || !selectedWorkflow || isMutatingSteps}
+              disabled={isActivating || isPausing || !selectedWorkflow || isMutatingSteps || selectedWorkflow.has_unsaved_changes}
             >
               {isActivating ? (
                 <>
