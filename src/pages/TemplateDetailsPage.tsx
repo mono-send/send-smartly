@@ -25,6 +25,12 @@ interface Template {
   updated_at: string;
 }
 
+interface Domain {
+  id: string;
+  domain: string;
+  name?: string;
+}
+
 export default function TemplateDetailsPage() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
@@ -40,6 +46,7 @@ export default function TemplateDetailsPage() {
   const [isEditingName, setIsEditingName] = useState(false);
   const [previewMode, setPreviewMode] = useState<"desktop" | "mobile">("desktop");
   const [showSendTestDialog, setShowSendTestDialog] = useState(false);
+  const [defaultDomainId, setDefaultDomainId] = useState<string | null>(null);
   
   const nameInputRef = useRef<HTMLInputElement>(null);
 
@@ -48,6 +55,10 @@ export default function TemplateDetailsPage() {
       fetchTemplate();
     }
   }, [id]);
+
+  useEffect(() => {
+    fetchDomains();
+  }, []);
 
   useEffect(() => {
     if (isEditingName && nameInputRef.current) {
@@ -75,6 +86,26 @@ export default function TemplateDetailsPage() {
       toast.error({ title: "Failed to load template" });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const fetchDomains = async () => {
+    try {
+      const response = await api("/domains");
+      if (response.ok) {
+        const data = await response.json();
+        const domainItems = Array.isArray(data) ? data : data.items || [];
+        const normalizedDomains = domainItems
+          .map((domain: Domain) => ({
+            id: domain.id,
+            domain: domain.domain || domain.name || "",
+            name: domain.name,
+          }))
+          .filter((domain: Domain) => domain.domain);
+        setDefaultDomainId(normalizedDomains.length === 1 ? normalizedDomains[0].id : null);
+      }
+    } catch (error) {
+      console.error("Failed to fetch domains:", error);
     }
   };
 
@@ -355,6 +386,7 @@ export default function TemplateDetailsPage() {
           open={showSendTestDialog}
           onOpenChange={setShowSendTestDialog}
           templateId={template.id}
+          domainId={defaultDomainId}
           subject={subject}
           body={body}
         />

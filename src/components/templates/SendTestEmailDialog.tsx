@@ -18,6 +18,7 @@ interface SendTestEmailDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   templateId: string;
+  domainId?: string | null;
   subject: string;
   body: string;
 }
@@ -26,6 +27,7 @@ export function SendTestEmailDialog({
   open,
   onOpenChange,
   templateId,
+  domainId,
   subject,
   body,
 }: SendTestEmailDialogProps) {
@@ -87,12 +89,14 @@ export function SendTestEmailDialog({
 
     setIsSending(true);
     try {
+      const payload = {
+        emails: emailList,
+        variables: parsedVariables,
+        ...(domainId ? { domain_id: domainId } : {}),
+      };
       const response = await api(`/templates/${templateId}/test`, {
         method: "POST",
-        body: {
-          emails: emailList,
-          variables: parsedVariables,
-        },
+        body: payload,
       });
 
       if (response.ok) {
