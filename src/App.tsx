@@ -23,6 +23,7 @@ import MetricsPage from "./pages/MetricsPage";
 import OnboardingPage from "./pages/OnboardingPage";
 import BroadcastsPage from "./pages/BroadcastsPage";
 import TemplatesPage from "./pages/TemplatesPage";
+import TemplateDetailsPage from "./pages/TemplateDetailsPage";
 import AudiencePage from "./pages/AudiencePage";
 import ContactDetailsPage from "./pages/ContactDetailsPage";
 import ImportContactsPage from "./pages/ImportContactsPage";
@@ -71,6 +72,7 @@ const App = () => (
               <Route path="/onboarding" element={<OnboardingPage />} />
             </Route>
             <Route path="/automations" element={<AutomationsPage />} />
+            <Route path="/templates/:id" element={<TemplateDetailsPage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/auth/magic" element={<MagicLinkConfirmPage />} />
             <Route path="/auth/github/callback" element={<GitHubCallback />} />
