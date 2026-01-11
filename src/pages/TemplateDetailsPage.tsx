@@ -7,6 +7,8 @@ import { X, Copy, Loader2, Monitor, Smartphone, Send } from "lucide-react";
 import { api } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { TemplateCodeEditor } from "@/components/templates/TemplateCodeEditor";
+import { SendTestEmailDialog } from "@/components/templates/SendTestEmailDialog";
 
 interface Template {
   id: string;
@@ -31,6 +33,7 @@ export default function TemplateDetailsPage() {
   const [body, setBody] = useState("");
   const [isEditingName, setIsEditingName] = useState(false);
   const [previewMode, setPreviewMode] = useState<"desktop" | "mobile">("desktop");
+  const [showSendTestDialog, setShowSendTestDialog] = useState(false);
   
   const nameInputRef = useRef<HTMLInputElement>(null);
 
@@ -101,6 +104,11 @@ export default function TemplateDetailsPage() {
     }
   };
 
+  const handleCopyBody = () => {
+    navigator.clipboard.writeText(body);
+    toast.success({ title: "Template body copied" });
+  };
+
   const handleNameKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") {
       setIsEditingName(false);
@@ -109,8 +117,6 @@ export default function TemplateDetailsPage() {
       setIsEditingName(false);
     }
   };
-
-  const lineNumbers = body.split("\n").map((_, i) => i + 1);
 
   if (isLoading) {
     return (
@@ -198,33 +204,21 @@ export default function TemplateDetailsPage() {
         <div className="flex-1 flex flex-col border-r border-border min-w-0">
           {/* Editor Toolbar */}
           <div className="h-12 border-b border-border flex items-center justify-end px-4 gap-2">
-            <Button variant="ghost" size="icon" className="h-8 w-8">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-8 w-8"
+              onClick={handleCopyBody}
+            >
               <Copy className="h-4 w-4" />
             </Button>
           </div>
           
-          {/* Code Editor */}
-          <div className="flex-1 flex overflow-hidden">
-            {/* Line Numbers */}
-            <div className="w-10 bg-muted/30 border-r border-border py-4 text-right pr-2 select-none overflow-hidden">
-              {lineNumbers.map((num) => (
-                <div
-                  key={num}
-                  className="text-xs text-muted-foreground leading-6 font-mono"
-                >
-                  {num}
-                </div>
-              ))}
-            </div>
-            
-            {/* Editor Content */}
-            <textarea
-              value={body}
-              onChange={(e) => setBody(e.target.value)}
-              className="flex-1 p-4 bg-transparent resize-none font-mono text-sm leading-6 focus:outline-none overflow-auto"
-              spellCheck={false}
-            />
-          </div>
+          {/* Code Editor with Syntax Highlighting */}
+          <TemplateCodeEditor
+            value={body}
+            onChange={setBody}
+          />
         </div>
 
         {/* Right Panel - Preview */}
@@ -259,7 +253,12 @@ export default function TemplateDetailsPage() {
               >
                 <Smartphone className="h-4 w-4" />
               </Button>
-              <Button variant="outline" size="sm" className="h-8 gap-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="h-8 gap-2"
+                onClick={() => setShowSendTestDialog(true)}
+              >
                 <Send className="h-4 w-4" />
                 SEND TEST
               </Button>
@@ -282,6 +281,17 @@ export default function TemplateDetailsPage() {
           </div>
         </div>
       </div>
+
+      {/* Send Test Email Dialog */}
+      {template && (
+        <SendTestEmailDialog
+          open={showSendTestDialog}
+          onOpenChange={setShowSendTestDialog}
+          templateId={template.id}
+          subject={subject}
+          body={body}
+        />
+      )}
     </div>
   );
 }
