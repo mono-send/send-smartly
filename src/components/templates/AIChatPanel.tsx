@@ -276,7 +276,7 @@ export const AIChatPanel: React.FC<AIChatPanelProps> = ({
   return (
     <div className="flex flex-col h-full bg-background border-b border-border">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-muted/30">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-muted/30 h-12">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
             <Sparkles className="w-4 h-4 text-white" />
