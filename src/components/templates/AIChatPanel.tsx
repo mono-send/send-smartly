@@ -283,9 +283,6 @@ export const AIChatPanel: React.FC<AIChatPanelProps> = ({
           </div>
           <div>
             <h3 className="text-sm font-semibold">AI Email Assistant</h3>
-            <p className="text-xs text-muted-foreground">
-              Describe what you want to build
-            </p>
           </div>
         </div>
         {messages.length > 0 && (
