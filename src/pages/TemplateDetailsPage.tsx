@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { X, Copy, Loader2, Monitor, Smartphone, Send, MoreVertical } from "lucide-react";
+import { X, Copy, Loader2, Monitor, Smartphone, Send, MoreVertical, GripVertical } from "lucide-react";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -15,6 +15,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  ResizablePanelGroup,
+  ResizablePanel,
+  ResizableHandle,
+} from "@/components/ui/resizable";
 
 interface Template {
   id: string;
@@ -296,77 +301,74 @@ export default function TemplateDetailsPage() {
         </div>
       </header>
 
-      {/* Main Content */}
-      <div className="flex-1 flex min-h-0">
+      {/* Main Content with Resizable Panels */}
+      <ResizablePanelGroup direction="horizontal" className="flex-1 min-h-0">
         {/* Left Panel - Code Editor */}
-        <div className="flex-1 flex flex-col border-r border-border min-w-0">
-          {/* Code Editor with Syntax Highlighting and Undo/Redo */}
-          <TemplateCodeEditor
-            value={body}
-            onChange={setBody}
-          />
-        </div>
+        <ResizablePanel defaultSize={50} minSize={30}>
+          <div className="h-full flex flex-col">
+            {/* Code Editor with Syntax Highlighting and Undo/Redo */}
+            <TemplateCodeEditor
+              value={body}
+              onChange={setBody}
+            />
+          </div>
+        </ResizablePanel>
+
+        <ResizableHandle withHandle />
 
         {/* Right Panel - Preview */}
-        <div className="flex-1 flex flex-col min-w-0">
-          {/* Preview Header */}
-          <div className="h-12 border-b border-border flex items-center justify-between px-4">
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium">Subject</span>
-              <span className="text-destructive">*</span>
-              <Input
-                value={subject}
-                onChange={(e) => setSubject(e.target.value)}
-                className="h-8 w-64 text-sm bg-white"
-                placeholder="Email subject"
-              />
+        <ResizablePanel defaultSize={50} minSize={30}>
+          <div className="h-full flex flex-col">
+            {/* Preview Header */}
+            <div className="h-12 border-b border-border flex items-center justify-between px-4">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium">Subject</span>
+                <span className="text-destructive">*</span>
+                <Input
+                  value={subject}
+                  onChange={(e) => setSubject(e.target.value)}
+                  className="h-8 w-64 text-sm bg-white"
+                  placeholder="Email subject"
+                />
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className={cn("h-8 w-8", previewMode === "desktop" && "bg-muted")}
+                  onClick={() => setPreviewMode("desktop")}
+                >
+                  <Monitor className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className={cn("h-8 w-8", previewMode === "mobile" && "bg-muted")}
+                  onClick={() => setPreviewMode("mobile")}
+                >
+                  <Smartphone className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
-            
-            <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                size="icon"
-                className={cn("h-8 w-8", previewMode === "desktop" && "bg-muted")}
-                onClick={() => setPreviewMode("desktop")}
-              >
-                <Monitor className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className={cn("h-8 w-8", previewMode === "mobile" && "bg-muted")}
-                onClick={() => setPreviewMode("mobile")}
-              >
-                <Smartphone className="h-4 w-4" />
-              </Button>
-              {/* <Button 
-                variant="outline" 
-                size="sm" 
-                className="h-8 gap-2"
-                onClick={() => setShowSendTestDialog(true)}
-              >
-                <Send className="h-4 w-4" />
-                SEND TEST
-              </Button> */}
-            </div>
-          </div>
 
-          {/* Preview Content */}
-          <div className="flex-1 overflow-auto">
-            <div
-              className={cn(
-                "bg-white mx-auto min-h-full",
-                previewMode === "desktop" ? "max-w-full" : "max-w-[375px]"
-              )}
-            >
+            {/* Preview Content */}
+            <div className="flex-1 overflow-auto">
               <div
-                className="p-4"
-                dangerouslySetInnerHTML={{ __html: body }}
-              />
+                className={cn(
+                  "bg-white mx-auto min-h-full",
+                  previewMode === "desktop" ? "max-w-full" : "max-w-[375px]"
+                )}
+              >
+                <div
+                  className="p-4"
+                  dangerouslySetInnerHTML={{ __html: body }}
+                />
+              </div>
             </div>
           </div>
-        </div>
-      </div>
+        </ResizablePanel>
+      </ResizablePanelGroup>
 
       {/* Send Test Email Dialog */}
       {template && (
