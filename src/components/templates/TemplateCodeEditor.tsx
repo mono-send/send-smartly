@@ -570,7 +570,7 @@ export function TemplateCodeEditor({
   return (
     <div ref={containerRef} className={cn("flex-1 flex flex-col overflow-hidden relative", className)}>
       {/* Editor Toolbar */}
-      <div className="h-10 border-b border-border flex items-center justify-between px-2 bg-muted/20 shrink-0">
+      <div className="h-12 border-b border-border flex items-center justify-between px-2 bg-muted/20 shrink-0">
         <EditorToolbar />
         <span className="text-xs text-muted-foreground">
           {canUndo || canRedo ? `History: ${historyIndexRef.current + 1}/${historyRef.current.length}` : ''}
