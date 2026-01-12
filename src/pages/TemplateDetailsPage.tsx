@@ -308,7 +308,6 @@ export default function TemplateDetailsPage() {
           <div className="h-full flex flex-col">
             {/* Code Editor with Syntax Highlighting and Undo/Redo */}
             <TemplateCodeEditor
-              className="h-12"
               value={body}
               onChange={setBody}
             />
