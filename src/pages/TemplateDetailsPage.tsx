@@ -3,12 +3,14 @@ import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { X, Copy, Loader2, Monitor, Smartphone, Send, MoreVertical, GripVertical } from "lucide-react";
+import { X, Copy, Loader2, Monitor, Smartphone, Send, MoreVertical, GripVertical, Sparkles } from "lucide-react";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { TemplateCodeEditor } from "@/components/templates/TemplateCodeEditor";
 import { SendTestEmailDialog } from "@/components/templates/SendTestEmailDialog";
+import { AIChatPanel } from "@/components/templates/AIChatPanel";
+import { ChatProvider, useChat } from "@/contexts/ChatContext";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -36,14 +38,15 @@ interface Domain {
   name?: string;
 }
 
-export default function TemplateDetailsPage() {
+function TemplateDetailsPageContent() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
-  
+  const { isOpen: isAIChatOpen, togglePanel } = useChat();
+
   const [template, setTemplate] = useState<Template | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  
+
   const [name, setName] = useState("");
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
@@ -51,7 +54,7 @@ export default function TemplateDetailsPage() {
   const [previewMode, setPreviewMode] = useState<"desktop" | "mobile">("desktop");
   const [showSendTestDialog, setShowSendTestDialog] = useState(false);
   const [defaultDomainId, setDefaultDomainId] = useState<string | null>(null);
-  
+
   const nameInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -265,6 +268,15 @@ export default function TemplateDetailsPage() {
         </div>
 
         <div className="flex items-center gap-2">
+          <Button
+            variant={isAIChatOpen ? "default" : "outline"}
+            size="sm"
+            className="h-9"
+            onClick={togglePanel}
+          >
+            <Sparkles className="h-4 w-4 mr-2" />
+            AI Assistant
+          </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="icon" className="h-9 w-9">
@@ -284,8 +296,8 @@ export default function TemplateDetailsPage() {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          <Button 
-            onClick={handleUpdate} 
+          <Button
+            onClick={handleUpdate}
             disabled={isSaving}
             className="h-9"
           >
@@ -303,15 +315,31 @@ export default function TemplateDetailsPage() {
 
       {/* Main Content with Resizable Panels */}
       <ResizablePanelGroup direction="horizontal" className="flex-1 min-h-0">
-        {/* Left Panel - Code Editor */}
+        {/* Left Panel - AI Chat + Code Editor */}
         <ResizablePanel defaultSize={50} minSize={30}>
-          <div className="h-full flex flex-col">
-            {/* Code Editor with Syntax Highlighting and Undo/Redo */}
-            <TemplateCodeEditor
-              value={body}
-              onChange={setBody}
-            />
-          </div>
+          {isAIChatOpen ? (
+            <ResizablePanelGroup direction="vertical" className="h-full">
+              {/* AI Chat Panel */}
+              <ResizablePanel defaultSize={40} minSize={20} maxSize={70}>
+                <AIChatPanel
+                  onCodeGenerated={setBody}
+                  currentCode={body}
+                />
+              </ResizablePanel>
+
+              <ResizableHandle withHandle />
+
+              {/* Code Editor */}
+              <ResizablePanel defaultSize={60} minSize={30}>
+                <TemplateCodeEditor value={body} onChange={setBody} />
+              </ResizablePanel>
+            </ResizablePanelGroup>
+          ) : (
+            <div className="h-full flex flex-col">
+              {/* Code Editor with Syntax Highlighting and Undo/Redo */}
+              <TemplateCodeEditor value={body} onChange={setBody} />
+            </div>
+          )}
         </ResizablePanel>
 
         <ResizableHandle withHandle />
@@ -382,5 +410,13 @@ export default function TemplateDetailsPage() {
         />
       )}
     </div>
+  );
+}
+
+export default function TemplateDetailsPage() {
+  return (
+    <ChatProvider>
+      <TemplateDetailsPageContent />
+    </ChatProvider>
   );
 }
