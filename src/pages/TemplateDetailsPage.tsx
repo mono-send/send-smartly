@@ -300,19 +300,7 @@ export default function TemplateDetailsPage() {
       <div className="flex-1 flex min-h-0">
         {/* Left Panel - Code Editor */}
         <div className="flex-1 flex flex-col border-r border-border min-w-0">
-          {/* Editor Toolbar */}
-          <div className="h-12 border-b border-border flex items-center justify-end px-4 gap-2">
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="h-8 w-8"
-              onClick={handleCopyBody}
-            >
-              <Copy className="h-4 w-4" />
-            </Button>
-          </div>
-          
-          {/* Code Editor with Syntax Highlighting */}
+          {/* Code Editor with Syntax Highlighting and Undo/Redo */}
           <TemplateCodeEditor
             value={body}
             onChange={setBody}

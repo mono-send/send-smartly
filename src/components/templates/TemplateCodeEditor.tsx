@@ -1,7 +1,9 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useRef, useState, useCallback } from "react";
 import Prism from "prismjs";
 import "prismjs/components/prism-markup";
 import { cn } from "@/lib/utils";
+import { Undo2, Redo2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface TemplateCodeEditorProps {
   value: string;
@@ -23,6 +25,13 @@ const COMMON_VARIABLES = [
   "supportEmail",
 ];
 
+interface HistoryEntry {
+  value: string;
+  cursorPos: number;
+}
+
+const MAX_HISTORY_SIZE = 100;
+
 export function TemplateCodeEditor({
   value,
   onChange,
@@ -35,6 +44,88 @@ export function TemplateCodeEditor({
   const [autocompletePosition, setAutocompletePosition] = useState({ top: 0, left: 0 });
   const [autocompleteFilter, setAutocompleteFilter] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
+
+  // Undo/Redo history
+  const historyRef = useRef<HistoryEntry[]>([{ value: "", cursorPos: 0 }]);
+  const historyIndexRef = useRef(0);
+  const isUndoRedoRef = useRef(false);
+  const lastValueRef = useRef(value);
+
+  // Initialize history with initial value
+  if (historyRef.current.length === 1 && historyRef.current[0].value === "" && value !== "") {
+    historyRef.current = [{ value, cursorPos: value.length }];
+    lastValueRef.current = value;
+  }
+
+  // Push to history (called on meaningful changes)
+  const pushToHistory = useCallback((newValue: string, cursorPos: number) => {
+    if (isUndoRedoRef.current) {
+      isUndoRedoRef.current = false;
+      return;
+    }
+
+    const history = historyRef.current;
+    const currentIndex = historyIndexRef.current;
+
+    // Don't push if value hasn't changed
+    if (history[currentIndex]?.value === newValue) return;
+
+    // Remove any redo history
+    historyRef.current = history.slice(0, currentIndex + 1);
+
+    // Add new entry
+    historyRef.current.push({ value: newValue, cursorPos });
+
+    // Limit history size
+    if (historyRef.current.length > MAX_HISTORY_SIZE) {
+      historyRef.current = historyRef.current.slice(-MAX_HISTORY_SIZE);
+    }
+
+    historyIndexRef.current = historyRef.current.length - 1;
+  }, []);
+
+  // Undo function
+  const handleUndo = useCallback(() => {
+    const currentIndex = historyIndexRef.current;
+    if (currentIndex > 0) {
+      isUndoRedoRef.current = true;
+      historyIndexRef.current = currentIndex - 1;
+      const entry = historyRef.current[historyIndexRef.current];
+      onChange(entry.value);
+      lastValueRef.current = entry.value;
+
+      // Restore cursor position
+      setTimeout(() => {
+        if (textareaRef.current) {
+          textareaRef.current.setSelectionRange(entry.cursorPos, entry.cursorPos);
+          textareaRef.current.focus();
+        }
+      }, 0);
+    }
+  }, [onChange]);
+
+  // Redo function
+  const handleRedo = useCallback(() => {
+    const currentIndex = historyIndexRef.current;
+    if (currentIndex < historyRef.current.length - 1) {
+      isUndoRedoRef.current = true;
+      historyIndexRef.current = currentIndex + 1;
+      const entry = historyRef.current[historyIndexRef.current];
+      onChange(entry.value);
+      lastValueRef.current = entry.value;
+
+      // Restore cursor position
+      setTimeout(() => {
+        if (textareaRef.current) {
+          textareaRef.current.setSelectionRange(entry.cursorPos, entry.cursorPos);
+          textareaRef.current.focus();
+        }
+      }, 0);
+    }
+  }, [onChange]);
+
+  const canUndo = historyIndexRef.current > 0;
+  const canRedo = historyIndexRef.current < historyRef.current.length - 1;
 
   // Highlight code with Prism
   const getHighlightedCode = useCallback((code: string) => {
@@ -70,6 +161,23 @@ export function TemplateCodeEditor({
     const cursorPos = e.target.selectionStart;
     
     onChange(newValue);
+
+    // Push to history on significant changes (debounced via space, newline, or after typing stops)
+    const lastValue = lastValueRef.current;
+    const addedChar = newValue.length === lastValue.length + 1 
+      ? newValue[cursorPos - 1] 
+      : null;
+    
+    // Push to history on space, newline, or significant deletion
+    if (
+      addedChar === " " || 
+      addedChar === "\n" || 
+      newValue.length < lastValue.length - 1 ||
+      Math.abs(newValue.length - lastValue.length) > 5
+    ) {
+      pushToHistory(newValue, cursorPos);
+    }
+    lastValueRef.current = newValue;
 
     // Check for variable autocomplete
     const variablePrefix = detectVariableTyping(newValue, cursorPos);
@@ -123,6 +231,8 @@ export function TemplateCodeEditor({
         text.slice(0, startPos) + `{{${variable}}}` + text.slice(cursorPos);
       
       onChange(newValue);
+      pushToHistory(newValue, startPos + variable.length + 4);
+      lastValueRef.current = newValue;
       
       // Set cursor position after the inserted variable
       setTimeout(() => {
@@ -136,6 +246,22 @@ export function TemplateCodeEditor({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // Handle undo/redo keyboard shortcuts
+    const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+    const modKey = isMac ? e.metaKey : e.ctrlKey;
+
+    if (modKey && e.key === 'z' && !e.shiftKey) {
+      e.preventDefault();
+      handleUndo();
+      return;
+    }
+
+    if ((modKey && e.shiftKey && e.key === 'z') || (modKey && e.key === 'y')) {
+      e.preventDefault();
+      handleRedo();
+      return;
+    }
+
     if (!showAutocomplete || filteredVariables.length === 0) return;
 
     if (e.key === "ArrowDown") {
@@ -156,10 +282,53 @@ export function TemplateCodeEditor({
     }
   };
 
+  // Push to history when user pauses typing (blur event)
+  const handleBlur = () => {
+    if (value !== historyRef.current[historyIndexRef.current]?.value) {
+      pushToHistory(value, textareaRef.current?.selectionStart || 0);
+    }
+    setTimeout(() => setShowAutocomplete(false), 150);
+  };
+
   const lineNumbers = value.split("\n").map((_, i) => i + 1);
 
+  // Expose undo/redo for external toolbar buttons
+  const UndoRedoToolbar = () => (
+    <div className="flex items-center gap-1">
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-8 w-8"
+        onClick={handleUndo}
+        disabled={!canUndo}
+        title="Undo (Ctrl+Z)"
+      >
+        <Undo2 className="h-4 w-4" />
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-8 w-8"
+        onClick={handleRedo}
+        disabled={!canRedo}
+        title="Redo (Ctrl+Shift+Z)"
+      >
+        <Redo2 className="h-4 w-4" />
+      </Button>
+    </div>
+  );
+
   return (
-    <div ref={containerRef} className={cn("flex-1 flex overflow-hidden relative", className)}>
+    <div ref={containerRef} className={cn("flex-1 flex flex-col overflow-hidden relative", className)}>
+      {/* Undo/Redo Toolbar */}
+      <div className="h-10 border-b border-border flex items-center justify-between px-2 bg-muted/20 shrink-0">
+        <UndoRedoToolbar />
+        <span className="text-xs text-muted-foreground">
+          {canUndo || canRedo ? `History: ${historyIndexRef.current + 1}/${historyRef.current.length}` : ''}
+        </span>
+      </div>
+      
+      <div className="flex-1 flex overflow-hidden">
       {/* Line Numbers */}
       <div className="w-10 bg-muted/30 border-r border-border py-4 text-right pr-2 select-none overflow-hidden shrink-0">
         {lineNumbers.map((num) => (
@@ -195,7 +364,7 @@ export function TemplateCodeEditor({
           onChange={handleInput}
           onScroll={handleScroll}
           onKeyDown={handleKeyDown}
-          onBlur={() => setTimeout(() => setShowAutocomplete(false), 150)}
+          onBlur={handleBlur}
           className="absolute inset-0 p-4 bg-transparent resize-none font-mono text-sm leading-6 focus:outline-none overflow-auto text-transparent caret-foreground whitespace-pre-wrap break-words"
           spellCheck={false}
         />
@@ -229,6 +398,7 @@ export function TemplateCodeEditor({
             ))}
           </div>
         )}
+      </div>
       </div>
 
       {/* Prism CSS for syntax highlighting */}
