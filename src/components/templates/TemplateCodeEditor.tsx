@@ -1,10 +1,12 @@
-import { useRef, useState, useCallback } from "react";
+import { useRef, useState, useCallback, useEffect } from "react";
 import Prism from "prismjs";
 import "prismjs/components/prism-markup";
 import { cn } from "@/lib/utils";
-import { Undo2, Redo2, Sparkles } from "lucide-react";
+import { Undo2, Redo2, Sparkles, Copy, Search, X, ChevronUp, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { toast } from "sonner";
 
 interface TemplateCodeEditorProps {
   value: string;
@@ -223,7 +225,100 @@ export function TemplateCodeEditor({
   const canUndo = historyIndexRef.current > 0;
   const canRedo = historyIndexRef.current < historyRef.current.length - 1;
 
-  // Highlight code with Prism
+  // Search state
+  const [showSearch, setShowSearch] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchMatches, setSearchMatches] = useState<{ start: number; end: number }[]>([]);
+  const [currentMatchIndex, setCurrentMatchIndex] = useState(0);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Copy HTML to clipboard
+  const handleCopyHTML = useCallback(() => {
+    navigator.clipboard.writeText(value);
+    toast.success("HTML copied to clipboard");
+  }, [value]);
+
+  // Toggle search
+  const toggleSearch = useCallback(() => {
+    setShowSearch((prev) => {
+      if (!prev) {
+        setTimeout(() => searchInputRef.current?.focus(), 0);
+      }
+      return !prev;
+    });
+  }, []);
+
+  // Search functionality
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setSearchMatches([]);
+      setCurrentMatchIndex(0);
+      return;
+    }
+
+    const matches: { start: number; end: number }[] = [];
+    const lowerValue = value.toLowerCase();
+    const lowerQuery = searchQuery.toLowerCase();
+    let startIndex = 0;
+
+    while (true) {
+      const index = lowerValue.indexOf(lowerQuery, startIndex);
+      if (index === -1) break;
+      matches.push({ start: index, end: index + searchQuery.length });
+      startIndex = index + 1;
+    }
+
+    setSearchMatches(matches);
+    if (matches.length > 0 && currentMatchIndex >= matches.length) {
+      setCurrentMatchIndex(0);
+    }
+  }, [searchQuery, value]);
+
+  // Navigate to match
+  const goToMatch = useCallback((index: number) => {
+    if (searchMatches.length === 0) return;
+    const match = searchMatches[index];
+    if (textareaRef.current && match) {
+      textareaRef.current.setSelectionRange(match.start, match.end);
+      textareaRef.current.focus();
+      
+      // Scroll to match position
+      const lines = value.slice(0, match.start).split("\n");
+      const lineIndex = lines.length - 1;
+      const lineHeight = 24;
+      textareaRef.current.scrollTop = lineIndex * lineHeight - 100;
+    }
+  }, [searchMatches, value]);
+
+  const goToNextMatch = useCallback(() => {
+    if (searchMatches.length === 0) return;
+    const nextIndex = (currentMatchIndex + 1) % searchMatches.length;
+    setCurrentMatchIndex(nextIndex);
+    goToMatch(nextIndex);
+  }, [currentMatchIndex, searchMatches.length, goToMatch]);
+
+  const goToPrevMatch = useCallback(() => {
+    if (searchMatches.length === 0) return;
+    const prevIndex = (currentMatchIndex - 1 + searchMatches.length) % searchMatches.length;
+    setCurrentMatchIndex(prevIndex);
+    goToMatch(prevIndex);
+  }, [currentMatchIndex, searchMatches.length, goToMatch]);
+
+  // Close search on Escape
+  const handleSearchKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Escape") {
+      setShowSearch(false);
+      setSearchQuery("");
+    } else if (e.key === "Enter") {
+      if (e.shiftKey) {
+        goToPrevMatch();
+      } else {
+        goToNextMatch();
+      }
+    }
+  };
+
+  // Highlight code with Prism and search matches
   const getHighlightedCode = useCallback((code: string) => {
     // First highlight HTML
     let highlighted = Prism.highlight(code, Prism.languages.markup, "markup");
@@ -233,9 +328,16 @@ export function TemplateCodeEditor({
       /\{\{(\w+)\}\}/g,
       '<span class="token template-variable">{{$1}}</span>'
     );
+
+    // If searching, highlight search matches
+    if (searchQuery.trim() && searchMatches.length > 0) {
+      const escapeRegex = (str: string) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const regex = new RegExp(`(${escapeRegex(searchQuery)})`, 'gi');
+      highlighted = highlighted.replace(regex, '<span class="search-highlight">$1</span>');
+    }
     
     return highlighted;
-  }, []);
+  }, [searchQuery, searchMatches.length]);
 
   // Sync scroll between textarea and highlight overlay
   const handleScroll = () => {
@@ -434,6 +536,34 @@ export function TemplateCodeEditor({
         </TooltipTrigger>
         <TooltipContent>Auto-format HTML</TooltipContent>
       </Tooltip>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 gap-1.5 text-xs"
+            onClick={handleCopyHTML}
+          >
+            <Copy className="h-3.5 w-3.5" />
+            Copy
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>Copy HTML to clipboard</TooltipContent>
+      </Tooltip>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="sm"
+            className={cn("h-8 gap-1.5 text-xs", showSearch && "bg-muted")}
+            onClick={toggleSearch}
+          >
+            <Search className="h-3.5 w-3.5" />
+            Search
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>Search in editor (Ctrl+F)</TooltipContent>
+      </Tooltip>
     </div>
   );
 
@@ -446,6 +576,60 @@ export function TemplateCodeEditor({
           {canUndo || canRedo ? `History: ${historyIndexRef.current + 1}/${historyRef.current.length}` : ''}
         </span>
       </div>
+
+      {/* Search Bar */}
+      {showSearch && (
+        <div className="h-10 border-b border-border flex items-center gap-2 px-2 bg-muted/30 shrink-0">
+          <Search className="h-4 w-4 text-muted-foreground" />
+          <Input
+            ref={searchInputRef}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={handleSearchKeyDown}
+            placeholder="Search..."
+            className="h-7 w-64 text-sm"
+          />
+          {searchMatches.length > 0 && (
+            <span className="text-xs text-muted-foreground">
+              {currentMatchIndex + 1} of {searchMatches.length}
+            </span>
+          )}
+          {searchQuery && searchMatches.length === 0 && (
+            <span className="text-xs text-muted-foreground">No results</span>
+          )}
+          <div className="flex items-center gap-0.5">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              onClick={goToPrevMatch}
+              disabled={searchMatches.length === 0}
+            >
+              <ChevronUp className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              onClick={goToNextMatch}
+              disabled={searchMatches.length === 0}
+            >
+              <ChevronDown className="h-4 w-4" />
+            </Button>
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7"
+            onClick={() => {
+              setShowSearch(false);
+              setSearchQuery("");
+            }}
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
       
       <div className="flex-1 flex overflow-hidden">
       {/* Line Numbers */}
@@ -532,6 +716,11 @@ export function TemplateCodeEditor({
           background: hsl(var(--chart-4) / 0.1);
           border-radius: 2px;
           padding: 0 2px;
+        }
+        .search-highlight {
+          background: hsl(var(--chart-2) / 0.4);
+          border-radius: 2px;
+          padding: 0 1px;
         }
       `}</style>
     </div>
