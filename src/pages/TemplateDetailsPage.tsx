@@ -352,10 +352,10 @@ export default function TemplateDetailsPage() {
           </div>
 
           {/* Preview Content */}
-          <div className="flex-1 overflow-auto p-4 bg-muted/20">
+          <div className="flex-1 overflow-auto">
             <div
               className={cn(
-                "bg-white mx-auto shadow-sm border border-border min-h-full",
+                "bg-white mx-auto min-h-full",
                 previewMode === "desktop" ? "max-w-full" : "max-w-[375px]"
               )}
             >
