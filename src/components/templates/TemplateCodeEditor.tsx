@@ -2,8 +2,9 @@ import { useRef, useState, useCallback } from "react";
 import Prism from "prismjs";
 import "prismjs/components/prism-markup";
 import { cn } from "@/lib/utils";
-import { Undo2, Redo2 } from "lucide-react";
+import { Undo2, Redo2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface TemplateCodeEditorProps {
   value: string;
@@ -31,6 +32,91 @@ interface HistoryEntry {
 }
 
 const MAX_HISTORY_SIZE = 100;
+
+// Simple HTML beautifier
+function beautifyHTML(html: string): string {
+  const INDENT = "  ";
+  const VOID_ELEMENTS = new Set([
+    "area", "base", "br", "col", "embed", "hr", "img", "input",
+    "link", "meta", "param", "source", "track", "wbr"
+  ]);
+  const INLINE_ELEMENTS = new Set([
+    "a", "abbr", "b", "bdo", "br", "cite", "code", "dfn", "em", "i",
+    "img", "kbd", "q", "samp", "small", "span", "strong", "sub", "sup",
+    "time", "var"
+  ]);
+
+  // Normalize whitespace first
+  let result = html.trim();
+  
+  // Simple tokenization
+  const tokens: { type: "tag" | "text" | "comment"; content: string; tagName?: string; isClosing?: boolean; isSelfClosing?: boolean }[] = [];
+  const tagRegex = /(<\/?[a-zA-Z][^>]*\/?>|<!--[\s\S]*?-->)/g;
+  let lastIndex = 0;
+  let match;
+
+  while ((match = tagRegex.exec(result)) !== null) {
+    // Text before this tag
+    if (match.index > lastIndex) {
+      const text = result.slice(lastIndex, match.index);
+      if (text.trim()) {
+        tokens.push({ type: "text", content: text.trim() });
+      }
+    }
+
+    const tag = match[1];
+    if (tag.startsWith("<!--")) {
+      tokens.push({ type: "comment", content: tag });
+    } else {
+      const isClosing = tag.startsWith("</");
+      const isSelfClosing = tag.endsWith("/>") || VOID_ELEMENTS.has(tag.replace(/<\/?(\w+).*/, "$1").toLowerCase());
+      const tagName = tag.replace(/<\/?(\w+).*/, "$1").toLowerCase();
+      tokens.push({ type: "tag", content: tag, tagName, isClosing, isSelfClosing });
+    }
+
+    lastIndex = tagRegex.lastIndex;
+  }
+
+  // Remaining text
+  if (lastIndex < result.length) {
+    const text = result.slice(lastIndex);
+    if (text.trim()) {
+      tokens.push({ type: "text", content: text.trim() });
+    }
+  }
+
+  // Build formatted output
+  let output = "";
+  let indentLevel = 0;
+
+  for (let i = 0; i < tokens.length; i++) {
+    const token = tokens[i];
+    const indent = INDENT.repeat(indentLevel);
+
+    if (token.type === "comment") {
+      output += indent + token.content + "\n";
+    } else if (token.type === "text") {
+      output += indent + token.content + "\n";
+    } else if (token.type === "tag") {
+      const isInline = token.tagName && INLINE_ELEMENTS.has(token.tagName);
+      
+      if (token.isClosing) {
+        indentLevel = Math.max(0, indentLevel - 1);
+        const newIndent = INDENT.repeat(indentLevel);
+        output += newIndent + token.content + "\n";
+      } else if (token.isSelfClosing) {
+        output += indent + token.content + "\n";
+      } else {
+        output += indent + token.content + "\n";
+        if (!isInline) {
+          indentLevel++;
+        }
+      }
+    }
+  }
+
+  return output.trim();
+}
 
 export function TemplateCodeEditor({
   value,
@@ -123,6 +209,16 @@ export function TemplateCodeEditor({
       }, 0);
     }
   }, [onChange]);
+
+  // Format HTML function
+  const formatHTML = useCallback(() => {
+    const formatted = beautifyHTML(value);
+    if (formatted !== value) {
+      onChange(formatted);
+      pushToHistory(formatted, 0);
+      lastValueRef.current = formatted;
+    }
+  }, [value, onChange, pushToHistory]);
 
   const canUndo = historyIndexRef.current > 0;
   const canRedo = historyIndexRef.current < historyRef.current.length - 1;
@@ -292,37 +388,60 @@ export function TemplateCodeEditor({
 
   const lineNumbers = value.split("\n").map((_, i) => i + 1);
 
-  // Expose undo/redo for external toolbar buttons
-  const UndoRedoToolbar = () => (
+  // Toolbar component
+  const EditorToolbar = () => (
     <div className="flex items-center gap-1">
-      <Button
-        variant="ghost"
-        size="icon"
-        className="h-8 w-8"
-        onClick={handleUndo}
-        disabled={!canUndo}
-        title="Undo (Ctrl+Z)"
-      >
-        <Undo2 className="h-4 w-4" />
-      </Button>
-      <Button
-        variant="ghost"
-        size="icon"
-        className="h-8 w-8"
-        onClick={handleRedo}
-        disabled={!canRedo}
-        title="Redo (Ctrl+Shift+Z)"
-      >
-        <Redo2 className="h-4 w-4" />
-      </Button>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            onClick={handleUndo}
+            disabled={!canUndo}
+          >
+            <Undo2 className="h-4 w-4" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>Undo (Ctrl+Z)</TooltipContent>
+      </Tooltip>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            onClick={handleRedo}
+            disabled={!canRedo}
+          >
+            <Redo2 className="h-4 w-4" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>Redo (Ctrl+Shift+Z)</TooltipContent>
+      </Tooltip>
+      <div className="w-px h-5 bg-border mx-1" />
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 gap-1.5 text-xs"
+            onClick={formatHTML}
+          >
+            <Sparkles className="h-3.5 w-3.5" />
+            Format
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>Auto-format HTML</TooltipContent>
+      </Tooltip>
     </div>
   );
 
   return (
     <div ref={containerRef} className={cn("flex-1 flex flex-col overflow-hidden relative", className)}>
-      {/* Undo/Redo Toolbar */}
+      {/* Editor Toolbar */}
       <div className="h-10 border-b border-border flex items-center justify-between px-2 bg-muted/20 shrink-0">
-        <UndoRedoToolbar />
+        <EditorToolbar />
         <span className="text-xs text-muted-foreground">
           {canUndo || canRedo ? `History: ${historyIndexRef.current + 1}/${historyRef.current.length}` : ''}
         </span>
