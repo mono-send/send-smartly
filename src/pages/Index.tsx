@@ -452,7 +452,7 @@ const Index = () => {
                 disabled={isSectionsDisabled}
               >
                 <Globe className="h-4 w-4" />
-                Add domain
+                Configure domain DNS
               </Button>
             </div>
           </div>
