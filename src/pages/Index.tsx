@@ -428,7 +428,7 @@ const Index = () => {
                 {isDomainVerified ? (
                   <Check className="h-4 w-4 text-white" />
                 ) : isDomainUnverified ? (
-                  <AlertTriangle className="h-4 w-4 text-warning" />
+                  <AlertTriangle className="h-4 w-4 text-orange-600" />
                 ) : (
                   <div className="h-2 w-2 rounded-full bg-foreground" />
                 )}
@@ -440,7 +440,7 @@ const Index = () => {
                 {isDomainVerified ? (
                   <Badge variant="secondary" className="bg-green-100 text-green-700 border-green-200">Completed</Badge>
                 ) : isDomainUnverified ? (
-                  <Badge variant="secondary" className="bg-orange-500/10 text-orange-600 border-orange-500/20">Warning</Badge>
+                  <Badge variant="secondary" className="bg-orange-500/10 text-orange-600 border-orange-500/20">Unverified</Badge>
                 ) : (
                   <Badge variant="secondary">Recommended</Badge>
                 )}
