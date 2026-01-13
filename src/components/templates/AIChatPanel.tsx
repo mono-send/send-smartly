@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Send, Loader2, Trash2, Sparkles } from "lucide-react";
+import { Send, Loader2, Trash2, Sparkles, Plus, ArrowUp } from "lucide-react";
 import { useChat } from "@/contexts/ChatContext";
 import { ChatMessage } from "./ChatMessage";
 import { Button } from "@/components/ui/button";
@@ -351,38 +351,50 @@ export const AIChatPanel: React.FC<AIChatPanelProps> = ({
       </div>
 
       {/* Input Area */}
-      <div className="border-t border-border bg-background p-4">
-        <div className="flex gap-2">
-          <textarea
-            ref={textareaRef}
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Describe your email template... (Shift+Enter for new line)"
-            className={cn(
-              "flex-1 resize-none rounded-lg border border-input bg-background px-3 py-2",
-              "text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-              "placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50",
-              "min-h-[44px] max-h-[120px]"
-            )}
-            rows={1}
-            disabled={isLoading}
-          />
-          <Button
-            onClick={handleSend}
-            disabled={!input.trim() || isLoading}
-            className="h-auto px-4"
-          >
-            {isLoading ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Send className="w-4 h-4" />
-            )}
-          </Button>
+      <div className="bg-muted/30 p-4">
+        <div className="bg-background rounded-2xl border border-border shadow-sm">
+          {/* Textarea */}
+          <div className="px-4 pt-4 pb-2">
+            <textarea
+              ref={textareaRef}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="How can I help you today?"
+              className={cn(
+                "w-full resize-none bg-transparent text-sm",
+                "focus-visible:outline-none",
+                "placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50",
+                "min-h-[24px] max-h-[120px]"
+              )}
+              rows={1}
+              disabled={isLoading}
+            />
+          </div>
+          {/* Bottom row with plus and send buttons */}
+          <div className="flex items-center justify-between px-3 pb-3">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-muted-foreground hover:text-foreground"
+              disabled={isLoading}
+            >
+              <Plus className="w-5 h-5" />
+            </Button>
+            <Button
+              onClick={handleSend}
+              disabled={!input.trim() || isLoading}
+              size="icon"
+              className="h-9 w-9 rounded-lg bg-primary/80 hover:bg-primary text-primary-foreground"
+            >
+              {isLoading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <ArrowUp className="w-4 h-4" />
+              )}
+            </Button>
+          </div>
         </div>
-        <p className="text-xs text-muted-foreground mt-2">
-          Press Enter to send, Shift+Enter for new line
-        </p>
       </div>
     </div>
   );
