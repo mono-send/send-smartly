@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { TopBar } from "@/components/layout/TopBar";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,7 @@ import { CodeBlock } from "@/components/ui/code-block";
 import { Key, Send, Globe, FlaskConical, Navigation } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { api } from "@/lib/api";
 
 const languages = ["Node.js", "PHP", "Python", "Ruby", "Go", "Rust", "Elixir", "Java", ".NET", "cURL"] as const;
 type Language = typeof languages[number];
@@ -118,9 +119,36 @@ await client.Emails.SendAsync(new SendEmailRequest {
   }'`
 };
 
+interface OnboardingData {
+  plan: string | null;
+  is_api_key: boolean;
+  domain: string;
+}
+
 const Index = () => {
   const navigate = useNavigate();
   const [activeLanguage, setActiveLanguage] = useState<Language>("Node.js");
+  const [onboardingData, setOnboardingData] = useState<OnboardingData | null>(null);
+  const [isLoadingOnboarding, setIsLoadingOnboarding] = useState(true);
+
+  useEffect(() => {
+    fetchOnboardingData();
+  }, []);
+
+  const fetchOnboardingData = async () => {
+    try {
+      setIsLoadingOnboarding(true);
+      const response = await api("/onboarding");
+      if (response.ok) {
+        const data = await response.json();
+        setOnboardingData(data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch onboarding data:", error);
+    } finally {
+      setIsLoadingOnboarding(false);
+    }
+  };
 
   const handleCopyCode = (code: string) => {
     navigator.clipboard.writeText(code);
@@ -130,6 +158,24 @@ const Index = () => {
   const handleSendEmail = () => {
     toast.success("Email sent successfully!");
   };
+
+  const handleAddApiKey = async () => {
+    try {
+      const response = await api("/api_keys", { method: "POST" });
+      if (response.ok) {
+        toast.success("API Key created successfully!");
+        // Refresh onboarding data to update the UI
+        fetchOnboardingData();
+      } else {
+        toast.error("Failed to create API Key");
+      }
+    } catch (error) {
+      console.error("Failed to create API key:", error);
+      toast.error("Failed to create API Key");
+    }
+  };
+
+  const isSectionsDisabled = onboardingData?.is_api_key === false;
 
   return (
     <>
@@ -153,9 +199,9 @@ const Index = () => {
             <div className="flex-1 pb-8">
               <h2 className="text-lg font-semibold text-foreground mb-1">Add an API Key</h2>
               <p className="text-muted-foreground text-sm mb-4">Use the following generated key to authenticate requests</p>
-              <Button 
+              <Button
                 className="gap-2 h-9"
-                onClick={() => navigate("/api-keys")}
+                onClick={handleAddApiKey}
               >
                 <Key className="h-4 w-4" />
                 Add API Key
@@ -164,7 +210,7 @@ const Index = () => {
           </div>
 
           {/* Step 2: Send Email */}
-          <div className="flex gap-4">
+          <div className={`flex gap-4 ${isSectionsDisabled ? 'opacity-50 pointer-events-none' : ''}`}>
             <div className="flex flex-col items-center">
               <div className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-foreground">
                 <div className="h-2 w-2 rounded-full bg-foreground" />
@@ -220,7 +266,7 @@ const Index = () => {
           </div>
 
           {/* Step 3: Add Domain */}
-          <div className="flex gap-4">
+          <div className={`flex gap-4 ${isSectionsDisabled ? 'opacity-50 pointer-events-none' : ''}`}>
             <div className="flex flex-col items-center">
               <div className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-foreground">
                 <div className="h-2 w-2 rounded-full bg-foreground" />
@@ -232,9 +278,10 @@ const Index = () => {
                 <Badge variant="secondary">Recommended</Badge>
               </div>
               <p className="text-muted-foreground text-sm mb-4">Improve deliverability by proving to inbox providers that you own the domain you're sending from.</p>
-              <Button 
+              <Button
                 className="gap-2 h-9"
                 onClick={() => navigate("/domains/new")}
+                disabled={isSectionsDisabled}
               >
                 <Globe className="h-4 w-4" />
                 Add domain
