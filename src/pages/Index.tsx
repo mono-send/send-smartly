@@ -289,9 +289,10 @@ const Index = () => {
                   />
                 </CardContent>
                 <div className="border-t border-border p-4">
-                  <Button 
+                  <Button
                     className="gap-2"
                     onClick={handleSendEmail}
+                    disabled={isEmailSent}
                   >
                     <Send className="h-4 w-4" />
                     Send email
