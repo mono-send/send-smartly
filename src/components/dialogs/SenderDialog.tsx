@@ -160,6 +160,7 @@ export function SenderDialog({
                   id="senderName"
                   placeholder="e.g., Marketing Team"
                   value={name}
+                  className="pr-9 bg-white hover:border-stone-300 focus-within:border-stone-300 focus-within:shadow-input hover:shadow-input-hover focus-within:shadow-input focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0"
                   onChange={(e) => setName(e.target.value)}
                 />
               </div>
@@ -172,7 +173,7 @@ export function SenderDialog({
                     placeholder="e.g., no-reply"
                     value={from}
                     onChange={(e) => setFrom(e.target.value)}
-                    className="md:flex-1"
+                    className="pr-9 bg-white hover:border-stone-300 focus-within:border-stone-300 focus-within:shadow-input hover:shadow-input-hover focus-within:shadow-input focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 md:flex-1"
                   />
                   <span className="hidden text-sm font-medium text-muted-foreground md:inline">@</span>
                   {isLoadingDomains ? (
@@ -221,11 +222,12 @@ export function SenderDialog({
                   id="replyTo"
                   placeholder="e.g., support@example.com"
                   value={replyTo}
+                  className="pr-9 bg-white hover:border-stone-300 focus-within:border-stone-300 focus-within:shadow-input hover:shadow-input-hover focus-within:shadow-input focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0"
                   onChange={(e) => setReplyTo(e.target.value)}
                 />
               </div>
 
-              <div className="rounded-lg border border-muted bg-muted/30 px-4 py-3 text-sm text-muted-foreground">
+              <div className="rounded-xl border border-muted bg-muted/30 px-4 py-3 text-sm text-muted-foreground">
                 <span className="font-medium text-foreground">Tip:</span> Marketing emails such as product updates or
                 feature announcements get higher engagement when sent from a real person’s name.
               </div>
