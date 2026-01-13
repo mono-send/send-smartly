@@ -343,7 +343,7 @@ export default function EmailDetailsPage() {
         </div>
 
         {/* Content Tabs */}
-        <div className="rounded-lg border border-border bg-card">
+        <div className="rounded-2xl border border-border bg-card">
           <Tabs defaultValue="preview">
             <div className="flex items-center justify-between border-b border-border px-4">
               <TabsList className="h-12 bg-transparent">
