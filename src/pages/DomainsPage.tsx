@@ -110,7 +110,7 @@ export default function DomainsPage() {
               placeholder="Search domains..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pr-9 bg-white"
+              className="pr-9 bg-white hover:border-stone-300 focus-within:border-stone-300 focus-within:shadow-input hover:shadow-input-hover focus-within:shadow-input focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0"
             />
           </div>
 
