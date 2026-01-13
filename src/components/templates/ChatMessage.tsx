@@ -112,7 +112,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
               </button>
             </div>
             <div className="p-3 overflow-x-auto max-h-[300px] overflow-y-auto">
-              <pre className="text-xs">
+              <pre className="text-xs text-slate-300">
                 <code
                   className="language-html"
                   dangerouslySetInnerHTML={{
@@ -121,6 +121,15 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
                 />
               </pre>
             </div>
+            <style>{`
+              .language-html .token.tag { color: #7dd3fc; }
+              .language-html .token.attr-name { color: #a5f3fc; }
+              .language-html .token.attr-value { color: #fde047; }
+              .language-html .token.punctuation { color: #94a3b8; }
+              .language-html .token.comment { color: #64748b; font-style: italic; }
+              .language-html .token.doctype { color: #f472b6; }
+              .language-html .token { color: #e2e8f0; }
+            `}</style>
           </div>
         )}
 
