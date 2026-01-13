@@ -294,7 +294,9 @@ export default function ApiKeyDetailsPage() {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem onClick={() => setIsEditDialogOpen(true)}>Edit</DropdownMenuItem>
-                <DropdownMenuItem>Roll key</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => toast.info("Will be implemented soon")}>
+                  Roll key
+                </DropdownMenuItem>
                 <DropdownMenuItem 
                   className="text-destructive"
                   onClick={() => setIsRevokeDialogOpen(true)}
