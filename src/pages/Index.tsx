@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CodeBlock } from "@/components/ui/code-block";
-import { Key, Send, Globe, FlaskConical, Navigation, Check, Loader2 } from "lucide-react";
+import { Key, Send, Globe, FlaskConical, Navigation, Check, Loader2, AlertTriangle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
@@ -135,6 +135,8 @@ const Index = () => {
   const [isCreatingApiKey, setIsCreatingApiKey] = useState(false);
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [isEmailSent, setIsEmailSent] = useState(false);
+  const isDomainVerified = onboardingData?.domain === "verified";
+  const isDomainUnverified = onboardingData?.domain === "unverified";
 
   useEffect(() => {
     const loadOnboardingData = async () => {
@@ -405,14 +407,32 @@ const Index = () => {
           {/* Step 3: Add Domain */}
           <div className={`flex gap-4 ${isSectionsDisabled ? 'opacity-50 pointer-events-none' : ''}`}>
             <div className="flex flex-col items-center">
-              <div className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-foreground">
-                <div className="h-2 w-2 rounded-full bg-foreground" />
+              <div className={`flex h-6 w-6 items-center justify-center rounded-full border-2 ${
+                isDomainVerified
+                  ? "bg-green-500 border-green-500"
+                  : isDomainUnverified
+                    ? "bg-warning/10 border-warning"
+                    : "border-foreground"
+              }`}>
+                {isDomainVerified ? (
+                  <Check className="h-4 w-4 text-white" />
+                ) : isDomainUnverified ? (
+                  <AlertTriangle className="h-4 w-4 text-warning" />
+                ) : (
+                  <div className="h-2 w-2 rounded-full bg-foreground" />
+                )}
               </div>
             </div>
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-1">
                 <h2 className="text-lg font-semibold text-foreground">Add a domain</h2>
-                <Badge variant="secondary">Recommended</Badge>
+                {isDomainVerified ? (
+                  <Badge variant="secondary" className="bg-green-100 text-green-700 border-green-200">Completed</Badge>
+                ) : isDomainUnverified ? (
+                  <Badge variant="secondary" className="bg-warning/10 text-warning border-warning/20">Warning</Badge>
+                ) : (
+                  <Badge variant="secondary">Recommended</Badge>
+                )}
               </div>
               <p className="text-muted-foreground text-sm mb-4">Improve deliverability by proving to inbox providers that you own the domain you're sending from.</p>
               <Button
