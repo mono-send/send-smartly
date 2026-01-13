@@ -298,7 +298,7 @@ export default function EmailDetailsPage() {
           <p className="mb-4 text-xs font-medium uppercase tracking-wider text-muted-foreground">
             Email Events
           </p>
-          <div className="rounded-lg border border-border bg-card p-6">
+          <div className="rounded-2xl border border-border bg-card p-6">
             {email.events.length === 0 ? (
               <p className="text-sm text-muted-foreground">No events recorded</p>
             ) : (
