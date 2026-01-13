@@ -49,8 +49,8 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
         "flex gap-3 mb-4 animate-in fade-in slide-in-from-bottom-2 duration-300",
         role === "user" ? "flex-row-reverse" : "flex-row"
       )}
-      {/* onMouseEnter={() => setShowTimestamp(true)}
-      onMouseLeave={() => setShowTimestamp(false)} */}
+      /* { onMouseEnter={() => setShowTimestamp(true)}
+      onMouseLeave={() => setShowTimestamp(false)} } */
     >
       {/* Avatar */}
       <div
