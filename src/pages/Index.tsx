@@ -166,8 +166,8 @@ const Index = () => {
           {/* Step 2: Send Email */}
           <div className="flex gap-4">
             <div className="flex flex-col items-center">
-              <div className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-muted-foreground">
-                <div className="h-2 w-2 rounded-full bg-muted-foreground" />
+              <div className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-foreground">
+                <div className="h-2 w-2 rounded-full bg-foreground" />
               </div>
               <div className="flex-1 w-px bg-border mt-2" />
             </div>
@@ -222,8 +222,8 @@ const Index = () => {
           {/* Step 3: Add Domain */}
           <div className="flex gap-4">
             <div className="flex flex-col items-center">
-              <div className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-muted-foreground">
-                <div className="h-2 w-2 rounded-full bg-muted-foreground" />
+              <div className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-foreground">
+                <div className="h-2 w-2 rounded-full bg-foreground" />
               </div>
             </div>
             <div className="flex-1">
