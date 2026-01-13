@@ -320,7 +320,7 @@ export default function ApiKeyDetailsPage() {
           </div>
           <div className="flex flex-col gap-2 p-6">
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Total Uses</p>
-            <p className="text-foreground border-b border-muted-foreground/50 inline">
+            <p className="text-foreground inline">
               {apiKey.total_uses === 1 ? "1 time" : `${apiKey.total_uses.toLocaleString()} times`}
             </p>
           </div>
@@ -346,7 +346,7 @@ export default function ApiKeyDetailsPage() {
           </div>
           <div className="flex flex-col gap-2 p-6">
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Last Used</p>
-            <p className="text-foreground border-b border-muted-foreground/50 inline">
+            <p className="text-foreground inline">
               {formatDate(apiKey.last_used_at)}
             </p>
           </div>
