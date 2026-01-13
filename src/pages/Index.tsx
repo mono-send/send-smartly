@@ -124,6 +124,7 @@ interface OnboardingData {
   plan: string | null;
   is_api_key: boolean;
   domain: string;
+  domain_id: string | null;
 }
 
 const Index = () => {
@@ -215,6 +216,16 @@ const Index = () => {
   };
 
   const isSectionsDisabled = onboardingData?.is_api_key === false;
+  const handleDomainCtaClick = () => {
+    const domainId = onboardingData?.domain_id?.trim() ?? "";
+
+    if (isDomainUnverified && domainId) {
+      navigate(`/domains/${domainId}`);
+      return;
+    }
+
+    navigate("/domains/new");
+  };
 
   return (
     <>
@@ -437,7 +448,7 @@ const Index = () => {
               <p className="text-muted-foreground text-sm mb-4">Improve deliverability by proving to inbox providers that you own the domain you're sending from.</p>
               <Button
                 className="gap-2 h-9"
-                onClick={() => navigate("/domains/new")}
+                onClick={handleDomainCtaClick}
                 disabled={isSectionsDisabled}
               >
                 <Globe className="h-4 w-4" />
