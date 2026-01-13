@@ -55,6 +55,11 @@ function TemplateDetailsPageContent() {
   const [showSendTestDialog, setShowSendTestDialog] = useState(false);
   const [defaultDomainId, setDefaultDomainId] = useState<string | null>(null);
 
+  // Track if there are unsaved changes
+  const hasChanges = template
+    ? name !== template.name || subject !== template.subject || body !== template.body
+    : false;
+
   const nameInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -298,7 +303,7 @@ function TemplateDetailsPageContent() {
           </DropdownMenu>
           <Button
             onClick={handleUpdate}
-            disabled={isSaving}
+            disabled={isSaving || !hasChanges}
             className="h-9"
           >
             {isSaving ? (
