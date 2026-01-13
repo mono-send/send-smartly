@@ -87,7 +87,7 @@ export default function MetricsPage() {
         </Select>
       </TopBar>
       
-      <div className="p-6 space-y-6">
+      <div className="p-6 space-y-4">
         {/* KPI Cards */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <MetricCard
