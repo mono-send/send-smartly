@@ -75,57 +75,121 @@ export const AIChatPanel: React.FC<AIChatPanelProps> = ({
 
     if (lowerMessage.includes("welcome") || lowerMessage.includes("greeting")) {
       responseText =
-        "I've created a welcome email template with a clean header, personalized greeting, and a prominent call-to-action button. The design uses a modern color scheme and is mobile-responsive.";
+        "I've created a welcome email template with a clean header, personalized greeting, and a prominent call-to-action button. The design uses a modern color scheme and is fully mobile-responsive with optimized spacing and touch-friendly buttons.";
       generatedCode = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Welcome Email</title>
+  <style type="text/css">
+    /* Reset styles */
+    body {
+      margin: 0 !important;
+      padding: 0 !important;
+      -webkit-text-size-adjust: 100% !important;
+      -ms-text-size-adjust: 100% !important;
+    }
+
+    /* Mobile-specific styles */
+    @media only screen and (max-width: 600px) {
+      .email-container {
+        width: 100% !important;
+        max-width: 100% !important;
+      }
+
+      .mobile-padding {
+        padding: 20px !important;
+      }
+
+      .mobile-header-padding {
+        padding: 30px 20px !important;
+      }
+
+      .mobile-font-size-h1 {
+        font-size: 24px !important;
+        line-height: 1.3 !important;
+      }
+
+      .mobile-font-size-p {
+        font-size: 16px !important;
+      }
+
+      .mobile-button {
+        padding: 14px 30px !important;
+        font-size: 16px !important;
+        min-height: 48px !important;
+        display: block !important;
+        width: auto !important;
+      }
+    }
+  </style>
 </head>
 <body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f4f4f4;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f4f4;">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f4f4f4; min-height: 100vh;">
     <tr>
-      <td align="center" style="padding: 40px 0;">
-        <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+      <td align="center" style="padding: 20px 10px;">
+        <!--[if mso]>
+        <table width="600" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+        <td>
+        <![endif]-->
+        <table class="email-container" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width: 600px; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+          <!-- Header -->
           <tr>
-            <td style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px; text-align: center; border-radius: 8px 8px 0 0;">
-              <h1 style="color: #ffffff; margin: 0; font-size: 32px;">Welcome to {{companyName}}!</h1>
+            <td class="mobile-header-padding" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px; text-align: center; border-radius: 8px 8px 0 0;">
+              <h1 class="mobile-font-size-h1" style="color: #ffffff; margin: 0; font-size: 32px; font-weight: bold; line-height: 1.2;">Welcome to {{companyName}}!</h1>
             </td>
           </tr>
+          <!-- Content -->
           <tr>
-            <td style="padding: 40px;">
-              <p style="color: #333333; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
+            <td class="mobile-padding" style="padding: 40px;">
+              <p class="mobile-font-size-p" style="color: #333333; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
                 Hi {{firstName}},
               </p>
-              <p style="color: #333333; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
+              <p class="mobile-font-size-p" style="color: #333333; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
                 We're thrilled to have you on board! Your account has been successfully created, and you're all set to explore everything we have to offer.
               </p>
-              <p style="color: #333333; font-size: 16px; line-height: 1.6; margin: 0 0 30px 0;">
+              <p class="mobile-font-size-p" style="color: #333333; font-size: 16px; line-height: 1.6; margin: 0 0 30px 0;">
                 To get started, click the button below to verify your email address and complete your setup.
               </p>
-              <table width="100%" cellpadding="0" cellspacing="0">
+              <!-- Button -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
                 <tr>
-                  <td align="center">
-                    <a href="{{verificationLink}}" style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #ffffff; text-decoration: none; padding: 16px 40px; border-radius: 6px; font-weight: bold; font-size: 16px;">
+                  <td align="center" style="padding: 10px 0;">
+                    <!--[if mso]>
+                    <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="{{verificationLink}}" style="height:48px;v-text-anchor:middle;width:240px;" arcsize="10%" stroke="f" fillcolor="#667eea">
+                    <w:anchorlock/>
+                    <center style="color:#ffffff;font-family:Arial,sans-serif;font-size:16px;font-weight:bold;">Verify Email Address</center>
+                    </v:roundrect>
+                    <![endif]-->
+                    <!--[if !mso]><!-->
+                    <a href="{{verificationLink}}" class="mobile-button" style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #ffffff; text-decoration: none; padding: 16px 40px; border-radius: 6px; font-weight: bold; font-size: 16px; min-height: 48px; line-height: 1.5; text-align: center; mso-hide: all;">
                       Verify Email Address
                     </a>
+                    <!--<![endif]-->
                   </td>
                 </tr>
               </table>
               <p style="color: #666666; font-size: 14px; line-height: 1.6; margin: 30px 0 0 0;">
-                If you have any questions, feel free to reach out to us at <a href="mailto:{{supportEmail}}" style="color: #667eea;">{{supportEmail}}</a>
+                If you have any questions, feel free to reach out to us at <a href="mailto:{{supportEmail}}" style="color: #667eea; text-decoration: none;">{{supportEmail}}</a>
               </p>
             </td>
           </tr>
+          <!-- Footer -->
           <tr>
             <td style="background-color: #f8f9fa; padding: 20px; text-align: center; border-radius: 0 0 8px 8px;">
-              <p style="color: #999999; font-size: 12px; margin: 0;">
+              <p style="color: #999999; font-size: 12px; margin: 0; line-height: 1.5;">
                 &copy; 2024 {{companyName}}. All rights reserved.
               </p>
             </td>
           </tr>
         </table>
+        <!--[if mso]>
+        </td>
+        </tr>
+        </table>
+        <![endif]-->
       </td>
     </tr>
   </table>
@@ -136,34 +200,86 @@ export const AIChatPanel: React.FC<AIChatPanelProps> = ({
       lowerMessage.includes("reset")
     ) {
       responseText =
-        "I've created a password reset email template with clear instructions and a secure verification link. The design is straightforward and focuses on the action the user needs to take.";
+        "I've created a password reset email template with clear instructions and a secure verification link. The design is straightforward, focuses on the action the user needs to take, and is fully optimized for mobile devices.";
       generatedCode = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Password Reset</title>
+  <style type="text/css">
+    /* Reset styles */
+    body {
+      margin: 0 !important;
+      padding: 0 !important;
+      -webkit-text-size-adjust: 100% !important;
+      -ms-text-size-adjust: 100% !important;
+    }
+
+    /* Mobile-specific styles */
+    @media only screen and (max-width: 600px) {
+      .email-container {
+        width: 100% !important;
+        max-width: 100% !important;
+      }
+
+      .mobile-padding {
+        padding: 20px !important;
+      }
+
+      .mobile-font-size-h1 {
+        font-size: 22px !important;
+        line-height: 1.3 !important;
+      }
+
+      .mobile-font-size-p {
+        font-size: 16px !important;
+      }
+
+      .mobile-button {
+        padding: 14px 30px !important;
+        font-size: 16px !important;
+        min-height: 48px !important;
+        display: block !important;
+        width: auto !important;
+      }
+    }
+  </style>
 </head>
 <body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f4f4f4;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f4f4;">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f4f4f4; min-height: 100vh;">
     <tr>
-      <td align="center" style="padding: 40px 0;">
-        <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px;">
+      <td align="center" style="padding: 20px 10px;">
+        <!--[if mso]>
+        <table width="600" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+        <td>
+        <![endif]-->
+        <table class="email-container" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width: 600px; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
           <tr>
-            <td style="padding: 40px;">
-              <h1 style="color: #333333; margin: 0 0 20px 0; font-size: 24px;">Password Reset Request</h1>
-              <p style="color: #333333; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
+            <td class="mobile-padding" style="padding: 40px;">
+              <h1 class="mobile-font-size-h1" style="color: #333333; margin: 0 0 20px 0; font-size: 24px; font-weight: bold; line-height: 1.3;">Password Reset Request</h1>
+              <p class="mobile-font-size-p" style="color: #333333; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
                 Hi {{firstName}},
               </p>
-              <p style="color: #333333; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
+              <p class="mobile-font-size-p" style="color: #333333; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
                 We received a request to reset your password. Click the button below to create a new password:
               </p>
-              <table width="100%" cellpadding="0" cellspacing="0" style="margin: 30px 0;">
+              <!-- Button -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin: 30px 0;">
                 <tr>
-                  <td align="center">
-                    <a href="{{resetPasswordLink}}" style="display: inline-block; background-color: #4f46e5; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 6px; font-weight: bold; font-size: 16px;">
+                  <td align="center" style="padding: 10px 0;">
+                    <!--[if mso]>
+                    <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="{{resetPasswordLink}}" style="height:48px;v-text-anchor:middle;width:200px;" arcsize="10%" stroke="f" fillcolor="#4f46e5">
+                    <w:anchorlock/>
+                    <center style="color:#ffffff;font-family:Arial,sans-serif;font-size:16px;font-weight:bold;">Reset Password</center>
+                    </v:roundrect>
+                    <![endif]-->
+                    <!--[if !mso]><!-->
+                    <a href="{{resetPasswordLink}}" class="mobile-button" style="display: inline-block; background-color: #4f46e5; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 6px; font-weight: bold; font-size: 16px; min-height: 48px; line-height: 1.5; text-align: center; mso-hide: all;">
                       Reset Password
                     </a>
+                    <!--<![endif]-->
                   </td>
                 </tr>
               </table>
@@ -176,6 +292,11 @@ export const AIChatPanel: React.FC<AIChatPanelProps> = ({
             </td>
           </tr>
         </table>
+        <!--[if mso]>
+        </td>
+        </tr>
+        </table>
+        <![endif]-->
       </td>
     </tr>
   </table>
@@ -186,60 +307,134 @@ export const AIChatPanel: React.FC<AIChatPanelProps> = ({
       lowerMessage.includes("product")
     ) {
       responseText =
-        "I've designed a promotional email template with an eye-catching header, product showcase section, and a strong call-to-action. Perfect for marketing campaigns!";
+        "I've designed a promotional email template with an eye-catching header, product showcase section, and a strong call-to-action. Perfect for marketing campaigns! Fully optimized for mobile devices with responsive design and touch-friendly elements.";
       generatedCode = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Special Offer</title>
+  <style type="text/css">
+    /* Reset styles */
+    body {
+      margin: 0 !important;
+      padding: 0 !important;
+      -webkit-text-size-adjust: 100% !important;
+      -ms-text-size-adjust: 100% !important;
+    }
+
+    /* Mobile-specific styles */
+    @media only screen and (max-width: 600px) {
+      .email-container {
+        width: 100% !important;
+        max-width: 100% !important;
+      }
+
+      .mobile-padding {
+        padding: 20px !important;
+      }
+
+      .mobile-header-padding {
+        padding: 25px 20px !important;
+      }
+
+      .mobile-font-size-h1 {
+        font-size: 28px !important;
+        line-height: 1.2 !important;
+      }
+
+      .mobile-font-size-h2 {
+        font-size: 20px !important;
+        line-height: 1.3 !important;
+      }
+
+      .mobile-font-size-p {
+        font-size: 16px !important;
+      }
+
+      .mobile-button {
+        padding: 14px 30px !important;
+        font-size: 16px !important;
+        min-height: 48px !important;
+        display: block !important;
+        width: auto !important;
+      }
+
+      .mobile-showcase-padding {
+        padding: 15px !important;
+      }
+    }
+  </style>
 </head>
 <body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f4f4f4;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f4f4;">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f4f4f4; min-height: 100vh;">
     <tr>
-      <td align="center" style="padding: 40px 0;">
-        <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff;">
+      <td align="center" style="padding: 20px 10px;">
+        <!--[if mso]>
+        <table width="600" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+        <td>
+        <![endif]-->
+        <table class="email-container" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width: 600px; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+          <!-- Header -->
           <tr>
-            <td style="background-color: #ff6b6b; padding: 30px; text-align: center;">
-              <h1 style="color: #ffffff; margin: 0; font-size: 36px;">Special Offer!</h1>
-              <p style="color: #ffffff; margin: 10px 0 0 0; font-size: 18px;">Limited Time Only</p>
+            <td class="mobile-header-padding" style="background-color: #ff6b6b; padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
+              <h1 class="mobile-font-size-h1" style="color: #ffffff; margin: 0; font-size: 36px; font-weight: bold; line-height: 1.2;">Special Offer!</h1>
+              <p style="color: #ffffff; margin: 10px 0 0 0; font-size: 18px; line-height: 1.4;">Limited Time Only</p>
             </td>
           </tr>
+          <!-- Content -->
           <tr>
-            <td style="padding: 40px;">
-              <p style="color: #333333; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
+            <td class="mobile-padding" style="padding: 40px;">
+              <p class="mobile-font-size-p" style="color: #333333; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
                 Hi {{firstName}},
               </p>
-              <p style="color: #333333; font-size: 16px; line-height: 1.6; margin: 0 0 30px 0;">
+              <p class="mobile-font-size-p" style="color: #333333; font-size: 16px; line-height: 1.6; margin: 0 0 30px 0;">
                 Don't miss out on our exclusive offer! Get 30% off on all products for the next 48 hours.
               </p>
-              <table width="100%" cellpadding="0" cellspacing="0" style="margin: 0 0 30px 0;">
+              <!-- Product Showcase -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin: 0 0 30px 0;">
                 <tr>
-                  <td align="center" style="padding: 20px; background-color: #f8f9fa; border-radius: 8px;">
-                    <h2 style="color: #333333; margin: 0 0 10px 0; font-size: 24px;">Featured Products</h2>
-                    <p style="color: #666666; margin: 0; font-size: 14px;">Handpicked just for you</p>
+                  <td class="mobile-showcase-padding" align="center" style="padding: 20px; background-color: #f8f9fa; border-radius: 8px;">
+                    <h2 class="mobile-font-size-h2" style="color: #333333; margin: 0 0 10px 0; font-size: 24px; font-weight: bold; line-height: 1.3;">Featured Products</h2>
+                    <p style="color: #666666; margin: 0; font-size: 14px; line-height: 1.5;">Handpicked just for you</p>
                   </td>
                 </tr>
               </table>
-              <table width="100%" cellpadding="0" cellspacing="0">
+              <!-- Button -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
                 <tr>
-                  <td align="center">
-                    <a href="{{websiteUrl}}" style="display: inline-block; background-color: #ff6b6b; color: #ffffff; text-decoration: none; padding: 16px 40px; border-radius: 6px; font-weight: bold; font-size: 16px;">
+                  <td align="center" style="padding: 10px 0;">
+                    <!--[if mso]>
+                    <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="{{websiteUrl}}" style="height:48px;v-text-anchor:middle;width:180px;" arcsize="10%" stroke="f" fillcolor="#ff6b6b">
+                    <w:anchorlock/>
+                    <center style="color:#ffffff;font-family:Arial,sans-serif;font-size:16px;font-weight:bold;">Shop Now</center>
+                    </v:roundrect>
+                    <![endif]-->
+                    <!--[if !mso]><!-->
+                    <a href="{{websiteUrl}}" class="mobile-button" style="display: inline-block; background-color: #ff6b6b; color: #ffffff; text-decoration: none; padding: 16px 40px; border-radius: 6px; font-weight: bold; font-size: 16px; min-height: 48px; line-height: 1.5; text-align: center; mso-hide: all;">
                       Shop Now
                     </a>
+                    <!--<![endif]-->
                   </td>
                 </tr>
               </table>
             </td>
           </tr>
+          <!-- Footer -->
           <tr>
-            <td style="background-color: #f8f9fa; padding: 20px; text-align: center;">
-              <p style="color: #999999; font-size: 12px; margin: 0 0 10px 0;">
-                <a href="{{unsubscribeLink}}" style="color: #999999;">Unsubscribe</a>
+            <td style="background-color: #f8f9fa; padding: 20px; text-align: center; border-radius: 0 0 8px 8px;">
+              <p style="color: #999999; font-size: 12px; margin: 0; line-height: 1.5;">
+                <a href="{{unsubscribeLink}}" style="color: #999999; text-decoration: underline;">Unsubscribe</a>
               </p>
             </td>
           </tr>
         </table>
+        <!--[if mso]>
+        </td>
+        </tr>
+        </table>
+        <![endif]-->
       </td>
     </tr>
   </table>
