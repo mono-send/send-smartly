@@ -298,7 +298,7 @@ export const AIChatPanel: React.FC<AIChatPanelProps> = ({
       </div>
 
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-muted/30">
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center px-4">
             <div className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center mb-4">
