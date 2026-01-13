@@ -176,7 +176,7 @@ const Index = () => {
               <p className="text-muted-foreground text-sm mb-4">Implement or run the code below to send your first email</p>
               
               <Card className="overflow-hidden">
-                <div className="border-b border-border bg-muted/30 px-4 py-2 flex items-center justify-between">
+                <div className="border-b border-border bg-muted/30 px-4 pt-2 pb-0 flex items-center justify-between">
                   <Tabs value={activeLanguage} onValueChange={(v) => setActiveLanguage(v as Language)}>
                     <TabsList className="h-auto bg-transparent p-0 gap-0">
                       {languages.map((lang) => (
