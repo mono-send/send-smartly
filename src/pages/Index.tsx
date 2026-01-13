@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CodeBlock } from "@/components/ui/code-block";
-import { Key, Send, Globe, FlaskConical, Navigation } from "lucide-react";
+import { Key, Send, Globe, FlaskConical, Navigation, Check } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
@@ -130,6 +130,7 @@ const Index = () => {
   const [activeLanguage, setActiveLanguage] = useState<Language>("Node.js");
   const [onboardingData, setOnboardingData] = useState<OnboardingData | null>(null);
   const [isLoadingOnboarding, setIsLoadingOnboarding] = useState(true);
+  const [isEmailSent, setIsEmailSent] = useState(false);
 
   useEffect(() => {
     fetchOnboardingData();
@@ -156,6 +157,7 @@ const Index = () => {
   };
 
   const handleSendEmail = () => {
+    setIsEmailSent(true);
     toast.success("Email sent successfully!");
   };
 
@@ -198,17 +200,31 @@ const Index = () => {
           {/* Step 1: Add API Key */}
           <div className="flex gap-4">
             <div className="flex flex-col items-center">
-              <div className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-foreground">
-                <div className="h-2 w-2 rounded-full bg-foreground" />
+              <div className={`flex h-6 w-6 items-center justify-center rounded-full ${
+                onboardingData?.is_api_key
+                  ? 'bg-green-500 border-2 border-green-500'
+                  : 'border-2 border-foreground'
+              }`}>
+                {onboardingData?.is_api_key ? (
+                  <Check className="h-4 w-4 text-white" />
+                ) : (
+                  <div className="h-2 w-2 rounded-full bg-foreground" />
+                )}
               </div>
               <div className="flex-1 w-px bg-border mt-2" />
             </div>
             <div className="flex-1 pb-8">
-              <h2 className="text-lg font-semibold text-foreground mb-1">Add an API Key</h2>
+              <div className="flex items-center gap-2 mb-1">
+                <h2 className="text-lg font-semibold text-foreground">Add an API Key</h2>
+                {onboardingData?.is_api_key && (
+                  <Badge variant="secondary" className="bg-green-100 text-green-700 border-green-200">Completed</Badge>
+                )}
+              </div>
               <p className="text-muted-foreground text-sm mb-4">Use the following generated key to authenticate requests</p>
               <Button
                 className="gap-2 h-9"
                 onClick={handleAddApiKey}
+                disabled={onboardingData?.is_api_key}
               >
                 <Key className="h-4 w-4" />
                 Add API Key
@@ -219,13 +235,26 @@ const Index = () => {
           {/* Step 2: Send Email */}
           <div className={`flex gap-4 ${isSectionsDisabled ? 'opacity-50 pointer-events-none' : ''}`}>
             <div className="flex flex-col items-center">
-              <div className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-foreground">
-                <div className="h-2 w-2 rounded-full bg-foreground" />
+              <div className={`flex h-6 w-6 items-center justify-center rounded-full ${
+                isEmailSent
+                  ? 'bg-green-500 border-2 border-green-500'
+                  : 'border-2 border-foreground'
+              }`}>
+                {isEmailSent ? (
+                  <Check className="h-4 w-4 text-white" />
+                ) : (
+                  <div className="h-2 w-2 rounded-full bg-foreground" />
+                )}
               </div>
               <div className="flex-1 w-px bg-border mt-2" />
             </div>
             <div className="flex-1 pb-8">
-              <h2 className="text-lg font-semibold text-foreground mb-1">Send an email</h2>
+              <div className="flex items-center gap-2 mb-1">
+                <h2 className="text-lg font-semibold text-foreground">Send an email</h2>
+                {isEmailSent && (
+                  <Badge variant="secondary" className="bg-green-100 text-green-700 border-green-200">Completed</Badge>
+                )}
+              </div>
               <p className="text-muted-foreground text-sm mb-4">Implement or run the code below to send your first email</p>
               
               <Card className="overflow-hidden">
