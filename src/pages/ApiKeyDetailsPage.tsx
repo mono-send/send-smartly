@@ -309,7 +309,7 @@ export default function ApiKeyDetailsPage() {
         </div>
 
         {/* Details Grid */}
-        <div className="grid overflow-hidden rounded-2xl border bg-card text-card-foreground shadow-sm divide-y md:grid-cols-4 md:divide-x md:divide-y-0 md:[&>*:nth-child(n+5)]:border-t md:[&>*:nth-child(n+5)]:border-border mb-8">
+        <div className="grid overflow-hidden rounded-2xl border bg-card text-card-foreground shadow-sm divide-y md:grid-cols-4 md:divide-x md:divide-y-0 md:[&>*:nth-child(-n+4)]:border-b md:[&>*:nth-child(-n+4)]:border-border mb-8">
           <div className="flex flex-col gap-2 p-6">
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Permission</p>
             <p className="text-foreground">{permissionLabels[apiKey.permission] || apiKey.permission}</p>
