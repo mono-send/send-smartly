@@ -365,6 +365,7 @@ export default function ApiKeyDetailsPage() {
               <p className="text-foreground">{apiKey.created_by}</p>
             </div>
           </div>
+          <div className="flex flex-col gap-2 p-6"></div>
         </div>
 
         {/* Usage Analytics Chart */}
