@@ -473,7 +473,7 @@ export default function DomainDetailsPage() {
         {/* Metadata */}
         <div className="grid overflow-hidden rounded-2xl border bg-card text-card-foreground shadow-sm md:grid-cols-3 md:divide-x mb-10">
           <div className="border-b md:border-b-0">
-            <CardContent className="flex flex-col items-center gap-3 py-6 text-center">
+            <CardContent className="flex flex-col gap-2 py-6">
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Created</p>
               <p className="text-foreground">
                 {formatDistanceToNow(new Date(domain.created_at), { addSuffix: true })}
@@ -481,13 +481,13 @@ export default function DomainDetailsPage() {
             </CardContent>
           </div>
           <div className="border-b md:border-b-0">
-            <CardContent className="flex flex-col items-center gap-3 py-6 text-center">
+            <CardContent className="flex flex-col gap-2 py-6">
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Status</p>
               <StatusBadge className="uppercase" status={domain.status} />
             </CardContent>
           </div>
           <div>
-            <CardContent className="flex flex-col items-center gap-3 py-6 text-center">
+            <CardContent className="flex flex-col gap-2 py-6">
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Region</p>
               <div className="flex items-center gap-2">
                 <span className="text-lg">{regionInfo.flag}</span>
