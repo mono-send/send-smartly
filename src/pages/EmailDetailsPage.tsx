@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { CardContent } from "@/components/ui/card";
 import { Mail, Copy, Check, ChevronLeft, MoreVertical, Send, CheckCircle, Code, BookOpen, Loader2 } from "lucide-react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
@@ -153,11 +154,13 @@ export default function EmailDetailsPage() {
           </div>
         </div>
 
-        <div className="mb-8 grid grid-cols-4 gap-6">
+        <div className="mb-8 grid overflow-hidden rounded-2xl border bg-card text-card-foreground shadow-sm md:grid-cols-4 md:divide-x">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i}>
-              <Skeleton className="h-3 w-12 mb-2" />
-              <Skeleton className="h-5 w-32" />
+            <div key={i} className="border-b md:border-b-0">
+              <CardContent className="flex flex-col gap-2 py-6">
+                <Skeleton className="h-3 w-12" />
+                <Skeleton className="h-5 w-32" />
+              </CardContent>
             </div>
           ))}
         </div>
@@ -247,38 +250,46 @@ export default function EmailDetailsPage() {
         </div>
 
         {/* Metadata */}
-        <div className="mb-8 grid grid-cols-4 gap-6">
-          <div>
-            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">From</p>
-            <p className="mt-1 text-sm">{email.from_email}</p>
+        <div className="mb-8 grid overflow-hidden rounded-2xl border bg-card text-card-foreground shadow-sm md:grid-cols-4 md:divide-x">
+          <div className="border-b md:border-b-0">
+            <CardContent className="flex flex-col gap-2 py-6">
+              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">From</p>
+              <p className="text-sm font-medium">{email.from_email}</p>
+            </CardContent>
+          </div>
+          <div className="border-b md:border-b-0">
+            <CardContent className="flex flex-col gap-2 py-6">
+              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Subject</p>
+              <p className="text-sm font-medium">{email.subject}</p>
+            </CardContent>
+          </div>
+          <div className="border-b md:border-b-0">
+            <CardContent className="flex flex-col gap-2 py-6">
+              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">To</p>
+              <p className="text-sm font-medium">{email.to_email}</p>
+            </CardContent>
           </div>
           <div>
-            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Subject</p>
-            <p className="mt-1 text-sm">{email.subject}</p>
-          </div>
-          <div>
-            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">To</p>
-            <p className="mt-1 text-sm">{email.to_email}</p>
-          </div>
-          <div>
-            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">ID</p>
-            <div className="mt-1 flex items-center gap-2">
-              <code className="rounded bg-muted px-2 py-1 font-mono text-xs">
-                {truncateId(email.id)}
-              </code>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-6 w-6"
-                onClick={() => copyToClipboard(email.id, "id")}
-              >
-                {copiedId ? (
-                  <Check className="h-3 w-3 text-success" />
-                ) : (
-                  <Copy className="h-3 w-3" />
-                )}
-              </Button>
-            </div>
+            <CardContent className="flex flex-col gap-2 py-6">
+              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">ID</p>
+              <div className="flex items-center gap-2">
+                <code className="rounded bg-muted px-2 py-1 font-mono text-xs">
+                  {truncateId(email.id)}
+                </code>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6"
+                  onClick={() => copyToClipboard(email.id, "id")}
+                >
+                  {copiedId ? (
+                    <Check className="h-3 w-3 text-success" />
+                  ) : (
+                    <Copy className="h-3 w-3" />
+                  )}
+                </Button>
+              </div>
+            </CardContent>
           </div>
         </div>
 
