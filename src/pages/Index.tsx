@@ -407,12 +407,12 @@ const Index = () => {
           {/* Step 3: Add Domain */}
           <div className={`flex gap-4 ${isSectionsDisabled ? 'opacity-50 pointer-events-none' : ''}`}>
             <div className="flex flex-col items-center">
-              <div className={`flex h-6 w-6 items-center justify-center rounded-full border-2 ${
+              <div className={`flex h-6 w-6 items-center justify-center rounded-full ${
                 isDomainVerified
-                  ? "bg-green-500 border-green-500"
+                  ? "border-2 bg-green-500 border-green-500"
                   : isDomainUnverified
-                    ? "bg-warning/10 "
-                    : "border-foreground"
+                    ? ""
+                    : "border-2 border-foreground"
               }`}>
                 {isDomainVerified ? (
                   <Check className="h-4 w-4 text-white" />
