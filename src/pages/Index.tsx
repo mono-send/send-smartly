@@ -130,18 +130,28 @@ const Index = () => {
   const navigate = useNavigate();
   const [activeLanguage, setActiveLanguage] = useState<Language>("Node.js");
   const [onboardingData, setOnboardingData] = useState<OnboardingData | null>(null);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [isLoadingOnboarding, setIsLoadingOnboarding] = useState(true);
   const [isCreatingApiKey, setIsCreatingApiKey] = useState(false);
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [isEmailSent, setIsEmailSent] = useState(false);
 
   useEffect(() => {
-    fetchOnboardingData();
-  }, []);
+    const loadOnboardingData = async () => {
+      await fetchOnboardingData({ showSkeleton: true });
+      setIsInitialLoad(false);
+    };
 
-  const fetchOnboardingData = async () => {
+    if (isInitialLoad) {
+      loadOnboardingData();
+    }
+  }, [isInitialLoad]);
+
+  const fetchOnboardingData = async ({ showSkeleton = false }: { showSkeleton?: boolean } = {}) => {
     try {
-      setIsLoadingOnboarding(true);
+      if (showSkeleton) {
+        setIsLoadingOnboarding(true);
+      }
       const response = await api("/onboarding");
       if (response.ok) {
         const data = await response.json();
@@ -150,7 +160,9 @@ const Index = () => {
     } catch (error) {
       console.error("Failed to fetch onboarding data:", error);
     } finally {
-      setIsLoadingOnboarding(false);
+      if (showSkeleton) {
+        setIsLoadingOnboarding(false);
+      }
     }
   };
 
@@ -188,7 +200,7 @@ const Index = () => {
       if (response.ok) {
         toast.success("API Key created successfully!");
         // Refresh onboarding data to update the UI
-        await fetchOnboardingData();
+        await fetchOnboardingData({ showSkeleton: false });
       } else {
         toast.error("Failed to create API Key");
       }
