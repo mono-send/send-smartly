@@ -483,7 +483,7 @@ export default function DomainDetailsPage() {
           <div className="border-b md:border-b-0">
             <CardContent className="flex-col gap-2 py-6">
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Status</p>
-              <StatusBadge className="uppercase mt-2" status={domain.status} />
+              <StatusBadge className="uppercase mt-3" status={domain.status} />
             </CardContent>
           </div>
           <div>
