@@ -161,7 +161,14 @@ const Index = () => {
 
   const handleAddApiKey = async () => {
     try {
-      const response = await api("/api_keys", { method: "POST" });
+      const response = await api("/api_keys", {
+        method: "POST",
+        body: {
+          name: "Onboarding",
+          permission: "sending_access",
+          domain: null
+        }
+      });
       if (response.ok) {
         toast.success("API Key created successfully!");
         // Refresh onboarding data to update the UI
