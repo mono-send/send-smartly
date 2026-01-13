@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Globe, Code, MoreVertical, ExternalLink, AlertTriangle, Mail, Loader2, Copy, Check, RefreshCw, List, CheckCircle2, Clock, Ban } from "lucide-react";
+import { Globe, Code, MoreVertical, ExternalLink, AlertTriangle, Mail, Loader2, Copy, Check, RefreshCw } from "lucide-react";
 import { useParams, useNavigate } from "react-router-dom";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Switch } from "@/components/ui/switch";
@@ -403,11 +403,6 @@ export default function DomainDetailsPage() {
   const shouldShowButtons = domain.status !== "verified" || (domain.status === "verified" && receivingEnabled && hasUnverifiedMXRecord);
 
   const regionInfo = regionLabels[domain.region] || { label: domain.region, flag: "🌍" };
-  const totalRecords = domain.dns_records.length;
-  const verifiedRecords = domain.dns_records.filter((record) => record.status === "verified").length;
-  const pendingRecords = domain.dns_records.filter((record) => record.status === "pending").length;
-  const unverifiedRecords = domain.dns_records.filter((record) => record.status === "unverified").length;
-  const notStartedRecords = domain.dns_records.filter((record) => record.status === "not_started").length;
 
   return (
     <>
@@ -476,81 +471,28 @@ export default function DomainDetailsPage() {
         </div>
 
         {/* Metadata */}
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-8 mb-10">
-          <div>
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Created</p>
-            <p className="text-foreground">
-              {formatDistanceToNow(new Date(domain.created_at), { addSuffix: true })}
-            </p>
-          </div>
-          <div>
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Status</p>
-            <StatusBadge className="uppercase" status={domain.status} />
-          </div>
-          <div>
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Region</p>
-            <div className="flex items-center gap-2">
-              <span className="text-lg">{regionInfo.flag}</span>
-              <p className="text-foreground">{regionInfo.label}</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Domain Stats */}
-        <div className="grid overflow-hidden rounded-2xl border bg-card text-card-foreground shadow-sm md:grid-cols-5 md:divide-x mb-10">
+        <div className="grid overflow-hidden rounded-2xl border bg-card text-card-foreground shadow-sm md:grid-cols-3 md:divide-x mb-10">
           <div className="border-b md:border-b-0">
-            <CardContent className="flex flex-col items-center gap-4 py-6">
-              <div className="flex items-center gap-5">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
-                  <List className="h-5 w-5 text-muted-foreground" />
-                </div>
-                <p className="text-3xl font-semibold">{totalRecords}</p>
-              </div>
-              <p className="text-sm font-medium text-muted-foreground text-center">All records</p>
+            <CardContent className="flex flex-col items-center gap-3 py-6 text-center">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Created</p>
+              <p className="text-foreground">
+                {formatDistanceToNow(new Date(domain.created_at), { addSuffix: true })}
+              </p>
             </CardContent>
           </div>
           <div className="border-b md:border-b-0">
-            <CardContent className="flex flex-col items-center gap-4 py-6">
-              <div className="flex items-center gap-5">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-success/10">
-                  <CheckCircle2 className="h-5 w-5 text-success" />
-                </div>
-                <p className="text-3xl font-semibold">{verifiedRecords}</p>
-              </div>
-              <p className="text-sm font-medium text-muted-foreground text-center">Verified</p>
-            </CardContent>
-          </div>
-          <div className="border-b md:border-b-0">
-            <CardContent className="flex flex-col items-center gap-4 py-6">
-              <div className="flex items-center gap-5">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-warning/10">
-                  <Clock className="h-5 w-5 text-warning" />
-                </div>
-                <p className="text-3xl font-semibold">{pendingRecords}</p>
-              </div>
-              <p className="text-sm font-medium text-muted-foreground text-center">Pending</p>
-            </CardContent>
-          </div>
-          <div className="border-b md:border-b-0">
-            <CardContent className="flex flex-col items-center gap-4 py-6">
-              <div className="flex items-center gap-5">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-destructive/10">
-                  <AlertTriangle className="h-5 w-5 text-destructive" />
-                </div>
-                <p className="text-3xl font-semibold">{unverifiedRecords}</p>
-              </div>
-              <p className="text-sm font-medium text-muted-foreground text-center">Unverified</p>
+            <CardContent className="flex flex-col items-center gap-3 py-6 text-center">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Status</p>
+              <StatusBadge className="uppercase" status={domain.status} />
             </CardContent>
           </div>
           <div>
-            <CardContent className="flex flex-col items-center gap-4 py-6">
-              <div className="flex items-center gap-5">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
-                  <Ban className="h-5 w-5 text-muted-foreground" />
-                </div>
-                <p className="text-3xl font-semibold">{notStartedRecords}</p>
+            <CardContent className="flex flex-col items-center gap-3 py-6 text-center">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Region</p>
+              <div className="flex items-center gap-2">
+                <span className="text-lg">{regionInfo.flag}</span>
+                <p className="text-foreground">{regionInfo.label}</p>
               </div>
-              <p className="text-sm font-medium text-muted-foreground text-center">Not started</p>
             </CardContent>
           </div>
         </div>
