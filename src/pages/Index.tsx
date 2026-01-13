@@ -5,8 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CodeBlock } from "@/components/ui/code-block";
-import { Key, Send, Globe, FlaskConical, Navigation, Check } from "lucide-react";
+import { Key, Send, Globe, FlaskConical, Navigation, Check, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
 
@@ -130,6 +131,8 @@ const Index = () => {
   const [activeLanguage, setActiveLanguage] = useState<Language>("Node.js");
   const [onboardingData, setOnboardingData] = useState<OnboardingData | null>(null);
   const [isLoadingOnboarding, setIsLoadingOnboarding] = useState(true);
+  const [isCreatingApiKey, setIsCreatingApiKey] = useState(false);
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [isEmailSent, setIsEmailSent] = useState(false);
 
   useEffect(() => {
@@ -156,13 +159,24 @@ const Index = () => {
     toast.success("Copied to clipboard");
   };
 
-  const handleSendEmail = () => {
-    setIsEmailSent(true);
-    toast.success("Email sent successfully!");
+  const handleSendEmail = async () => {
+    try {
+      setIsSendingEmail(true);
+      // Simulate API call delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      setIsEmailSent(true);
+      toast.success("Email sent successfully!");
+    } catch (error) {
+      console.error("Failed to send email:", error);
+      toast.error("Failed to send email");
+    } finally {
+      setIsSendingEmail(false);
+    }
   };
 
   const handleAddApiKey = async () => {
     try {
+      setIsCreatingApiKey(true);
       const response = await api("/api_keys", {
         method: "POST",
         body: {
@@ -174,13 +188,15 @@ const Index = () => {
       if (response.ok) {
         toast.success("API Key created successfully!");
         // Refresh onboarding data to update the UI
-        fetchOnboardingData();
+        await fetchOnboardingData();
       } else {
         toast.error("Failed to create API Key");
       }
     } catch (error) {
       console.error("Failed to create API key:", error);
       toast.error("Failed to create API Key");
+    } finally {
+      setIsCreatingApiKey(false);
     }
   };
 
@@ -195,6 +211,60 @@ const Index = () => {
         <h1 className="text-xl font-semibold text-foreground mb-2">Hey Cooper, let's get started</h1>
         <p className="text-muted-foreground mb-8">Follow these steps to set up your project and start sending emails with the MonoSend API.</p>
 
+        {isLoadingOnboarding ? (
+          // Skeleton loaders while loading
+          <div className="space-y-8">
+            {/* Step 1 Skeleton */}
+            <div className="flex gap-4">
+              <div className="flex flex-col items-center">
+                <Skeleton className="h-6 w-6 rounded-full" />
+                <div className="flex-1 w-px bg-border mt-2" />
+              </div>
+              <div className="flex-1 pb-8">
+                <Skeleton className="h-6 w-48 mb-4" />
+                <Skeleton className="h-4 w-64 mb-4" />
+                <Skeleton className="h-9 w-32" />
+              </div>
+            </div>
+
+            {/* Step 2 Skeleton */}
+            <div className="flex gap-4">
+              <div className="flex flex-col items-center">
+                <Skeleton className="h-6 w-6 rounded-full" />
+                <div className="flex-1 w-px bg-border mt-2" />
+              </div>
+              <div className="flex-1 pb-8">
+                <Skeleton className="h-6 w-48 mb-4" />
+                <Skeleton className="h-4 w-64 mb-4" />
+                <Card className="overflow-hidden">
+                  <div className="border-b border-border bg-muted/30 px-4 pt-2 pb-0">
+                    <Skeleton className="h-8 w-full mb-2" />
+                  </div>
+                  <CardContent className="p-4">
+                    <Skeleton className="h-64 w-full" />
+                  </CardContent>
+                  <div className="border-t border-border p-4">
+                    <Skeleton className="h-10 w-32" />
+                  </div>
+                </Card>
+              </div>
+            </div>
+
+            {/* Step 3 Skeleton */}
+            <div className="flex gap-4">
+              <div className="flex flex-col items-center">
+                <Skeleton className="h-6 w-6 rounded-full" />
+              </div>
+              <div className="flex-1">
+                <Skeleton className="h-6 w-48 mb-4" />
+                <Skeleton className="h-4 w-64 mb-4" />
+                <Skeleton className="h-9 w-32" />
+              </div>
+            </div>
+          </div>
+        ) : (
+        // Actual content when loaded
+        <>
         {/* Steps */}
         <div className="space-y-8">
           {/* Step 1: Add API Key */}
@@ -224,10 +294,19 @@ const Index = () => {
               <Button
                 className="gap-2 h-9"
                 onClick={handleAddApiKey}
-                disabled={onboardingData?.is_api_key}
+                disabled={onboardingData?.is_api_key || isCreatingApiKey}
               >
-                <Key className="h-4 w-4" />
-                Add API Key
+                {isCreatingApiKey ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Creating...
+                  </>
+                ) : (
+                  <>
+                    <Key className="h-4 w-4" />
+                    Add API Key
+                  </>
+                )}
               </Button>
             </div>
           </div>
@@ -292,10 +371,19 @@ const Index = () => {
                   <Button
                     className="gap-2"
                     onClick={handleSendEmail}
-                    disabled={isEmailSent}
+                    disabled={isEmailSent || isSendingEmail}
                   >
-                    <Send className="h-4 w-4" />
-                    Send email
+                    {isSendingEmail ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Sending...
+                      </>
+                    ) : (
+                      <>
+                        <Send className="h-4 w-4" />
+                        Send email
+                      </>
+                    )}
                   </Button>
                 </div>
               </Card>
@@ -368,6 +456,8 @@ const Index = () => {
             </Card>
           </div>
         </div>
+        </>
+        )}
       </div>
     </>
   );
