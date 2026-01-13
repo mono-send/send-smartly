@@ -403,7 +403,7 @@ export default function LogDetailsPage() {
         {/* Response Body */}
         <div className="mb-8">
           <h2 className="text-lg font-semibold text-foreground mb-4">Response</h2>
-          <div className="relative rounded-lg bg-code border border-code-border p-4 overflow-x-auto">
+          <div className="relative rounded-2xl bg-code border border-code-border p-4 overflow-x-auto">
             <div className="absolute top-2 right-2">
               <CopyButton content={responseBodyJson} />
             </div>
@@ -417,7 +417,7 @@ export default function LogDetailsPage() {
         {hasRequestBody && (
           <div>
             <h2 className="text-lg font-semibold text-foreground mb-4">Request</h2>
-            <div className="relative rounded-lg bg-code border border-code-border p-4 overflow-x-auto">
+            <div className="relative rounded-2xl bg-code border border-code-border p-4 overflow-x-auto">
               <div className="absolute top-2 right-2">
                 <CopyButton content={requestBodyJson} />
               </div>
