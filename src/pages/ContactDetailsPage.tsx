@@ -187,7 +187,7 @@ export default function ContactDetailsPage() {
   const properties = getProperties();
   return (
     <>
-      <TopBar title="Contact" />
+      <TopBar title="Contact Details" />
       <div className="p-6 max-w-4xl">
         {/* Header */}
         <div className="flex items-start justify-between mb-8">
