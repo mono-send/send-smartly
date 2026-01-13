@@ -440,7 +440,7 @@ const Index = () => {
                 {isDomainVerified ? (
                   <Badge variant="secondary" className="bg-green-100 text-green-700 border-green-200">Completed</Badge>
                 ) : isDomainUnverified ? (
-                  <Badge variant="secondary" className="bg-warning/10 text-warning border-warning/20">Warning</Badge>
+                  <Badge variant="secondary" className="bg-orange-500/10 text-orange-600 border-orange-500/20">Warning</Badge>
                 ) : (
                   <Badge variant="secondary">Recommended</Badge>
                 )}
