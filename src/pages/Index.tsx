@@ -411,7 +411,7 @@ const Index = () => {
                 isDomainVerified
                   ? "bg-green-500 border-green-500"
                   : isDomainUnverified
-                    ? "bg-warning/10 border-warning"
+                    ? "bg-warning/10 "
                     : "border-foreground"
               }`}>
                 {isDomainVerified ? (
