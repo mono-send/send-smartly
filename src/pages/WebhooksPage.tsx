@@ -1428,6 +1428,7 @@ export default function WebhooksPage() {
             <div className="space-y-2">
               <Label className="text-muted-foreground text-sm">Sample Payload</Label>
               <CodeBlock 
+                className="rounded-2xl"
                 code={webhookToTest ? JSON.stringify(getTestPayload(webhookToTest), null, 2) : ""} 
                 language="json"
               />
