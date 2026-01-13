@@ -309,23 +309,23 @@ export default function ApiKeyDetailsPage() {
         </div>
 
         {/* Details Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-8">
-          <div>
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Permission</p>
+        <div className="grid overflow-hidden rounded-2xl border bg-card text-card-foreground shadow-sm divide-y md:grid-cols-4 md:divide-x md:divide-y-0 md:[&>*:nth-child(-n+4)]:border-b mb-8">
+          <div className="flex flex-col gap-2 p-6">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Permission</p>
             <p className="text-foreground">{permissionLabels[apiKey.permission] || apiKey.permission}</p>
           </div>
-          <div>
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Domain</p>
+          <div className="flex flex-col gap-2 p-6">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Domain</p>
             <p className="text-foreground">{apiKey.domain || "All domains"}</p>
           </div>
-          <div>
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Total Uses</p>
+          <div className="flex flex-col gap-2 p-6">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Total Uses</p>
             <p className="text-foreground border-b border-dashed border-muted-foreground/50 inline">
               {apiKey.total_uses === 1 ? "1 time" : `${apiKey.total_uses.toLocaleString()} times`}
             </p>
           </div>
-          <div>
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Token</p>
+          <div className="flex flex-col gap-2 p-6">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Token</p>
             <div className="flex items-center gap-2">
               <code className="rounded bg-muted px-2 py-1 font-mono text-sm text-foreground">
                 {apiKey.token_prefix}...
@@ -344,22 +344,18 @@ export default function ApiKeyDetailsPage() {
               </Button>
             </div>
           </div>
-        </div>
-
-        {/* Second Row */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-8">
-          <div>
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Last Used</p>
+          <div className="flex flex-col gap-2 p-6">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Last Used</p>
             <p className="text-foreground border-b border-dashed border-muted-foreground/50 inline">
               {formatDate(apiKey.last_used_at)}
             </p>
           </div>
-          <div>
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Created</p>
+          <div className="flex flex-col gap-2 p-6">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Created</p>
             <p className="text-foreground">{formatDate(apiKey.created_at)}</p>
           </div>
-          <div>
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Creator</p>
+          <div className="flex flex-col gap-2 p-6">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Creator</p>
             <div className="flex items-center gap-2">
               <Avatar className="h-6 w-6">
                 <AvatarFallback className="text-xs bg-muted">
