@@ -500,7 +500,7 @@ export default function SettingsPage() {
                   <Progress value={100} className="h-2" />
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Broadcasts</span>
+                  <span className="text-muted-foreground">Campaigns</span>
                   <Badge variant="secondary">Unlimited</Badge>
                 </div>
               </CardContent>
