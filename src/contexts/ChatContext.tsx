@@ -32,7 +32,7 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [isLoading, setIsLoading] = useState(false);
   const [panelHeight, setPanelHeight] = useState(() => {
     const stored = localStorage.getItem("aiChatPanelHeight");
-    return stored ? parseFloat(stored) : 40;
+    return stored ? parseFloat(stored) : 75;
   });
 
   const addMessage = useCallback(
