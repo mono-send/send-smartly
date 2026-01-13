@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,6 +22,16 @@ import {
   ResizablePanel,
   ResizableHandle,
 } from "@/components/ui/resizable";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface Template {
   id: string;
@@ -53,6 +63,7 @@ function TemplateDetailsPageContent() {
   const [isEditingName, setIsEditingName] = useState(false);
   const [previewMode, setPreviewMode] = useState<"desktop" | "mobile">("desktop");
   const [showSendTestDialog, setShowSendTestDialog] = useState(false);
+  const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
   const [defaultDomainId, setDefaultDomainId] = useState<string | null>(null);
 
   // Track if there are unsaved changes
@@ -78,6 +89,33 @@ function TemplateDetailsPageContent() {
       nameInputRef.current.select();
     }
   }, [isEditingName]);
+
+  // Browser beforeunload warning for unsaved changes
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasChanges) {
+        e.preventDefault();
+        e.returnValue = "";
+        return "";
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [hasChanges]);
+
+  const handleClose = useCallback(() => {
+    if (hasChanges) {
+      setShowUnsavedDialog(true);
+    } else {
+      navigate("/templates");
+    }
+  }, [hasChanges, navigate]);
+
+  const handleConfirmLeave = () => {
+    setShowUnsavedDialog(false);
+    navigate("/templates");
+  };
 
   const fetchTemplate = async () => {
     setIsLoading(true);
@@ -239,7 +277,7 @@ function TemplateDetailsPageContent() {
             variant="ghost"
             size="icon"
             className="h-8 w-8"
-            onClick={() => navigate("/templates")}
+            onClick={handleClose}
           >
             <X className="h-4 w-4" />
           </Button>
@@ -414,6 +452,24 @@ function TemplateDetailsPageContent() {
           body={body}
         />
       )}
+
+      {/* Unsaved Changes Warning Dialog */}
+      <AlertDialog open={showUnsavedDialog} onOpenChange={setShowUnsavedDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Unsaved changes</AlertDialogTitle>
+            <AlertDialogDescription>
+              You have unsaved changes. Are you sure you want to leave? Your changes will be lost.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmLeave} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Leave without saving
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
