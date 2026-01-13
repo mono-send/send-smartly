@@ -363,7 +363,7 @@ function TemplateDetailsPageContent() {
           {isAIChatOpen ? (
             <ResizablePanelGroup direction="vertical" className="h-full">
               {/* AI Chat Panel */}
-              <ResizablePanel defaultSize={60} minSize={30} maxSize={80}>
+              <ResizablePanel defaultSize={70} minSize={30} maxSize={80}>
                 <AIChatPanel
                   onCodeGenerated={setBody}
                   currentCode={body}
@@ -373,7 +373,7 @@ function TemplateDetailsPageContent() {
               <ResizableHandle withHandle />
 
               {/* Code Editor */}
-              <ResizablePanel defaultSize={40} minSize={20}>
+              <ResizablePanel defaultSize={30} minSize={20}>
                 <TemplateCodeEditor value={body} onChange={setBody} />
               </ResizablePanel>
             </ResizablePanelGroup>
