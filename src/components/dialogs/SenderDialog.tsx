@@ -227,7 +227,7 @@ export function SenderDialog({
                 />
               </div>
 
-              <div className="rounded-xl border border-muted bg-muted/30 px-4 py-3 text-sm text-muted-foreground">
+              <div className="rounded-xl border border-muted bg-white px-4 py-3 text-sm text-muted-foreground">
                 <span className="font-medium text-foreground">Tip:</span> Marketing emails such as product updates or
                 feature announcements get higher engagement when sent from a real person’s name.
               </div>
