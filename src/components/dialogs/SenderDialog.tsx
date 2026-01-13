@@ -185,7 +185,7 @@ export function SenderDialog({
                     <p className="text-sm text-muted-foreground py-2">No domains available</p>
                   ) : (
                     <div className="md:flex-1">
-                      <Select value={domainId} onValueChange={setDomainId}>
+                      <Select value={domainId} onValueChange={setDomainId} className="bg-white">
                         <SelectTrigger className="w-full">
                           <SelectValue placeholder="Select a domain" />
                         </SelectTrigger>
