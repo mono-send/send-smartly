@@ -598,7 +598,7 @@ export default function SettingsPage() {
                     </div>
                     <div className="space-y-2">
                       <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Audiences</span>
+                        <span className="text-muted-foreground">Segments</span>
                         <span className="font-medium">
                           {formatCount(usage?.segment_count)} / {formatCount(usage?.marketing_audiences_limit)}
                         </span>
