@@ -352,7 +352,7 @@ export default function ContactDetailsPage() {
                         <tr key={`activity-skeleton-${index}`} className="border-b border-border last:border-b-0">
                           <td className="px-6 py-3">
                             <div className="flex items-center gap-2">
-                              <Skeleton className="h-4 w-4 rounded-full" />
+                              {/* <Skeleton className="h-4 w-4 rounded-full" /> */}
                               <Skeleton className="h-4 w-48" />
                             </div>
                           </td>
@@ -366,7 +366,7 @@ export default function ContactDetailsPage() {
                         <tr key={item.id} className="border-b border-border last:border-b-0">
                           <td className="px-6 py-3">
                             <div className="flex items-center gap-2">
-                              <span className="text-muted-foreground">{getEventIcon(item.event_type)}</span>
+                              {/* <span className="text-muted-foreground">{getEventIcon(item.event_type)}</span> */}
                               <span>{getEventLabel(item.event_type, item)}</span>
                             </div>
                           </td>
