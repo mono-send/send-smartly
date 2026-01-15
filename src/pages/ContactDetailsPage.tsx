@@ -213,65 +213,63 @@ export default function ContactDetailsPage() {
           </div>
         </div>
 
-        {/* Info Grid */}
-        <div className="grid grid-cols-4 gap-8 mb-8 pb-8 border-b">
-          <div>
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Email Address</p>
-            <p className="text-sm">{contact.email}</p>
-          </div>
-          <div>
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Created</p>
-            <p className="text-sm">{formatDate(contact.created_at)}</p>
-          </div>
-          <div>
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Status</p>
-            <StatusBadge status={contact.status} />
-          </div>
-          <div>
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">ID</p>
-            <div className="flex items-center gap-2">
-              <p className="text-sm truncate max-w-[120px]">{contact.id}</p>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="h-6 w-6"
-                onClick={() => copyToClipboard(contact.id)}
-              >
-                <Copy className="h-3 w-3" />
-              </Button>
+        {/* Details Table */}
+        <div className="mb-8">
+          <div className="grid grid-cols-3 rounded-2xl border border-border bg-white overflow-hidden">
+            <div className="p-6 border-b border-border border-r border-border">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Email Address</p>
+              <p className="text-sm">{contact.email}</p>
             </div>
-          </div>
-        </div>
-
-        {/* Segments & Categories */}
-        <div className="grid grid-cols-4 gap-8 mb-8 pb-8 border-b">
-          <div>
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Segments</p>
-            {contact.segments && contact.segments.length > 0 ? (
-              <div className="flex flex-wrap gap-1">
-                {contact.segments.map((segment) => (
-                  <span key={segment.id} className="text-sm border-b border-dashed border-foreground">
-                    {segment.name}
-                  </span>
-                ))}
+            <div className="p-6 border-b border-border border-r border-border">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Status</p>
+              <StatusBadge status={contact.status} />
+            </div>
+            <div className="p-6 border-b border-border">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">ID</p>
+              <div className="flex items-center gap-2">
+                <p className="text-sm truncate max-w-[120px]">{contact.id}</p>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6"
+                  onClick={() => copyToClipboard(contact.id)}
+                >
+                  <Copy className="h-3 w-3" />
+                </Button>
               </div>
-            ) : (
-              <p className="text-sm italic text-muted-foreground">No segments</p>
-            )}
-          </div>
-          <div>
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Categories</p>
-            {contact.categories && contact.categories.length > 0 ? (
-              <div className="flex flex-wrap gap-1">
-                {contact.categories.map((category) => (
-                  <span key={category.id} className="text-sm border-b border-dashed border-foreground">
-                    {category.name}
-                  </span>
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm italic text-muted-foreground">No categories</p>
-            )}
+            </div>
+            <div className="p-6 border-r border-border">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Segments</p>
+              {contact.segments && contact.segments.length > 0 ? (
+                <div className="flex flex-wrap gap-1">
+                  {contact.segments.map((segment) => (
+                    <span key={segment.id} className="text-sm border-b border-dashed border-foreground">
+                      {segment.name}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm italic text-muted-foreground">No segments</p>
+              )}
+            </div>
+            <div className="p-6 border-r border-border">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Categories</p>
+              {contact.categories && contact.categories.length > 0 ? (
+                <div className="flex flex-wrap gap-1">
+                  {contact.categories.map((category) => (
+                    <span key={category.id} className="text-sm border-b border-dashed border-foreground">
+                      {category.name}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm italic text-muted-foreground">No categories</p>
+              )}
+            </div>
+            <div className="p-6">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Created</p>
+              <p className="text-sm">{formatDate(contact.created_at)}</p>
+            </div>
           </div>
         </div>
 
