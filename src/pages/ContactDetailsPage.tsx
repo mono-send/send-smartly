@@ -297,31 +297,59 @@ export default function ContactDetailsPage() {
         {/* Activity */}
         <div>
           <h2 className="text-lg font-semibold mb-4">Activity</h2>
-          {isLoadingActivity ? (
-            <div className="space-y-3">
-              <Skeleton className="h-6 w-48" />
-              <Skeleton className="h-6 w-40" />
+          <div className="rounded-2xl border border-border bg-white">
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[360px] text-sm">
+                <thead>
+                  <tr className="border-b border-border text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    <th scope="col" className="px-6 py-3 text-left">
+                      Activity
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left">
+                      Date
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {isLoadingActivity ? (
+                    Array.from({ length: 2 }).map((_, index) => (
+                      <tr key={`activity-skeleton-${index}`} className="border-b border-border last:border-b-0">
+                        <td className="px-6 py-3">
+                          <div className="flex items-center gap-2">
+                            <Skeleton className="h-4 w-4 rounded-full" />
+                            <Skeleton className="h-4 w-48" />
+                          </div>
+                        </td>
+                        <td className="px-6 py-3">
+                          <Skeleton className="h-4 w-20" />
+                        </td>
+                      </tr>
+                    ))
+                  ) : activity.length > 0 ? (
+                    activity.map((item) => (
+                      <tr key={item.id} className="border-b border-border last:border-b-0">
+                        <td className="px-6 py-3">
+                          <div className="flex items-center gap-2">
+                            <span className="text-muted-foreground">{getEventIcon(item.event_type)}</span>
+                            <span>{getEventLabel(item.event_type, item)}</span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-3 text-muted-foreground">
+                          {formatDate(item.created_at)}
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td className="px-6 py-4 text-sm text-muted-foreground italic" colSpan={2}>
+                        No activity
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
             </div>
-          ) : activity.length > 0 ? (
-            <div className="relative">
-              <div className="absolute left-[7px] top-3 bottom-3 w-px bg-border" />
-              <div className="space-y-4">
-                {activity.map((item) => (
-                  <div key={item.id} className="flex items-start gap-3 relative">
-                    <div className="h-4 w-4 rounded-full bg-background border border-border flex items-center justify-center z-10">
-                      {getEventIcon(item.event_type)}
-                    </div>
-                    <div className="flex items-center gap-3 text-sm">
-                      <span>{getEventLabel(item.event_type, item)}</span>
-                      <span className="text-muted-foreground">{formatDate(item.created_at)}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <p className="text-sm text-muted-foreground italic">No activity</p>
-          )}
+          </div>
           <p className="text-xs text-muted-foreground mt-4">
             Activity data may take a few seconds to update.
           </p>
