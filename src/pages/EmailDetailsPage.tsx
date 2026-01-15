@@ -3,7 +3,20 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CardContent } from "@/components/ui/card";
-import { Mail, Copy, Check, ChevronLeft, MoreVertical, Send, CheckCircle, Code, BookOpen, Loader2 } from "lucide-react";
+import {
+  Mail,
+  Copy,
+  Check,
+  ChevronLeft,
+  MoreVertical,
+  Send,
+  CheckCircle,
+  Code,
+  BookOpen,
+  Loader2,
+  Monitor,
+  Smartphone,
+} from "lucide-react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import {
@@ -18,6 +31,7 @@ import { APISection } from "@/components/APISection";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
 import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 
 interface EmailEvent {
   status: string;
@@ -51,6 +65,7 @@ export default function EmailDetailsPage() {
   const [showApiSection, setShowApiSection] = useState(false);
   const [email, setEmail] = useState<EmailDetails | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [previewMode, setPreviewMode] = useState<"desktop" | "mobile">("desktop");
 
   useEffect(() => {
     const fetchEmailDetails = async () => {
@@ -360,22 +375,52 @@ export default function EmailDetailsPage() {
                   Insights
                 </TabsTrigger>
               </TabsList>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8"
-                onClick={() => copyToClipboard(email.body, "content")}
-              >
-                {copiedContent ? (
-                  <Check className="h-4 w-4 text-success" />
-                ) : (
-                  <Copy className="h-4 w-4" />
-                )}
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className={cn("h-8 w-8", previewMode === "desktop" && "bg-muted")}
+                  onClick={() => setPreviewMode("desktop")}
+                >
+                  <Monitor className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className={cn("h-8 w-8", previewMode === "mobile" && "bg-muted")}
+                  onClick={() => setPreviewMode("mobile")}
+                >
+                  <Smartphone className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => copyToClipboard(email.body, "content")}
+                >
+                  {copiedContent ? (
+                    <Check className="h-4 w-4 text-success" />
+                  ) : (
+                    <Copy className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
             </div>
 
             <TabsContent value="preview" className="p-6">
-              <div className="whitespace-pre-wrap text-sm">{email.body}</div>
+              <div className="rounded-xl border border-border bg-muted/30 p-4">
+                <div
+                  className={cn(
+                    "mx-auto min-h-[320px] overflow-hidden rounded-lg bg-white shadow-sm",
+                    previewMode === "desktop" ? "max-w-full" : "max-w-[375px]"
+                  )}
+                >
+                  <div
+                    className="p-4"
+                    dangerouslySetInnerHTML={{ __html: email.body }}
+                  />
+                </div>
+              </div>
             </TabsContent>
 
             <TabsContent value="plain-text" className="p-6">
