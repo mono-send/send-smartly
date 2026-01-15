@@ -408,18 +408,13 @@ export default function EmailDetailsPage() {
             </div>
 
             <TabsContent value="preview" className="p-6">
-              <div className="rounded-xl border border-border bg-muted/30 p-4">
-                <div
-                  className={cn(
-                    "mx-auto min-h-[320px] overflow-hidden rounded-lg bg-white shadow-sm",
-                    previewMode === "desktop" ? "max-w-full" : "max-w-[375px]"
-                  )}
-                >
-                  <div
-                    className="p-4"
-                    dangerouslySetInnerHTML={{ __html: email.body }}
-                  />
-                </div>
+              <div
+                className={cn(
+                  "mx-auto min-h-[320px] overflow-hidden rounded-lg bg-white shadow-sm",
+                  previewMode === "desktop" ? "max-w-full" : "max-w-[375px]"
+                )}
+              >
+                <div dangerouslySetInnerHTML={{ __html: email.body }} />
               </div>
             </TabsContent>
 
