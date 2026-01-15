@@ -44,6 +44,8 @@ interface EmailDetails {
   from_email: string;
   subject: string;
   body: string;
+  plain_text?: string;
+  text_body?: string;
   status: string;
   created_at: string;
   sent_at: string | null;
@@ -129,6 +131,15 @@ export default function EmailDetailsPage() {
     }
   };
 
+  const derivePlainTextFromHtml = (html: string) => {
+    if (!html) return "";
+    if (typeof DOMParser === "undefined") {
+      return html;
+    }
+    const parsed = new DOMParser().parseFromString(html, "text/html");
+    return parsed.body.textContent ?? "";
+  };
+
   const getEventLabel = (status: string) => {
     const labels: Record<string, string> = {
       queued: "Queued",
@@ -208,6 +219,11 @@ export default function EmailDetailsPage() {
       </div>
     );
   }
+
+  const plainTextContent =
+    email.plain_text ??
+    email.text_body ??
+    derivePlainTextFromHtml(email.body);
 
   return (
     <div className="p-6">
@@ -420,7 +436,7 @@ export default function EmailDetailsPage() {
 
             <TabsContent value="plain-text" className="px-6 py-4">
               <pre className="whitespace-pre-wrap font-mono text-sm text-muted-foreground">
-                {email.body}
+                {plainTextContent}
               </pre>
             </TabsContent>
 
