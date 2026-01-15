@@ -331,7 +331,7 @@ export default function ContactDetailsPage() {
         {/* Activity */}
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           <div>
-            <h2 className="text-lg font-semibold mb-4">Activity</h2>
+            <h2 className="text-lg font-semibold mb-4">Contact Activity</h2>
             <div className="rounded-2xl border border-border bg-white">
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[360px] text-sm">
