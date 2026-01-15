@@ -312,8 +312,8 @@ export default function LogsPage() {
             />
           </div>
           
-          <Select value={sourceFilter} onValueChange={setSourceFilter} className="bg-white">
-            <SelectTrigger className="w-[120px]" className="bg-white">
+          <Select value={sourceFilter} onValueChange={setSourceFilter}>
+            <SelectTrigger className="w-[120px] bg-white">
               <SelectValue placeholder="Source" />
             </SelectTrigger>
             <SelectContent>
@@ -323,8 +323,8 @@ export default function LogsPage() {
             </SelectContent>
           </Select>
 
-          <Select value={statusFilter} onValueChange={setStatusFilter} className="bg-white">
-            <SelectTrigger className="w-[120px]">
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-[120px] bg-white">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
@@ -336,8 +336,8 @@ export default function LogsPage() {
             </SelectContent>
           </Select>
 
-          <Select value={dateRange} onValueChange={setDateRange} className="bg-white">
-            <SelectTrigger className="w-[160px]">
+          <Select value={dateRange} onValueChange={setDateRange}>
+            <SelectTrigger className="w-[160px] bg-white">
               <Calendar className="mr-2 h-4 w-4" />
               <SelectValue placeholder="Date range" />
             </SelectTrigger>
