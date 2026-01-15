@@ -65,6 +65,7 @@ function TemplateDetailsPageContent() {
   const [showSendTestDialog, setShowSendTestDialog] = useState(false);
   const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
   const [defaultDomainId, setDefaultDomainId] = useState<string | null>(null);
+  const previewContainerRef = useRef<HTMLDivElement>(null);
 
   // Track if there are unsaved changes
   const hasChanges = template
@@ -89,6 +90,19 @@ function TemplateDetailsPageContent() {
       nameInputRef.current.select();
     }
   }, [isEditingName]);
+
+  useEffect(() => {
+    const container = previewContainerRef.current;
+    if (!container) {
+      return;
+    }
+
+    const links = Array.from(container.querySelectorAll<HTMLAnchorElement>("a[href]"));
+    links.forEach((link) => {
+      link.setAttribute("target", "_blank");
+      link.setAttribute("rel", "noopener noreferrer");
+    });
+  }, [body]);
 
   // Browser beforeunload warning for unsaved changes
   useEffect(() => {
@@ -433,6 +447,7 @@ function TemplateDetailsPageContent() {
               >
                 <div
                   className="p-4"
+                  ref={previewContainerRef}
                   dangerouslySetInnerHTML={{ __html: body }}
                 />
               </div>
