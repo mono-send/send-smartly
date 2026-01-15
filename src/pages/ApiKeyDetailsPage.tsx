@@ -128,6 +128,7 @@ export default function ApiKeyDetailsPage() {
   const [apiKey, setApiKey] = useState<ApiKeyDetails | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [copied, setCopied] = useState(false);
+  const [isCopying, setIsCopying] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isRevokeDialogOpen, setIsRevokeDialogOpen] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
@@ -160,11 +161,29 @@ export default function ApiKeyDetailsPage() {
     }
   };
 
-  const handleCopy = () => {
+  const handleCopy = async () => {
     if (!apiKey) return;
-    navigator.clipboard.writeText(apiKey.token_prefix);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    try {
+      setIsCopying(true);
+      const response = await api(`/api_keys/${apiKey.id}/token`);
+      if (!response.ok) {
+        toast.error("Failed to fetch API key token");
+        return;
+      }
+      const data = await response.json();
+      if (data?.token) {
+        await navigator.clipboard.writeText(data.token);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      } else {
+        toast.error("Token was not returned");
+      }
+    } catch (error) {
+      console.error("Failed to copy API key:", error);
+      toast.error("Failed to copy API key");
+    } finally {
+      setIsCopying(false);
+    }
   };
 
   const handleEditSubmit = async (data: ApiKeyData) => {
@@ -335,8 +354,11 @@ export default function ApiKeyDetailsPage() {
                 size="icon"
                 className="h-7 w-7"
                 onClick={handleCopy}
+                disabled={isCopying}
               >
-                {copied ? (
+                {isCopying ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : copied ? (
                   <Check className="h-3.5 w-3.5 text-success" />
                 ) : (
                   <Copy className="h-3.5 w-3.5" />

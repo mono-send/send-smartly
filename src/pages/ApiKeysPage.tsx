@@ -57,6 +57,7 @@ export default function ApiKeysPage() {
   const [dialogMode, setDialogMode] = useState<"create" | "edit">("create");
   const [editingKeyId, setEditingKeyId] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [copyingId, setCopyingId] = useState<string | null>(null);
   const [revokeDialogOpen, setRevokeDialogOpen] = useState(false);
   const [keyToRevoke, setKeyToRevoke] = useState<ApiKeyItem | null>(null);
   const [isRevoking, setIsRevoking] = useState(false);
@@ -179,10 +180,28 @@ export default function ApiKeysPage() {
     }
   };
 
-  const handleCopy = (id: string, token: string) => {
-    navigator.clipboard.writeText(token);
-    setCopiedId(id);
-    setTimeout(() => setCopiedId(null), 2000);
+  const handleCopy = async (id: string) => {
+    try {
+      setCopyingId(id);
+      const response = await api(`/api_keys/${id}/token`);
+      if (!response.ok) {
+        toast.error("Failed to fetch API key token");
+        return;
+      }
+      const data = await response.json();
+      if (data?.token) {
+        await navigator.clipboard.writeText(data.token);
+        setCopiedId(id);
+        setTimeout(() => setCopiedId(null), 2000);
+      } else {
+        toast.error("Token was not returned");
+      }
+    } catch (error) {
+      console.error("Failed to copy API key:", error);
+      toast.error("Failed to copy API key");
+    } finally {
+      setCopyingId(null);
+    }
   };
 
   const formatDate = (dateString: string | null) => {
@@ -273,12 +292,15 @@ export default function ApiKeysPage() {
                           variant="ghost"
                           size="icon"
                           className="h-7 w-7"
+                          disabled={copyingId === key.id}
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleCopy(key.id, key.key);
+                            handleCopy(key.id);
                           }}
                         >
-                          {copiedId === key.id ? (
+                          {copyingId === key.id ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : copiedId === key.id ? (
                             <Check className="h-3.5 w-3.5 text-success" />
                           ) : (
                             <Copy className="h-3.5 w-3.5" />
