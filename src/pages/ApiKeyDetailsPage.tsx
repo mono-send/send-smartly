@@ -17,6 +17,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { AreaChart, Area, XAxis, YAxis } from "recharts";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { api } from "@/lib/api";
 import { formatDistanceToNow } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -80,6 +87,8 @@ export default function ApiKeyDetailsPage() {
   const [isUpdating, setIsUpdating] = useState(false);
   const [isRevoking, setIsRevoking] = useState(false);
   const [timeRange, setTimeRange] = useState<TimeRange>("7d");
+  const [methodFilter, setMethodFilter] = useState<string | null>(null);
+  const [endpointFilter, setEndpointFilter] = useState<string | null>(null);
   const [usageData, setUsageData] = useState<Array<{ date: string; requests: number }>>([]);
   const [isUsageLoading, setIsUsageLoading] = useState(false);
   const [usageError, setUsageError] = useState<string | null>(null);
@@ -92,9 +101,9 @@ export default function ApiKeyDetailsPage() {
 
   useEffect(() => {
     if (id) {
-      fetchUsageAnalytics(id, timeRange);
+      fetchUsageAnalytics(id, timeRange, methodFilter, endpointFilter);
     }
-  }, [id, timeRange]);
+  }, [id, timeRange, methodFilter, endpointFilter]);
 
   const fetchApiKeyDetails = async () => {
     try {
@@ -114,12 +123,27 @@ export default function ApiKeyDetailsPage() {
     }
   };
 
-  const fetchUsageAnalytics = async (apiKeyId: string, range: TimeRange) => {
+  const fetchUsageAnalytics = async (
+    apiKeyId: string,
+    range: TimeRange,
+    method?: string | null,
+    endpoint?: string | null,
+  ) => {
     try {
       setIsUsageLoading(true);
       setUsageError(null);
       const days = timeRangeDays[range];
-      const response = await api(`/api_keys/usage/analytics?api_key_id=${apiKeyId}&days=${days}`);
+      const params = new URLSearchParams({
+        api_key_id: apiKeyId,
+        days: String(days),
+      });
+      if (method) {
+        params.set("method", method);
+      }
+      if (endpoint) {
+        params.set("endpoint", endpoint);
+      }
+      const response = await api(`/api_keys/usage/analytics?${params.toString()}`);
       if (response.ok) {
         const payload = await response.json();
         const normalizedData = Array.isArray(payload?.data)
@@ -408,46 +432,77 @@ export default function ApiKeyDetailsPage() {
 
         {/* Usage Analytics Chart */}
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardHeader className="flex flex-col gap-4 space-y-0 pb-2 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <CardTitle className="text-lg">Usage Analytics</CardTitle>
               <p className="text-sm text-muted-foreground">{timeRangeLabels[timeRange]}</p>
             </div>
-            <ToggleGroup 
-              type="single" 
-              value={timeRange} 
-              onValueChange={(value) => value && setTimeRange(value as TimeRange)}
-              className="bg-muted rounded-lg p-1"
-            >
-              <ToggleGroupItem
-                value="1d"
-                size="sm"
-                className="px-3 text-xs data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+            <div className="flex flex-wrap items-center gap-2">
+              <Select
+                value={methodFilter ?? "all"}
+                onValueChange={(value) => setMethodFilter(value === "all" ? null : value)}
               >
-                1D
-              </ToggleGroupItem>
-              <ToggleGroupItem
-                value="7d"
-                size="sm"
-                className="px-3 text-xs data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+                <SelectTrigger className="h-8 w-[140px] text-xs">
+                  <SelectValue placeholder="Method" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All methods</SelectItem>
+                  <SelectItem value="GET">GET</SelectItem>
+                  <SelectItem value="POST">POST</SelectItem>
+                  <SelectItem value="PUT">PUT</SelectItem>
+                  <SelectItem value="PATCH">PATCH</SelectItem>
+                  <SelectItem value="DELETE">DELETE</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select
+                value={endpointFilter ?? "all"}
+                onValueChange={(value) => setEndpointFilter(value === "all" ? null : value)}
               >
-                7D
-              </ToggleGroupItem>
-              <ToggleGroupItem
-                value="14d"
-                size="sm"
-                className="px-3 text-xs data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+                <SelectTrigger className="h-8 w-[160px] text-xs">
+                  <SelectValue placeholder="Endpoint" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All endpoints</SelectItem>
+                  <SelectItem value="/contacts">/contacts</SelectItem>
+                  <SelectItem value="/emails">/emails</SelectItem>
+                </SelectContent>
+              </Select>
+              <ToggleGroup 
+                type="single" 
+                value={timeRange} 
+                onValueChange={(value) => value && setTimeRange(value as TimeRange)}
+                className="bg-muted rounded-lg p-1"
               >
-                14D
-              </ToggleGroupItem>
-              <ToggleGroupItem
-                value="30d"
-                size="sm"
-                className="px-3 text-xs data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
-              >
-                30D
-              </ToggleGroupItem>
-            </ToggleGroup>
+                <ToggleGroupItem
+                  value="1d"
+                  size="sm"
+                  className="px-3 text-xs data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+                >
+                  1D
+                </ToggleGroupItem>
+                <ToggleGroupItem
+                  value="7d"
+                  size="sm"
+                  className="px-3 text-xs data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+                >
+                  7D
+                </ToggleGroupItem>
+                <ToggleGroupItem
+                  value="14d"
+                  size="sm"
+                  className="px-3 text-xs data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+                >
+                  14D
+                </ToggleGroupItem>
+                <ToggleGroupItem
+                  value="30d"
+                  size="sm"
+                  className="px-3 text-xs data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+                >
+                  30D
+                </ToggleGroupItem>
+              </ToggleGroup>
+            </div>
           </CardHeader>
           <CardContent>
             {isUsageLoading ? (
