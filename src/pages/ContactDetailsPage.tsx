@@ -133,6 +133,10 @@ export default function ContactDetailsPage() {
     toast.success("Copied to clipboard");
   };
 
+  const handleBack = () => {
+    navigate(-1);
+  };
+
   const getEventLabel = (eventType: string, item: ActivityItem) => {
     switch (eventType) {
       case "imported":
@@ -167,7 +171,7 @@ export default function ContactDetailsPage() {
   if (isLoading) {
     return (
       <>
-        <TopBar title="Contact" />
+        <TopBar title="Contact" showBackButton onBack={handleBack} />
         <div className="p-6 space-y-6">
           <div className="flex items-center gap-4">
             <Skeleton className="h-16 w-16 rounded-full" />
@@ -213,7 +217,7 @@ export default function ContactDetailsPage() {
   const properties = getProperties();
   return (
     <>
-      <TopBar title="Contact Details" />
+      <TopBar title="Contact Details" showBackButton onBack={handleBack} />
       <div className="p-6 max-w-4xl">
         {/* Header */}
         <div className="flex items-start justify-between mb-8">
