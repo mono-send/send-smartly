@@ -115,7 +115,7 @@ export default function DomainsPage() {
           </div>
 
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-[140px]">
+            <SelectTrigger className="w-[140px] bg-white">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
@@ -128,7 +128,7 @@ export default function DomainsPage() {
           </Select>
 
           <Select value={regionFilter} onValueChange={setRegionFilter}>
-            <SelectTrigger className="w-[140px]">
+            <SelectTrigger className="w-[140px] bg-white">
               <SelectValue placeholder="Region" />
             </SelectTrigger>
             <SelectContent>
