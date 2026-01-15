@@ -419,16 +419,32 @@ export default function ApiKeyDetailsPage() {
               onValueChange={(value) => value && setTimeRange(value as TimeRange)}
               className="bg-muted rounded-lg p-1"
             >
-              <ToggleGroupItem value="1d" size="sm" className="text-xs px-3">
+              <ToggleGroupItem
+                value="1d"
+                size="sm"
+                className="px-3 text-xs data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+              >
                 1D
               </ToggleGroupItem>
-              <ToggleGroupItem value="7d" size="sm" className="text-xs px-3">
+              <ToggleGroupItem
+                value="7d"
+                size="sm"
+                className="px-3 text-xs data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+              >
                 7D
               </ToggleGroupItem>
-              <ToggleGroupItem value="14d" size="sm" className="text-xs px-3">
+              <ToggleGroupItem
+                value="14d"
+                size="sm"
+                className="px-3 text-xs data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+              >
                 14D
               </ToggleGroupItem>
-              <ToggleGroupItem value="30d" size="sm" className="text-xs px-3">
+              <ToggleGroupItem
+                value="30d"
+                size="sm"
+                className="px-3 text-xs data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+              >
                 30D
               </ToggleGroupItem>
             </ToggleGroup>
