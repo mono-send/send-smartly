@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { TopBar } from "@/components/layout/TopBar";
-import { MoreVertical, Copy, Trash2, Search, Loader2 } from "lucide-react";
+import { MoreVertical, Copy, Clipboard, Trash2, Search, Loader2 } from "lucide-react";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
 import {
@@ -177,6 +177,11 @@ export default function TemplatesPage() {
     }
   };
 
+  const handleCopyTemplateId = (template: Template) => {
+    navigator.clipboard.writeText(template.id);
+    toast.success("Template ID copied");
+  };
+
   return (
     <>
       <TopBar
@@ -262,6 +267,10 @@ export default function TemplatesPage() {
                           >
                             <Copy className="mr-2 h-4 w-4" />
                             Duplicate
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleCopyTemplateId(template)}>
+                            <Clipboard className="mr-2 h-4 w-4" />
+                            Copy template ID
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             className="text-destructive focus:text-destructive"
