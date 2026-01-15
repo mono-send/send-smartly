@@ -17,7 +17,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Search, Calendar, Loader2 } from "lucide-react";
+import { Search, Calendar, Loader2, RefreshCw } from "lucide-react";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -131,9 +131,15 @@ export default function LogsPage() {
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [hasError, setHasError] = useState(false);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const isFetchingRef = useRef(false);
+  const logsRef = useRef<Log[]>([]);
+
+  useEffect(() => {
+    logsRef.current = logs;
+  }, [logs]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -142,11 +148,18 @@ export default function LogsPage() {
     return () => clearTimeout(timer);
   }, [search]);
 
-  const fetchLogs = useCallback(async (cursor?: string, replace = false) => {
+  const fetchLogs = useCallback(async (
+    cursor?: string,
+    replace = false,
+    options: { silent?: boolean } = {}
+  ) => {
     if (isFetchingRef.current) return;
 
     isFetchingRef.current = true;
-    if (replace) {
+
+    if (options.silent) {
+      setIsRefreshing(true);
+    } else if (replace) {
       setIsLoading(true);
       setNextCursor(null);
     } else if (cursor) {
@@ -203,16 +216,27 @@ export default function LogsPage() {
         user_agent: item.user_agent,
       }));
 
-      setLogs((prev) => {
-        if (replace || !cursor) {
-          return mappedLogs;
+      if (replace || !cursor) {
+        const previousLogs = logsRef.current;
+        const isSameLength = previousLogs.length === mappedLogs.length;
+        const isSameOrder = isSameLength && previousLogs.every(
+          (log, index) => log.id === mappedLogs[index]?.id
+        );
+
+        if (isSameOrder) {
+          return;
         }
 
-        const existingIds = new Set(prev.map((log) => log.id));
-        const uniqueNewLogs = mappedLogs.filter((log) => !existingIds.has(log.id));
-        return [...prev, ...uniqueNewLogs];
-      });
-      setNextCursor(data.next_cursor);
+        setLogs(mappedLogs);
+        setNextCursor(data.next_cursor);
+      } else {
+        setLogs((prev) => {
+          const existingIds = new Set(prev.map((log) => log.id));
+          const uniqueNewLogs = mappedLogs.filter((log) => !existingIds.has(log.id));
+          return [...prev, ...uniqueNewLogs];
+        });
+        setNextCursor(data.next_cursor);
+      }
     } catch (error) {
       console.error("Failed to fetch logs:", error);
       toast.error("Failed to load logs");
@@ -224,6 +248,7 @@ export default function LogsPage() {
       isFetchingRef.current = false;
       setIsLoading(false);
       setIsLoadingMore(false);
+      setIsRefreshing(false);
     }
   }, [debouncedSearch, sourceFilter, statusFilter, dateRange]);
 
@@ -265,6 +290,10 @@ export default function LogsPage() {
       return dateString;
     }
   };
+
+  const onRefresh = useCallback(() => {
+    fetchLogs(undefined, true, { silent: true });
+  }, [fetchLogs]);
 
   return (
     <>
@@ -319,6 +348,21 @@ export default function LogsPage() {
               <SelectItem value="30">Last 30 days</SelectItem>
             </SelectContent>
           </Select>
+
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onRefresh}
+            disabled={isRefreshing}
+            className="gap-2"
+          >
+            {isRefreshing ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <RefreshCw className="h-4 w-4" />
+            )}
+            Refresh
+          </Button>
         </div>
 
         {/* Table */}
