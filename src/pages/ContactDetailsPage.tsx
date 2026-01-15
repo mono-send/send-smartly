@@ -4,6 +4,7 @@ import { TopBar } from "@/components/layout/TopBar";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
+import { TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Copy, ArrowUpRight, Circle, User } from "lucide-react";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
@@ -339,16 +340,12 @@ export default function ContactDetailsPage() {
             <div className="rounded-2xl border border-border bg-white">
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[360px] text-sm">
-                  <thead>
-                    <tr className="border-b border-border text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                      <th scope="col" className="px-6 py-3 text-left">
-                        Activity
-                      </th>
-                      <th scope="col" className="px-6 py-3 text-left">
-                        Date
-                      </th>
-                    </tr>
-                  </thead>
+                  <TableHeader>
+                    <TableRow className="uppercase text-xs">
+                      <TableHead className="h-10 px-6 rounded-tl-2xl">Activity</TableHead>
+                      <TableHead className="h-10 px-6 rounded-tr-2xl">Date</TableHead>
+                    </TableRow>
+                  </TableHeader>
                   <tbody>
                     {isLoadingActivity ? (
                       Array.from({ length: 2 }).map((_, index) => (
@@ -398,19 +395,13 @@ export default function ContactDetailsPage() {
             <div className="rounded-2xl border border-border bg-white">
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[360px] text-sm">
-                  <thead>
-                    <tr className="border-b border-border text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                      <th scope="col" className="px-6 py-3 text-left">
-                        Status
-                      </th>
-                      <th scope="col" className="px-6 py-3 text-left">
-                        Subject
-                      </th>
-                      <th scope="col" className="px-6 py-3 text-left">
-                        Sent
-                      </th>
-                    </tr>
-                  </thead>
+                  <TableHeader>
+                    <TableRow className="uppercase text-xs">
+                      <TableHead className="h-10 px-6 rounded-tl-2xl">Status</TableHead>
+                      <TableHead className="h-10 px-6">Subject</TableHead>
+                      <TableHead className="h-10 px-6 rounded-tr-2xl">Sent</TableHead>
+                    </TableRow>
+                  </TableHeader>
                   <tbody>
                     {isLoadingEmailActivity ? (
                       Array.from({ length: 2 }).map((_, index) => (
