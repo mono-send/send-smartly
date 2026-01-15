@@ -30,6 +30,7 @@ import { formatDistanceToNow } from "date-fns";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface DNSRecord {
   id: string;
@@ -369,8 +370,51 @@ export default function DomainDetailsPage() {
           showBackButton
           onBack={() => navigate("/domains")}
         />
-        <div className="flex items-center justify-center p-12">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        <div className="p-6">
+          <div className="flex items-start justify-between mb-8">
+            <div className="flex items-center gap-4">
+              <Skeleton className="h-16 w-16 rounded-xl" />
+              <div>
+                <Skeleton className="h-4 w-16 mb-2" />
+                <Skeleton className="h-7 w-56" />
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Skeleton className="h-9 w-16 rounded-md" />
+              <Skeleton className="h-9 w-9 rounded-md" />
+            </div>
+          </div>
+
+          <div className="grid overflow-hidden rounded-2xl border bg-card text-card-foreground shadow-sm md:grid-cols-3 md:divide-x mb-10">
+            {Array.from({ length: 3 }).map((_, index) => (
+              <div key={index} className={index === 2 ? "" : "border-b md:border-b-0"}>
+                <CardContent className="flex flex-col gap-2 py-6">
+                  <Skeleton className="h-3 w-20" />
+                  <Skeleton className="h-5 w-32" />
+                </CardContent>
+              </div>
+            ))}
+          </div>
+
+          <div className="rounded-2xl border border-border bg-card p-6">
+            <div className="flex items-center justify-between mb-6">
+              <Skeleton className="h-5 w-32" />
+              <div className="flex items-center gap-2">
+                <Skeleton className="h-9 w-24 rounded-md" />
+                <Skeleton className="h-9 w-36 rounded-md" />
+                <Skeleton className="h-9 w-9 rounded-md" />
+              </div>
+            </div>
+
+            <div className="space-y-8">
+              {Array.from({ length: 3 }).map((_, index) => (
+                <div key={index}>
+                  <Skeleton className="h-4 w-40 mb-4" />
+                  <Skeleton className="h-32 w-full rounded-lg" />
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </>
     );
