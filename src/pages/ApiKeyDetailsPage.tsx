@@ -79,7 +79,7 @@ export default function ApiKeyDetailsPage() {
   const [isRevokeDialogOpen, setIsRevokeDialogOpen] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [isRevoking, setIsRevoking] = useState(false);
-  const [timeRange, setTimeRange] = useState<TimeRange>("14d");
+  const [timeRange, setTimeRange] = useState<TimeRange>("7d");
   const [usageData, setUsageData] = useState<Array<{ date: string; requests: number }>>([]);
   const [isUsageLoading, setIsUsageLoading] = useState(false);
   const [usageError, setUsageError] = useState<string | null>(null);
