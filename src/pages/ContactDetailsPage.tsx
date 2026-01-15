@@ -40,18 +40,29 @@ interface ActivityItem {
   created_at: string;
 }
 
+type EmailActivityItem = {
+  id: string;
+  status: string;
+  subject: string;
+  created_at: string;
+  [key: string]: unknown;
+};
+
 export default function ContactDetailsPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [contact, setContact] = useState<Contact | null>(null);
   const [activity, setActivity] = useState<ActivityItem[]>([]);
+  const [emailActivity, setEmailActivity] = useState<EmailActivityItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingActivity, setIsLoadingActivity] = useState(true);
+  const [isLoadingEmailActivity, setIsLoadingEmailActivity] = useState(true);
 
   useEffect(() => {
     if (id) {
       fetchContact();
       fetchActivity();
+      fetchEmailActivity();
     }
   }, [id]);
 
@@ -86,6 +97,21 @@ export default function ContactDetailsPage() {
       console.error("Failed to load activity");
     } finally {
       setIsLoadingActivity(false);
+    }
+  };
+
+  const fetchEmailActivity = async () => {
+    setIsLoadingEmailActivity(true);
+    try {
+      const response = await api(`/contacts/${id}/emails`);
+      if (response.ok) {
+        const data = await response.json();
+        setEmailActivity(data.items || []);
+      }
+    } catch (error) {
+      console.error("Failed to load email activity");
+    } finally {
+      setIsLoadingEmailActivity(false);
     }
   };
 
@@ -303,64 +329,121 @@ export default function ContactDetailsPage() {
         </div>
 
         {/* Activity */}
-        <div>
-          <h2 className="text-lg font-semibold mb-4">Activity</h2>
-          <div className="rounded-2xl border border-border bg-white">
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[360px] text-sm">
-                <thead>
-                  <tr className="border-b border-border text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                    <th scope="col" className="px-6 py-3 text-left">
-                      Activity
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left">
-                      Date
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {isLoadingActivity ? (
-                    Array.from({ length: 2 }).map((_, index) => (
-                      <tr key={`activity-skeleton-${index}`} className="border-b border-border last:border-b-0">
-                        <td className="px-6 py-3">
-                          <div className="flex items-center gap-2">
-                            <Skeleton className="h-4 w-4 rounded-full" />
-                            <Skeleton className="h-4 w-48" />
-                          </div>
-                        </td>
-                        <td className="px-6 py-3">
-                          <Skeleton className="h-4 w-20" />
-                        </td>
-                      </tr>
-                    ))
-                  ) : activity.length > 0 ? (
-                    activity.map((item) => (
-                      <tr key={item.id} className="border-b border-border last:border-b-0">
-                        <td className="px-6 py-3">
-                          <div className="flex items-center gap-2">
-                            <span className="text-muted-foreground">{getEventIcon(item.event_type)}</span>
-                            <span>{getEventLabel(item.event_type, item)}</span>
-                          </div>
-                        </td>
-                        <td className="px-6 py-3 text-muted-foreground">
-                          {formatDate(item.created_at)}
-                        </td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td className="px-6 py-4 text-sm text-muted-foreground italic" colSpan={2}>
-                        No activity
-                      </td>
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <div>
+            <h2 className="text-lg font-semibold mb-4">Activity</h2>
+            <div className="rounded-2xl border border-border bg-white">
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[360px] text-sm">
+                  <thead>
+                    <tr className="border-b border-border text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                      <th scope="col" className="px-6 py-3 text-left">
+                        Activity
+                      </th>
+                      <th scope="col" className="px-6 py-3 text-left">
+                        Date
+                      </th>
                     </tr>
-                  )}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {isLoadingActivity ? (
+                      Array.from({ length: 2 }).map((_, index) => (
+                        <tr key={`activity-skeleton-${index}`} className="border-b border-border last:border-b-0">
+                          <td className="px-6 py-3">
+                            <div className="flex items-center gap-2">
+                              <Skeleton className="h-4 w-4 rounded-full" />
+                              <Skeleton className="h-4 w-48" />
+                            </div>
+                          </td>
+                          <td className="px-6 py-3">
+                            <Skeleton className="h-4 w-20" />
+                          </td>
+                        </tr>
+                      ))
+                    ) : activity.length > 0 ? (
+                      activity.map((item) => (
+                        <tr key={item.id} className="border-b border-border last:border-b-0">
+                          <td className="px-6 py-3">
+                            <div className="flex items-center gap-2">
+                              <span className="text-muted-foreground">{getEventIcon(item.event_type)}</span>
+                              <span>{getEventLabel(item.event_type, item)}</span>
+                            </div>
+                          </td>
+                          <td className="px-6 py-3 text-muted-foreground">
+                            {formatDate(item.created_at)}
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td className="px-6 py-4 text-sm text-muted-foreground italic" colSpan={2}>
+                          No activity
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground mt-4">
+              Activity data may take a few seconds to update.
+            </p>
+          </div>
+          <div>
+            <h2 className="text-lg font-semibold mb-4">Email Activity</h2>
+            <div className="rounded-2xl border border-border bg-white">
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[360px] text-sm">
+                  <thead>
+                    <tr className="border-b border-border text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                      <th scope="col" className="px-6 py-3 text-left">
+                        Status
+                      </th>
+                      <th scope="col" className="px-6 py-3 text-left">
+                        Subject
+                      </th>
+                      <th scope="col" className="px-6 py-3 text-left">
+                        Sent
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {isLoadingEmailActivity ? (
+                      Array.from({ length: 2 }).map((_, index) => (
+                        <tr key={`email-activity-skeleton-${index}`} className="border-b border-border last:border-b-0">
+                          <td className="px-6 py-3">
+                            <Skeleton className="h-4 w-16" />
+                          </td>
+                          <td className="px-6 py-3">
+                            <Skeleton className="h-4 w-48" />
+                          </td>
+                          <td className="px-6 py-3">
+                            <Skeleton className="h-4 w-20" />
+                          </td>
+                        </tr>
+                      ))
+                    ) : emailActivity.length > 0 ? (
+                      emailActivity.map((item) => (
+                        <tr key={item.id} className="border-b border-border last:border-b-0">
+                          <td className="px-6 py-3 text-muted-foreground">{item.status}</td>
+                          <td className="px-6 py-3">{item.subject}</td>
+                          <td className="px-6 py-3 text-muted-foreground">
+                            {formatDate(item.created_at)}
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td className="px-6 py-4 text-sm text-muted-foreground italic" colSpan={3}>
+                          No email activity
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
-          <p className="text-xs text-muted-foreground mt-4">
-            Activity data may take a few seconds to update.
-          </p>
         </div>
       </div>
     </>
