@@ -438,6 +438,15 @@ export default function ContactDetailsPage() {
                 </table>
               </div>
             </div>
+            <div className="mt-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate(`/emails?to=${encodeURIComponent(contact.email)}`)}
+              >
+                More
+              </Button>
+            </div>
           </div>
         </div>
       </div>
