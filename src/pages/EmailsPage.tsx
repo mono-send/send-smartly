@@ -21,7 +21,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Search, MoreVertical, Calendar, Trash2, X, RefreshCw, Loader2 } from "lucide-react";
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -95,6 +95,14 @@ export default function EmailsPage() {
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const isFetchingRef = useRef(false);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const toEmailParam = searchParams.get("to")?.trim() ?? "";
+
+  useEffect(() => {
+    if (toEmailParam && search.length === 0) {
+      setSearch(toEmailParam);
+    }
+  }, [search.length, toEmailParam]);
 
   // Debounce search input
   useEffect(() => {
@@ -122,6 +130,10 @@ export default function EmailsPage() {
         params.append("search", debouncedSearch);
       }
       
+      if (toEmailParam) {
+        params.append("to_email", toEmailParam);
+      }
+
       if (statusFilter !== "all") {
         params.append("status_filter", statusFilter);
       }
@@ -173,7 +185,7 @@ export default function EmailsPage() {
       setIsLoading(false);
       setIsLoadingMore(false);
     }
-  }, [debouncedSearch, statusFilter, dateRange]);
+  }, [debouncedSearch, statusFilter, dateRange, toEmailParam]);
 
   useEffect(() => {
     setSelectedIds(new Set());
