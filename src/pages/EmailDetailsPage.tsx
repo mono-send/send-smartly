@@ -407,7 +407,7 @@ export default function EmailDetailsPage() {
               </div>
             </div>
 
-            <TabsContent value="preview" className="p-6">
+            <TabsContent value="preview" className="px-6 py-4">
               <div
                 className={cn(
                   "mx-auto min-h-[320px] overflow-hidden rounded-lg bg-white shadow-sm",
@@ -418,19 +418,19 @@ export default function EmailDetailsPage() {
               </div>
             </TabsContent>
 
-            <TabsContent value="plain-text" className="p-6">
+            <TabsContent value="plain-text" className="px-6 py-4">
               <pre className="whitespace-pre-wrap font-mono text-sm text-muted-foreground">
                 {email.body}
               </pre>
             </TabsContent>
 
-            <TabsContent value="html" className="p-6">
+            <TabsContent value="html" className="px-6 py-4">
               <pre className="overflow-x-auto rounded-lg bg-muted p-4 font-mono text-xs text-muted-foreground">
                 {email.body}
               </pre>
             </TabsContent>
 
-            <TabsContent value="insights" className="p-6">
+            <TabsContent value="insights" className="px-6 py-4">
               <div className="space-y-4">
                 <div className="flex items-center justify-between rounded-lg bg-muted/50 p-4">
                   <div className="flex items-center gap-3">
