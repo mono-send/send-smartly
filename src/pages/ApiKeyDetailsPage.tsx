@@ -19,6 +19,7 @@ import { AreaChart, Area, XAxis, YAxis } from "recharts";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { api } from "@/lib/api";
 import { formatDistanceToNow } from "date-fns";
+import { Skeleton } from "@/components/ui/skeleton";
 
 type TimeRange = "1d" | "7d" | "14d" | "30d";
 
@@ -238,8 +239,42 @@ export default function ApiKeyDetailsPage() {
           showBackButton
           onBack={() => navigate("/api-keys")}
         />
-        <div className="flex items-center justify-center p-12">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        <div className="p-6">
+          <div className="flex items-start justify-between mb-8">
+            <div className="flex items-center gap-4">
+              <Skeleton className="h-16 w-16 rounded-xl" />
+              <div>
+                <Skeleton className="h-4 w-20 mb-2" />
+                <Skeleton className="h-7 w-48" />
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Skeleton className="h-9 w-20 rounded-md" />
+              <Skeleton className="h-9 w-9 rounded-md" />
+            </div>
+          </div>
+
+          <div className="grid overflow-hidden rounded-2xl border bg-card text-card-foreground shadow-sm divide-y md:grid-cols-4 md:divide-x md:divide-y-0 md:[&>*:nth-child(-n+4)]:border-b md:[&>*:nth-child(-n+4)]:border-border mb-8">
+            {Array.from({ length: 8 }).map((_, index) => (
+              <div key={index} className="flex flex-col gap-2 p-6">
+                <Skeleton className="h-3 w-20" />
+                <Skeleton className="h-5 w-28" />
+              </div>
+            ))}
+          </div>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <div>
+                <Skeleton className="h-5 w-40 mb-2" />
+                <Skeleton className="h-3 w-32" />
+              </div>
+              <Skeleton className="h-9 w-48 rounded-lg" />
+            </CardHeader>
+            <CardContent>
+              <Skeleton className="h-[250px] w-full rounded-lg" />
+            </CardContent>
+          </Card>
         </div>
       </>
     );
