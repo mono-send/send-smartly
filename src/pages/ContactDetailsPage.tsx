@@ -218,57 +218,65 @@ export default function ContactDetailsPage() {
           <div className="rounded-2xl border border-border bg-white">
             <div className="overflow-x-auto">
               <div className="min-w-[720px]">
-                <div className="grid grid-cols-6 gap-4 border-b border-border px-6 py-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                  <div>Email Address</div>
-                  <div>Status</div>
-                  <div>ID</div>
-                  <div>Segments</div>
-                  <div>Categories</div>
-                  <div>Created</div>
+                <div className="border-b border-border px-6 py-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  <div className="grid grid-cols-3 gap-4">
+                    <div>Email Address</div>
+                    <div>Status</div>
+                    <div>ID</div>
+                  </div>
+                  <div className="mt-3 grid grid-cols-3 gap-4">
+                    <div>Segments</div>
+                    <div>Categories</div>
+                    <div>Created</div>
+                  </div>
                 </div>
-                <div className="grid grid-cols-6 gap-4 px-6 py-4 text-sm">
-                  <div className="flex items-center">{contact.email}</div>
-                  <div className="flex items-center">
-                    <StatusBadge status={contact.status} />
+                <div className="px-6 py-4 text-sm">
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="flex items-center">{contact.email}</div>
+                    <div className="flex items-center">
+                      <StatusBadge status={contact.status} />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <p className="truncate max-w-[140px]">{contact.id}</p>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6"
+                        onClick={() => copyToClipboard(contact.id)}
+                      >
+                        <Copy className="h-3 w-3" />
+                      </Button>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <p className="truncate max-w-[140px]">{contact.id}</p>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-6 w-6"
-                      onClick={() => copyToClipboard(contact.id)}
-                    >
-                      <Copy className="h-3 w-3" />
-                    </Button>
+                  <div className="mt-4 grid grid-cols-3 gap-4">
+                    <div>
+                      {contact.segments && contact.segments.length > 0 ? (
+                        <div className="flex flex-wrap gap-1">
+                          {contact.segments.map((segment) => (
+                            <span key={segment.id} className="border-b border-dashed border-foreground">
+                              {segment.name}
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="italic text-muted-foreground">No segments</p>
+                      )}
+                    </div>
+                    <div>
+                      {contact.categories && contact.categories.length > 0 ? (
+                        <div className="flex flex-wrap gap-1">
+                          {contact.categories.map((category) => (
+                            <span key={category.id} className="border-b border-dashed border-foreground">
+                              {category.name}
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="italic text-muted-foreground">No categories</p>
+                      )}
+                    </div>
+                    <div className="flex items-center">{formatDate(contact.created_at)}</div>
                   </div>
-                  <div>
-                    {contact.segments && contact.segments.length > 0 ? (
-                      <div className="flex flex-wrap gap-1">
-                        {contact.segments.map((segment) => (
-                          <span key={segment.id} className="border-b border-dashed border-foreground">
-                            {segment.name}
-                          </span>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="italic text-muted-foreground">No segments</p>
-                    )}
-                  </div>
-                  <div>
-                    {contact.categories && contact.categories.length > 0 ? (
-                      <div className="flex flex-wrap gap-1">
-                        {contact.categories.map((category) => (
-                          <span key={category.id} className="border-b border-dashed border-foreground">
-                            {category.name}
-                          </span>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="italic text-muted-foreground">No categories</p>
-                    )}
-                  </div>
-                  <div className="flex items-center">{formatDate(contact.created_at)}</div>
                 </div>
               </div>
             </div>
