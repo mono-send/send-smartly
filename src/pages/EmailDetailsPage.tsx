@@ -336,7 +336,7 @@ export default function EmailDetailsPage() {
                           <CheckCircle className="h-4 w-4" />
                         )}
                       </div>
-                      <p className={`mt-2 text-sm font-medium ${
+                      <p className={`text-sm font-medium ${
                         isSuccessEvent(event.status)
                           ? "text-success"
                           : event.status === "bounced" || event.status === "failed"
