@@ -312,7 +312,7 @@ export default function LogsPage() {
             />
           </div>
           
-          <Select value={sourceFilter} onValueChange={setSourceFilter}>
+          <Select value={sourceFilter} onValueChange={setSourceFilter} className="bg-white">
             <SelectTrigger className="w-[120px]">
               <SelectValue placeholder="Source" />
             </SelectTrigger>
@@ -323,7 +323,7 @@ export default function LogsPage() {
             </SelectContent>
           </Select>
 
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <Select value={statusFilter} onValueChange={setStatusFilter} className="bg-white">
             <SelectTrigger className="w-[120px]">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
@@ -336,7 +336,7 @@ export default function LogsPage() {
             </SelectContent>
           </Select>
 
-          <Select value={dateRange} onValueChange={setDateRange}>
+          <Select value={dateRange} onValueChange={setDateRange} className="bg-white">
             <SelectTrigger className="w-[160px]">
               <Calendar className="mr-2 h-4 w-4" />
               <SelectValue placeholder="Date range" />
@@ -354,7 +354,7 @@ export default function LogsPage() {
             variant="outline"
             onClick={onRefresh}
             disabled={isRefreshing}
-            className="gap-2 rounded-xl px-3"
+            className="gap-2 rounded-xl px-3 bg-white"
           >
             {isRefreshing ? (
               <Loader2 className="h-4 w-4 animate-spin" />
