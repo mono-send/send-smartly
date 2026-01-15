@@ -314,7 +314,7 @@ export default function EmailsPage() {
           </div>
           
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-[160px]">
+            <SelectTrigger className="w-[160px] bg-white">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
@@ -330,7 +330,7 @@ export default function EmailsPage() {
           </Select>
 
           <Select value={dateRange} onValueChange={setDateRange}>
-            <SelectTrigger className="w-[160px]">
+            <SelectTrigger className="w-[160px] bg-white">
               <Calendar className="mr-2 h-4 w-4" />
               <SelectValue placeholder="Date range" />
             </SelectTrigger>
