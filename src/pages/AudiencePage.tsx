@@ -764,7 +764,7 @@ export default function AudiencePage() {
               </div>
 
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-[150px]">
+                <SelectTrigger className="w-[150px] bg-white">
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -777,7 +777,7 @@ export default function AudiencePage() {
               </Select>
 
               <Select value={segmentFilter} onValueChange={setSegmentFilter}>
-                <SelectTrigger className="w-[150px]">
+                <SelectTrigger className="w-[150px] bg-white">
                   <SelectValue placeholder="Segment" />
                 </SelectTrigger>
                 <SelectContent>
@@ -788,7 +788,7 @@ export default function AudiencePage() {
                 </SelectContent>
               </Select>
 
-              <Button variant="outline">
+              <Button variant="outline" className="bg-white rounded-xl">
                 <Download className="mr-2 h-4 w-4" />
                 Export CSV
               </Button>
