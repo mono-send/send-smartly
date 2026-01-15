@@ -313,7 +313,7 @@ export default function LogsPage() {
           </div>
           
           <Select value={sourceFilter} onValueChange={setSourceFilter} className="bg-white">
-            <SelectTrigger className="w-[120px]">
+            <SelectTrigger className="w-[120px]" className="bg-white">
               <SelectValue placeholder="Source" />
             </SelectTrigger>
             <SelectContent>
