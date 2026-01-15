@@ -46,73 +46,18 @@ const permissionValues: Record<string, string> = {
   "Read only": "read_only",
 };
 
-// Mock usage data for charts by time range
-const generateMockData = (keyId: string, range: TimeRange): Array<{ date: string; requests: number }> => {
-  const baseMultiplier = keyId === "1" ? 1 : keyId === "2" ? 0.1 : 0;
-  
-  const dataByRange: Record<TimeRange, Array<{ date: string; requests: number }>> = {
-    "1d": [
-      { date: "00:00", requests: Math.round(12 * baseMultiplier) },
-      { date: "04:00", requests: Math.round(8 * baseMultiplier) },
-      { date: "08:00", requests: Math.round(45 * baseMultiplier) },
-      { date: "12:00", requests: Math.round(67 * baseMultiplier) },
-      { date: "16:00", requests: Math.round(89 * baseMultiplier) },
-      { date: "20:00", requests: Math.round(34 * baseMultiplier) },
-      { date: "Now", requests: Math.round(23 * baseMultiplier) },
-    ],
-    "7d": [
-      { date: "Dec 18", requests: Math.round(267 * baseMultiplier) },
-      { date: "Dec 19", requests: Math.round(245 * baseMultiplier) },
-      { date: "Dec 20", requests: Math.round(312 * baseMultiplier) },
-      { date: "Dec 21", requests: Math.round(289 * baseMultiplier) },
-      { date: "Dec 22", requests: Math.round(267 * baseMultiplier) },
-      { date: "Dec 23", requests: Math.round(298 * baseMultiplier) },
-      { date: "Dec 24", requests: Math.round(256 * baseMultiplier) },
-    ],
-    "14d": [
-      { date: "Dec 11", requests: Math.round(145 * baseMultiplier) },
-      { date: "Dec 12", requests: Math.round(189 * baseMultiplier) },
-      { date: "Dec 13", requests: Math.round(156 * baseMultiplier) },
-      { date: "Dec 14", requests: Math.round(203 * baseMultiplier) },
-      { date: "Dec 15", requests: Math.round(178 * baseMultiplier) },
-      { date: "Dec 16", requests: Math.round(234 * baseMultiplier) },
-      { date: "Dec 17", requests: Math.round(198 * baseMultiplier) },
-      { date: "Dec 18", requests: Math.round(267 * baseMultiplier) },
-      { date: "Dec 19", requests: Math.round(245 * baseMultiplier) },
-      { date: "Dec 20", requests: Math.round(312 * baseMultiplier) },
-      { date: "Dec 21", requests: Math.round(289 * baseMultiplier) },
-      { date: "Dec 22", requests: Math.round(267 * baseMultiplier) },
-      { date: "Dec 23", requests: Math.round(298 * baseMultiplier) },
-      { date: "Dec 24", requests: Math.round(256 * baseMultiplier) },
-    ],
-    "30d": [
-      { date: "Nov 25", requests: Math.round(134 * baseMultiplier) },
-      { date: "Nov 27", requests: Math.round(156 * baseMultiplier) },
-      { date: "Nov 29", requests: Math.round(178 * baseMultiplier) },
-      { date: "Dec 1", requests: Math.round(167 * baseMultiplier) },
-      { date: "Dec 3", requests: Math.round(189 * baseMultiplier) },
-      { date: "Dec 5", requests: Math.round(201 * baseMultiplier) },
-      { date: "Dec 7", requests: Math.round(223 * baseMultiplier) },
-      { date: "Dec 9", requests: Math.round(198 * baseMultiplier) },
-      { date: "Dec 11", requests: Math.round(245 * baseMultiplier) },
-      { date: "Dec 13", requests: Math.round(267 * baseMultiplier) },
-      { date: "Dec 15", requests: Math.round(234 * baseMultiplier) },
-      { date: "Dec 17", requests: Math.round(289 * baseMultiplier) },
-      { date: "Dec 19", requests: Math.round(312 * baseMultiplier) },
-      { date: "Dec 21", requests: Math.round(278 * baseMultiplier) },
-      { date: "Dec 23", requests: Math.round(298 * baseMultiplier) },
-      { date: "Dec 24", requests: Math.round(256 * baseMultiplier) },
-    ],
-  };
-  
-  return dataByRange[range];
-};
-
 const timeRangeLabels: Record<TimeRange, string> = {
   "1d": "Last 24 hours",
   "7d": "Last 7 days",
   "14d": "Last 14 days",
   "30d": "Last 30 days",
+};
+
+const timeRangeDays: Record<TimeRange, number> = {
+  "1d": 1,
+  "7d": 7,
+  "14d": 14,
+  "30d": 30,
 };
 
 const chartConfig = {
@@ -134,14 +79,21 @@ export default function ApiKeyDetailsPage() {
   const [isUpdating, setIsUpdating] = useState(false);
   const [isRevoking, setIsRevoking] = useState(false);
   const [timeRange, setTimeRange] = useState<TimeRange>("14d");
-  
-  const chartData = id ? generateMockData(id, timeRange) : [];
+  const [usageData, setUsageData] = useState<Array<{ date: string; requests: number }>>([]);
+  const [isUsageLoading, setIsUsageLoading] = useState(false);
+  const [usageError, setUsageError] = useState<string | null>(null);
 
   useEffect(() => {
     if (id) {
       fetchApiKeyDetails();
     }
   }, [id]);
+
+  useEffect(() => {
+    if (id) {
+      fetchUsageAnalytics(id, timeRange);
+    }
+  }, [id, timeRange]);
 
   const fetchApiKeyDetails = async () => {
     try {
@@ -158,6 +110,35 @@ export default function ApiKeyDetailsPage() {
       toast.error("Failed to load API key details");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const fetchUsageAnalytics = async (apiKeyId: string, range: TimeRange) => {
+    try {
+      setIsUsageLoading(true);
+      setUsageError(null);
+      const days = timeRangeDays[range];
+      const response = await api(`/api_keys/usage/analytics?api_key_id=${apiKeyId}&days=${days}`);
+      if (response.ok) {
+        const payload = await response.json();
+        const normalizedData = Array.isArray(payload?.data)
+          ? payload.data.map((item: { date: string; count: number }) => ({
+              date: item.date,
+              requests: item.count,
+            }))
+          : [];
+        setUsageData(normalizedData);
+      } else {
+        setUsageData([]);
+        setUsageError("Failed to load usage analytics");
+      }
+    } catch (error) {
+      console.error("Failed to fetch usage analytics:", error);
+      setUsageData([]);
+      setUsageError("Failed to load usage analytics");
+      toast.error("Failed to load usage analytics");
+    } finally {
+      setIsUsageLoading(false);
     }
   };
 
@@ -418,37 +399,47 @@ export default function ApiKeyDetailsPage() {
             </ToggleGroup>
           </CardHeader>
           <CardContent>
-            <ChartContainer config={chartConfig} className="h-[250px] w-full">
-              <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="fillRequests" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <XAxis 
-                  dataKey="date" 
-                  tickLine={false} 
-                  axisLine={false} 
-                  tickMargin={8}
-                  tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
-                />
-                <YAxis 
-                  tickLine={false} 
-                  axisLine={false} 
-                  tickMargin={8}
-                  tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
-                />
-                <ChartTooltip content={<ChartTooltipContent />} />
-                <Area
-                  type="monotone"
-                  dataKey="requests"
-                  stroke="hsl(var(--primary))"
-                  strokeWidth={2}
-                  fill="url(#fillRequests)"
-                />
-              </AreaChart>
-            </ChartContainer>
+            {isUsageLoading ? (
+              <div className="flex h-[250px] items-center justify-center">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : usageError ? (
+              <div className="flex h-[250px] items-center justify-center text-sm text-muted-foreground">
+                {usageError}
+              </div>
+            ) : (
+              <ChartContainer config={chartConfig} className="h-[250px] w-full">
+                <AreaChart data={usageData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="fillRequests" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <XAxis 
+                    dataKey="date" 
+                    tickLine={false} 
+                    axisLine={false} 
+                    tickMargin={8}
+                    tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
+                  />
+                  <YAxis 
+                    tickLine={false} 
+                    axisLine={false} 
+                    tickMargin={8}
+                    tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
+                  />
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <Area
+                    type="monotone"
+                    dataKey="requests"
+                    stroke="hsl(var(--primary))"
+                    strokeWidth={2}
+                    fill="url(#fillRequests)"
+                  />
+                </AreaChart>
+              </ChartContainer>
+            )}
           </CardContent>
         </Card>
       </div>
