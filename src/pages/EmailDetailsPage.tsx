@@ -68,6 +68,9 @@ export default function EmailDetailsPage() {
   const [email, setEmail] = useState<EmailDetails | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [previewMode, setPreviewMode] = useState<"desktop" | "mobile">("desktop");
+  const [activeTab, setActiveTab] = useState<
+    "preview" | "plain-text" | "html" | "insights"
+  >("preview");
 
   useEffect(() => {
     const fetchEmailDetails = async () => {
@@ -375,7 +378,7 @@ export default function EmailDetailsPage() {
 
         {/* Content Tabs */}
         <div className="rounded-2xl border border-border bg-card">
-          <Tabs defaultValue="preview">
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
             <div className="flex items-center justify-between border-b border-border px-4">
               <TabsList className="h-12 bg-transparent">
                 <TabsTrigger value="preview" className="data-[state=active]:bg-muted">
@@ -412,7 +415,12 @@ export default function EmailDetailsPage() {
                   variant="ghost"
                   size="icon"
                   className="h-8 w-8"
-                  onClick={() => copyToClipboard(email.body, "content")}
+                  onClick={() =>
+                    copyToClipboard(
+                      activeTab === "plain-text" ? plainTextContent : email.body,
+                      "content"
+                    )
+                  }
                 >
                   {copiedContent ? (
                     <Check className="h-4 w-4 text-success" />
