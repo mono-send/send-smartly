@@ -95,7 +95,7 @@ export default function EmailsPage() {
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const isFetchingRef = useRef(false);
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const toEmailParam = searchParams.get("to")?.trim() ?? "";
 
   useEffect(() => {
@@ -277,6 +277,17 @@ export default function EmailsPage() {
     }
   };
 
+  const handleClearToFilter = useCallback(() => {
+    if (!toEmailParam) {
+      return;
+    }
+
+    setSearch("");
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.delete("to");
+    setSearchParams(nextParams);
+  }, [searchParams, setSearchParams, toEmailParam]);
+
   return (
     <>
       <TopBar title="Email Activity" subtitle="View and manage your sent emails" />
@@ -285,7 +296,15 @@ export default function EmailsPage() {
         {/* Filters */}
         <div className="mb-6 flex flex-wrap items-center gap-3">
           <div className="relative flex-1 min-w-[150px] max-w-xs">
-            <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <button
+              type="button"
+              onClick={handleClearToFilter}
+              disabled={!toEmailParam}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground disabled:cursor-default"
+              aria-label={toEmailParam ? "Clear to filter" : "Search"}
+            >
+              {toEmailParam ? <X className="h-4 w-4" /> : <Search className="h-4 w-4" />}
+            </button>
             <Input
               placeholder="Search by ID, To, Subject"
               value={search}
