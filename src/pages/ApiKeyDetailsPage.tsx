@@ -9,7 +9,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ApiKeyDialog, ApiKeyData } from "@/components/dialogs/ApiKeyDialog";
 import { ConfirmDeleteDialog } from "@/components/dialogs/ConfirmDeleteDialog";
 import { toast } from "sonner";
@@ -278,8 +277,8 @@ export default function ApiKeyDetailsPage() {
             </div>
           </div>
 
-          <div className="grid overflow-hidden rounded-2xl border bg-card text-card-foreground shadow-sm divide-y md:grid-cols-4 md:divide-x md:divide-y-0 md:[&>*:nth-child(-n+4)]:border-b md:[&>*:nth-child(-n+4)]:border-border mb-8">
-            {Array.from({ length: 8 }).map((_, index) => (
+          <div className="grid overflow-hidden rounded-2xl border bg-card text-card-foreground shadow-sm divide-y md:grid-cols-3 md:divide-x md:divide-y-0 md:[&>*:nth-child(-n+3)]:border-b md:[&>*:nth-child(-n+3)]:border-border mb-8">
+            {Array.from({ length: 6 }).map((_, index) => (
               <div key={index} className="flex flex-col gap-2 p-6">
                 <Skeleton className="h-3 w-20" />
                 <Skeleton className="h-5 w-28" />
@@ -371,17 +370,16 @@ export default function ApiKeyDetailsPage() {
         <div className="mb-8">
           <div className="rounded-2xl border border-border bg-card">
             <div className="overflow-x-auto">
-              <div className="min-w-[960px]">
-                <div className="grid grid-cols-7 gap-4 border-b border-border px-6 py-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              <div className="min-w-[720px]">
+                <div className="grid grid-cols-3 gap-4 border-b border-border px-6 py-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                   <div>Permission</div>
                   <div>Domain</div>
                   <div>Total Uses</div>
                   <div>Token</div>
                   <div>Last Used</div>
                   <div>Created</div>
-                  <div>Creator</div>
                 </div>
-                <div className="grid grid-cols-7 gap-4 px-6 py-4 text-sm">
+                <div className="grid grid-cols-3 gap-4 px-6 py-4 text-sm">
                   <div className="flex items-center text-foreground">
                     {permissionLabels[apiKey.permission] || apiKey.permission}
                   </div>
@@ -411,14 +409,6 @@ export default function ApiKeyDetailsPage() {
                   </div>
                   <div className="flex items-center text-foreground">{formatDate(apiKey.last_used_at)}</div>
                   <div className="flex items-center text-foreground">{formatDate(apiKey.created_at)}</div>
-                  <div className="flex items-center gap-2 text-foreground">
-                    <Avatar className="h-6 w-6">
-                      <AvatarFallback className="text-xs bg-muted">
-                        {apiKey.created_by.charAt(0).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                    <p className="truncate">{apiKey.created_by}</p>
-                  </div>
                 </div>
               </div>
             </div>
