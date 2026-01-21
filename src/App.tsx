@@ -9,6 +9,7 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import LoginPage from "./pages/LoginPage";
 import MagicLinkConfirmPage from "./pages/MagicLinkConfirmPage";
 import GitHubCallback from "./pages/auth/GitHubCallback";
+import GoogleCallback from "./pages/auth/GoogleCallback";
 import EmailsPage from "./pages/EmailsPage";
 import EmailDetailsPage from "./pages/EmailDetailsPage";
 import DomainsPage from "./pages/DomainsPage";
@@ -74,6 +75,7 @@ const App = () => (
             <Route path="/login" element={<LoginPage />} />
             <Route path="/auth/magic" element={<MagicLinkConfirmPage />} />
             <Route path="/auth/github/callback" element={<GitHubCallback />} />
+            <Route path="/auth/google/callback" element={<GoogleCallback />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

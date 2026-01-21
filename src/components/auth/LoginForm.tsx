@@ -37,9 +37,29 @@ declare global {
                         ux_mode?: "popup" | "redirect";
                         auto_select?: boolean;
                         cancel_on_tap_outside?: boolean;
+                        login_uri?: string;
                     }) => void;
                     prompt: (momentListener?: (notification: GooglePromptNotification) => void) => void;
                     cancel: () => void;
+                    renderButton?: (parent: HTMLElement, options: {
+                        type?: "standard" | "icon";
+                        theme?: "outline" | "filled_blue" | "filled_black";
+                        size?: "large" | "medium" | "small";
+                        text?: "signin_with" | "signup_with" | "continue_with" | "signin";
+                        shape?: "rectangular" | "pill" | "circle" | "square";
+                        width?: string;
+                    }) => void;
+                };
+                oauth2?: {
+                    initCodeClient: (options: {
+                        client_id: string;
+                        scope: string;
+                        callback: (response: { code?: string; error?: string }) => void;
+                        ux_mode?: "popup" | "redirect";
+                        redirect_uri?: string;
+                    }) => {
+                        requestCode: () => void;
+                    };
                 };
             };
         };
@@ -176,6 +196,21 @@ export const LoginForm = () => {
         }
     };
 
+    const handleGoogleLoginFallback = () => {
+        // Fallback to OAuth redirect flow when One Tap is not available
+        const redirectUri = `${window.location.origin}/auth/google/callback`;
+        const scope = "openid email profile";
+        const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
+            `client_id=${encodeURIComponent(GOOGLE_CLIENT_ID)}` +
+            `&redirect_uri=${encodeURIComponent(redirectUri)}` +
+            `&response_type=code` +
+            `&scope=${encodeURIComponent(scope)}` +
+            `&access_type=online` +
+            `&prompt=select_account`;
+
+        window.location.href = authUrl;
+    };
+
     const handleGoogleLogin = () => {
         if (!window.google?.accounts?.id) {
             toast.error("Google authentication is not ready. Please try again.");
@@ -189,15 +224,40 @@ export const LoginForm = () => {
                 notification.isSkippedMoment() ||
                 notification.isDismissedMoment()
             ) {
-                setIsGoogleLoading(false);
                 const reason =
                     notification.getNotDisplayedReason?.() ||
                     notification.getSkippedReason?.() ||
                     notification.getDismissedReason?.();
-                
-                // Don't show toast for credential_returned as it's not an error
-                if (reason && reason !== "credential_returned") {
-                    toast.error(reason);
+
+                // Don't show error or stop loading for credential_returned as it's not an error
+                if (reason === "credential_returned") {
+                    return;
+                }
+
+                setIsGoogleLoading(false);
+
+                // Handle different error cases with user-friendly messages
+                if (reason === "opt_out_or_no_session") {
+                    // User has no active Google session or opted out of One Tap
+                    // Fallback to redirect-based OAuth flow
+                    toast.info("Redirecting to Google sign-in...");
+                    setTimeout(() => {
+                        handleGoogleLoginFallback();
+                    }, 500);
+                } else if (reason === "user_cancel" || reason === "tap_outside") {
+                    // User dismissed the prompt - no error needed
+                    return;
+                } else if (reason === "suppressed_by_user") {
+                    toast.error("Google One Tap has been disabled. Please use the standard sign-in flow.");
+                    setTimeout(() => {
+                        handleGoogleLoginFallback();
+                    }, 1500);
+                } else if (reason) {
+                    // Other errors - show user-friendly message and offer fallback
+                    toast.error("Unable to show Google One Tap. Trying alternative sign-in...");
+                    setTimeout(() => {
+                        handleGoogleLoginFallback();
+                    }, 1000);
                 }
             }
         });
