@@ -62,6 +62,7 @@ const App = () => (
             <Route path="/domains/:id" element={<DomainDetailsPage />} />
             <Route path="/logs" element={<LogsPage />} />
             <Route path="/logs/:id" element={<LogDetailsPage />} />
+            <Route path="/senders" element={<SendersPage />} />
             <Route path="/api-keys" element={<ApiKeysPage />} />
             <Route path="/api-keys/:id" element={<ApiKeyDetailsPage />} />
             <Route path="/webhooks" element={<WebhooksPage />} />
