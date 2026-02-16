@@ -402,6 +402,7 @@ export default function EmailBuilderPage() {
               <ResizablePanel defaultSize={35} minSize={20}>
                 <CodePanel
                   emailHtml={emailHtml}
+                  onEmailHtmlChange={(value) => setEmailHtml(value)}
                   historyIndex={generationCount}
                   historyTotal={generationCount}
                 />
