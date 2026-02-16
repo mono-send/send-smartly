@@ -21,6 +21,16 @@ import {
   ResizablePanel,
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface Message {
   id: string;
@@ -65,6 +75,7 @@ export default function EmailBuilderPage() {
   const [isHeaderUpdated, setIsHeaderUpdated] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [showSendTestDialog, setShowSendTestDialog] = useState(false);
+  const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
   const [isDuplicating, setIsDuplicating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [bottomCodePanelSize, setBottomCodePanelSize] = useState<number>(35);
@@ -84,6 +95,7 @@ export default function EmailBuilderPage() {
     (subject !== (template.subject || "") ||
       previewHtml !== template.preview_html ||
       emailHtml !== template.email_html);
+  const hasPendingChanges = hasUnsavedChanges || isHeaderUpdated;
   const legacyTemplateId = template?.template_id ?? null;
   const hasLegacyTemplate = Boolean(legacyTemplateId);
 
@@ -148,6 +160,20 @@ export default function EmailBuilderPage() {
   useEffect(() => {
     localStorage.setItem(CODE_PANEL_LAYOUT_STORAGE_KEY, codePanelLayoutMode);
   }, [codePanelLayoutMode]);
+
+  // Browser beforeunload warning for unsaved changes
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasPendingChanges) {
+        e.preventDefault();
+        e.returnValue = "";
+        return "";
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [hasPendingChanges]);
 
   // Send prompt to AI
   const handleSendPrompt = useCallback(
@@ -423,6 +449,19 @@ export default function EmailBuilderPage() {
     }
   };
 
+  const handleClose = useCallback(() => {
+    if (hasPendingChanges) {
+      setShowUnsavedDialog(true);
+    } else {
+      navigate("/templates");
+    }
+  }, [hasPendingChanges, navigate]);
+
+  const handleConfirmLeave = () => {
+    setShowUnsavedDialog(false);
+    navigate("/templates");
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -440,7 +479,7 @@ export default function EmailBuilderPage() {
             variant="ghost"
             size="icon"
             className="h-8 w-8"
-            onClick={() => navigate("/templates")}
+            onClick={handleClose}
           >
             <ArrowLeft className="h-4 w-4" />
           </Button>
@@ -627,6 +666,26 @@ export default function EmailBuilderPage() {
           body={emailHtml || previewHtml || ""}
         />
       )}
+
+      <AlertDialog open={showUnsavedDialog} onOpenChange={setShowUnsavedDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Unsaved changes</AlertDialogTitle>
+            <AlertDialogDescription>
+              You have unsaved changes. Are you sure you want to leave? Your changes will be lost.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmLeave}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Leave without saving
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
