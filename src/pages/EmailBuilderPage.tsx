@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, MoreVertical, Loader2 } from "lucide-react";
 import { api } from "@/lib/api";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -38,7 +38,6 @@ interface EBTemplate {
 export default function EmailBuilderPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { toast } = useToast();
 
   const [template, setTemplate] = useState<EBTemplate | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);

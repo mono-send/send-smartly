@@ -43,7 +43,6 @@ interface Template {
 }
 
 export default function TemplatesPage() {
-  const { toast } = useToast();
   const navigate = useNavigate();
   const [templates, setTemplates] = useState<Template[]>([]);
   const [isLoading, setIsLoading] = useState(true);
