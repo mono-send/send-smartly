@@ -2,7 +2,7 @@ import { useRef, useState, useCallback, useEffect } from "react";
 import Prism from "prismjs";
 import "prismjs/components/prism-markup";
 import { cn } from "@/lib/utils";
-import { Undo2, Redo2, Sparkles, Copy, Search, X, ChevronUp, ChevronDown } from "lucide-react";
+import { Undo2, Redo2, RotateCcw, Sparkles, Copy, Search, X, ChevronUp, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -138,6 +138,7 @@ export function TemplateCodeEditor({
   const historyIndexRef = useRef(0);
   const isUndoRedoRef = useRef(false);
   const lastValueRef = useRef(value);
+  const initialValueRef = useRef(value);
 
   // Initialize history with initial value
   if (historyRef.current.length === 1 && historyRef.current[0].value === "" && value !== "") {
@@ -220,6 +221,22 @@ export function TemplateCodeEditor({
       pushToHistory(formatted, 0);
       lastValueRef.current = formatted;
     }
+  }, [value, onChange, pushToHistory]);
+
+  const handleRevert = useCallback(() => {
+    const initialValue = initialValueRef.current;
+    if (value === initialValue) return;
+
+    onChange(initialValue);
+    pushToHistory(initialValue, 0);
+    lastValueRef.current = initialValue;
+
+    setTimeout(() => {
+      if (textareaRef.current) {
+        textareaRef.current.setSelectionRange(0, 0);
+        textareaRef.current.focus();
+      }
+    }, 0);
   }, [value, onChange, pushToHistory]);
 
   const canUndo = historyIndexRef.current > 0;
@@ -535,6 +552,21 @@ export function TemplateCodeEditor({
           </Button>
         </TooltipTrigger>
         <TooltipContent>Auto-format HTML</TooltipContent>
+      </Tooltip>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 gap-1.5 text-xs"
+            onClick={handleRevert}
+            disabled={value === initialValueRef.current}
+          >
+            <RotateCcw className="h-3.5 w-3.5" />
+            Revert
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>Revert to original content</TooltipContent>
       </Tooltip>
       <Tooltip>
         <TooltipTrigger asChild>
