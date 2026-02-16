@@ -55,6 +55,7 @@ export default function EmailBuilderPage() {
   const [generationCount, setGenerationCount] = useState(0);
   const [isEditingName, setIsEditingName] = useState(false);
   const [isSavingName, setIsSavingName] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
   const nameInputRef = useRef<HTMLInputElement>(null);
 
   // Fetch template and conversation on mount
@@ -190,7 +191,13 @@ export default function EmailBuilderPage() {
 
   // Keep UPDATE behavior aligned with Export to Templates.
   const handleUpdate = async () => {
-    await handleExport();
+    if (isUpdating) return;
+    setIsUpdating(true);
+    try {
+      await handleExport();
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
   const handleNameKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -349,8 +356,20 @@ export default function EmailBuilderPage() {
             size="sm"
             className="h-8"
             onClick={handleUpdate}
+            disabled={isUpdating}
           >
-            UPDATE
+            {isUpdating ? (
+              <span className="flex items-center gap-0.5">
+                <span>dancing</span>
+                <span className="inline-flex">
+                  <span className="animate-bounce [animation-delay:0ms]">.</span>
+                  <span className="animate-bounce [animation-delay:150ms]">.</span>
+                  <span className="animate-bounce [animation-delay:300ms]">.</span>
+                </span>
+              </span>
+            ) : (
+              "UPDATE"
+            )}
           </Button>
         </div>
       </div>
