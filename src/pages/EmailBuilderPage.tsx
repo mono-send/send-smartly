@@ -14,6 +14,11 @@ import {
 import { ChatPanel } from "@/components/email-builder/ChatPanel";
 import { PreviewPanel } from "@/components/email-builder/PreviewPanel";
 import { CodePanel } from "@/components/email-builder/CodePanel";
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from "@/components/ui/resizable";
 
 interface Message {
   id: string;
@@ -320,19 +325,23 @@ export default function EmailBuilderPage() {
 
         {/* Right: Preview + Code */}
         <div className="flex-1 flex flex-col overflow-hidden">
-          {/* Preview area */}
-          <div className="flex-1 overflow-hidden">
-            <PreviewPanel previewHtml={previewHtml} />
-          </div>
+          <ResizablePanelGroup direction="vertical" className="h-full">
+            {/* Preview area */}
+            <ResizablePanel defaultSize={65} minSize={30}>
+              <PreviewPanel previewHtml={previewHtml} />
+            </ResizablePanel>
 
-          {/* Code area (collapsible bottom section) */}
-          <div className="h-[280px] flex-shrink-0 overflow-hidden">
-            <CodePanel
-              emailHtml={emailHtml}
-              historyIndex={generationCount}
-              historyTotal={generationCount}
-            />
-          </div>
+            <ResizableHandle withHandle />
+
+            {/* Code area */}
+            <ResizablePanel defaultSize={35} minSize={20}>
+              <CodePanel
+                emailHtml={emailHtml}
+                historyIndex={generationCount}
+                historyTotal={generationCount}
+              />
+            </ResizablePanel>
+          </ResizablePanelGroup>
         </div>
       </div>
     </div>
