@@ -28,7 +28,7 @@ export function PreviewPanel({ previewHtml }: PreviewPanelProps) {
   return (
     <div className="flex flex-col h-full">
       {/* Device toggle */}
-      <div className="flex items-center justify-end px-4 py-2 border-b border-border gap-1">
+      <div className="flex items-center justify-center px-4 py-3 border-b border-border gap-1">
         <Button
           variant={device === "desktop" ? "default" : "ghost"}
           size="icon"
