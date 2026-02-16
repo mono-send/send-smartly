@@ -68,8 +68,7 @@ export default function EmailBuilderPage() {
           setPreviewHtml(t.preview_html);
           setEmailHtml(t.email_html);
         } else {
-          toast.error({
-            title: "Error",
+          toast.error("Error", {
             description: "Template not found",
           });
           navigate("/templates");
@@ -89,8 +88,7 @@ export default function EmailBuilderPage() {
           );
         }
       } catch {
-        toast.error({
-          title: "Error",
+        toast.error("Error", {
           description: "Failed to load template",
         });
       } finally {
@@ -144,17 +142,26 @@ export default function EmailBuilderPage() {
             setSubject(result.subject);
           }
         } else {
-          const err = await response.json();
-          toast.error({
-            title: "Generation failed",
-            description: err.detail || "Failed to generate template",
+          let errorDescription = "Failed to generate template";
+          try {
+            const err = await response.json();
+            if (err?.detail && typeof err.detail === "string") {
+              errorDescription = err.detail;
+            } else if (err?.message && typeof err.message === "string") {
+              errorDescription = err.message;
+            }
+          } catch {
+            // Keep fallback description when the error response is not JSON.
+          }
+
+          toast.error("Generation failed", {
+            description: errorDescription,
           });
           // Remove optimistic user message
           setMessages((prev) => prev.filter((m) => m.id !== tempUserMsg.id));
         }
       } catch {
-        toast.error({
-          title: "Error",
+        toast.error("Error", {
           description: "Failed to connect to AI service",
         });
         setMessages((prev) => prev.filter((m) => m.id !== tempUserMsg.id));
@@ -177,19 +184,16 @@ export default function EmailBuilderPage() {
       });
 
       if (response.ok) {
-        toast.success({
-          title: "Template updated",
+        toast.success("Template updated", {
           description: "Subject and metadata saved.",
         });
       } else {
-        toast.error({
-          title: "Error",
+        toast.error("Error", {
           description: "Failed to update template",
         });
       }
     } catch {
-      toast.error({
-        title: "Error",
+      toast.error("Error", {
         description: "Failed to update template",
       });
     } finally {
@@ -207,20 +211,17 @@ export default function EmailBuilderPage() {
       });
 
       if (response.ok) {
-        toast.success({
-          title: "Template exported",
+        toast.success("Template exported", {
           description:
             "Your template has been exported to the templates library.",
         });
       } else {
-        toast.error({
-          title: "Error",
+        toast.error("Error", {
           description: "Failed to export template",
         });
       }
     } catch {
-      toast.error({
-        title: "Error",
+      toast.error("Error", {
         description: "Failed to export template",
       });
     }
