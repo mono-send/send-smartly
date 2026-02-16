@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, MoreVertical, Loader2 } from "lucide-react";
+import { ArrowLeft, MoreVertical, Loader2, Send } from "lucide-react";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,7 @@ import {
 import { ChatPanel } from "@/components/email-builder/ChatPanel";
 import { PreviewPanel } from "@/components/email-builder/PreviewPanel";
 import { CodePanel } from "@/components/email-builder/CodePanel";
+import { SendTestEmailDialog } from "@/components/templates/SendTestEmailDialog";
 import {
   ResizableHandle,
   ResizablePanel,
@@ -58,12 +59,17 @@ export default function EmailBuilderPage() {
   const [isSavingSubject, setIsSavingSubject] = useState(false);
   const [isHeaderUpdated, setIsHeaderUpdated] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [showSendTestDialog, setShowSendTestDialog] = useState(false);
+  const [isDuplicating, setIsDuplicating] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const nameInputRef = useRef<HTMLInputElement>(null);
   const hasUnsavedChanges =
     !!template &&
     (subject !== (template.subject || "") ||
       previewHtml !== template.preview_html ||
       emailHtml !== template.email_html);
+  const legacyTemplateId = template?.template_id ?? null;
+  const hasLegacyTemplate = Boolean(legacyTemplateId);
 
   // Fetch template and conversation on mount
   useEffect(() => {
@@ -348,6 +354,55 @@ export default function EmailBuilderPage() {
     }
   };
 
+  const handleDuplicate = async () => {
+    if (!legacyTemplateId || isDuplicating) return;
+
+    setIsDuplicating(true);
+    try {
+      const response = await api(`/templates/${legacyTemplateId}/duplicate`, {
+        method: "POST",
+      });
+
+      if (response.ok) {
+        const duplicated = await response.json();
+        toast.success("Template duplicated");
+        if (duplicated?.id) {
+          navigate(`/templates/legacy/${duplicated.id}`);
+        }
+      } else {
+        const error = await response.json();
+        toast.error("Failed to duplicate", { description: error.detail });
+      }
+    } catch {
+      toast.error("Failed to duplicate template");
+    } finally {
+      setIsDuplicating(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!legacyTemplateId || isDeleting) return;
+
+    setIsDeleting(true);
+    try {
+      const response = await api(`/templates/${legacyTemplateId}`, {
+        method: "DELETE",
+      });
+
+      if (response.ok) {
+        toast.success("Template deleted");
+        navigate("/templates");
+      } else {
+        const error = await response.json();
+        toast.error("Failed to delete", { description: error.detail });
+      }
+    } catch {
+      toast.error("Failed to delete template");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -414,13 +469,29 @@ export default function EmailBuilderPage() {
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8">
+              <Button variant="outline" size="icon" className="h-9 w-9">
                 <MoreVertical className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={handleExport}>
-                Export to Templates
+              <DropdownMenuItem
+                onClick={handleDuplicate}
+                disabled={!hasLegacyTemplate || isDuplicating}
+              >
+                Duplicate
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => setShowSendTestDialog(true)}
+                disabled={!hasLegacyTemplate}
+              >
+                <Send className="h-4 w-4" />
+                Test email
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={handleDelete}
+                disabled={!hasLegacyTemplate || isDeleting}
+              >
+                Delete
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -484,6 +555,17 @@ export default function EmailBuilderPage() {
           </div>
         </ResizablePanel>
       </ResizablePanelGroup>
+
+      {legacyTemplateId && (
+        <SendTestEmailDialog
+          open={showSendTestDialog}
+          onOpenChange={setShowSendTestDialog}
+          templateId={legacyTemplateId}
+          domainId={null}
+          subject={subject}
+          body={emailHtml || previewHtml || ""}
+        />
+      )}
     </div>
   );
 }
