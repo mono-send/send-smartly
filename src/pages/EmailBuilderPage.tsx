@@ -56,7 +56,7 @@ export default function EmailBuilderPage() {
   const [isEditingName, setIsEditingName] = useState(false);
   const [isSavingName, setIsSavingName] = useState(false);
   const [isSavingSubject, setIsSavingSubject] = useState(false);
-  const [isUploadAvailable, setIsUploadAvailable] = useState(false);
+  const [isHeaderUpdated, setIsHeaderUpdated] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const nameInputRef = useRef<HTMLInputElement>(null);
   const hasUnsavedChanges =
@@ -198,7 +198,7 @@ export default function EmailBuilderPage() {
 
   // Keep UPDATE behavior aligned with Export to Templates.
   const handleUpdate = async () => {
-    if (isUpdating || !hasUnsavedChanges) return;
+    if (isUpdating || (!hasUnsavedChanges && !isHeaderUpdated)) return;
     setIsUpdating(true);
     try {
       await handleExport();
@@ -212,6 +212,7 @@ export default function EmailBuilderPage() {
             }
           : prev
       );
+      setIsHeaderUpdated(false);
     } finally {
       setIsUpdating(false);
     }
@@ -239,6 +240,13 @@ export default function EmailBuilderPage() {
     const nextName = name.trim();
     const currentName = template.name || "";
 
+    // Ignore empty/whitespace-only values.
+    if (!nextName) {
+      setName(currentName);
+      setIsEditingName(false);
+      return;
+    }
+
     // No-op when the name hasn't changed.
     if (nextName === currentName) {
       setIsEditingName(false);
@@ -258,7 +266,7 @@ export default function EmailBuilderPage() {
 
       setTemplate((prev) => (prev ? { ...prev, name: nextName } : prev));
       setName(nextName);
-      setIsUploadAvailable(true);
+      setIsHeaderUpdated(true);
     } catch {
       setName(currentName);
       toast.error("Error", {
@@ -277,6 +285,12 @@ export default function EmailBuilderPage() {
 
     const nextSubject = subject.trim();
     const currentSubject = template.subject || "";
+
+    // Ignore empty/whitespace-only values.
+    if (!nextSubject) {
+      setSubject(currentSubject);
+      return;
+    }
 
     // No-op when the subject hasn't changed.
     if (nextSubject === currentSubject) {
@@ -297,7 +311,7 @@ export default function EmailBuilderPage() {
 
       setTemplate((prev) => (prev ? { ...prev, subject: nextSubject } : prev));
       setSubject(nextSubject);
-      setIsUploadAvailable(true);
+      setIsHeaderUpdated(true);
     } catch {
       setSubject(currentSubject);
       toast.error("Error", {
@@ -398,16 +412,6 @@ export default function EmailBuilderPage() {
             />
           </div>
 
-          <Button
-            size="sm"
-            variant="outline"
-            className="h-8"
-            onClick={handleExport}
-            disabled={!isUploadAvailable}
-          >
-            Upload
-          </Button>
-
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -425,7 +429,7 @@ export default function EmailBuilderPage() {
             size="sm"
             className="h-8"
             onClick={handleUpdate}
-            disabled={isUpdating || !hasUnsavedChanges}
+            disabled={isUpdating || (!hasUnsavedChanges && !isHeaderUpdated)}
           >
             {isUpdating ? (
               <span className="flex items-center gap-0.5">
