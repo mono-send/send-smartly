@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, MoreVertical, Loader2 } from "lucide-react";
 import { api } from "@/lib/api";
@@ -45,9 +45,12 @@ export default function EmailBuilderPage() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [subject, setSubject] = useState("");
+  const [name, setName] = useState("");
   const [previewHtml, setPreviewHtml] = useState<string | null>(null);
   const [emailHtml, setEmailHtml] = useState<string | null>(null);
   const [generationCount, setGenerationCount] = useState(0);
+  const [isEditingName, setIsEditingName] = useState(false);
+  const nameInputRef = useRef<HTMLInputElement>(null);
 
   // Fetch template and conversation on mount
   useEffect(() => {
@@ -64,6 +67,7 @@ export default function EmailBuilderPage() {
         if (templateRes.ok) {
           const t = await templateRes.json();
           setTemplate(t);
+          setName(t.name || "");
           setSubject(t.subject || "");
           setPreviewHtml(t.preview_html);
           setEmailHtml(t.email_html);
@@ -98,6 +102,13 @@ export default function EmailBuilderPage() {
 
     fetchData();
   }, [id]);
+
+  useEffect(() => {
+    if (isEditingName && nameInputRef.current) {
+      nameInputRef.current.focus();
+      nameInputRef.current.select();
+    }
+  }, [isEditingName]);
 
   // Send prompt to AI
   const handleSendPrompt = useCallback(
@@ -175,15 +186,47 @@ export default function EmailBuilderPage() {
   // Update template metadata
   const handleUpdate = async () => {
     if (!id || isUpdating) return;
+    const trimmedName = name.trim();
+    if (!trimmedName) {
+      toast.error("Name is required", {
+        description: "Please enter a template name.",
+      });
+      return;
+    }
+
     setIsUpdating(true);
 
     try {
       const response = await api(`/email-builder/templates/${id}`, {
         method: "PUT",
-        body: { subject, name: template?.name },
+        body: { subject, name: trimmedName },
       });
 
       if (response.ok) {
+        let updatedTemplate: EBTemplate | null = null;
+        try {
+          updatedTemplate = await response.json();
+        } catch {
+          // Some backends return an empty success response for updates.
+        }
+
+        if (updatedTemplate) {
+          setTemplate(updatedTemplate);
+          setName(updatedTemplate.name || trimmedName);
+          setSubject(updatedTemplate.subject || subject);
+        } else {
+          setTemplate((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  name: trimmedName,
+                  subject,
+                }
+              : prev
+          );
+          setName(trimmedName);
+        }
+
         toast.success("Template updated", {
           description: "Subject and metadata saved.",
         });
@@ -198,6 +241,18 @@ export default function EmailBuilderPage() {
       });
     } finally {
       setIsUpdating(false);
+    }
+  };
+
+  const handleNameKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      setIsEditingName(false);
+      return;
+    }
+
+    if (e.key === "Escape") {
+      setName(template?.name || "");
+      setIsEditingName(false);
     }
   };
 
@@ -249,9 +304,23 @@ export default function EmailBuilderPage() {
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div>
-            <h1 className="text-sm font-semibold">
-              {template?.name || "Email Builder"}
-            </h1>
+            {isEditingName ? (
+              <Input
+                ref={nameInputRef}
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                onBlur={() => setIsEditingName(false)}
+                onKeyDown={handleNameKeyDown}
+                className="h-7 w-64 px-1 text-sm font-semibold"
+              />
+            ) : (
+              <h1
+                className="text-sm font-semibold cursor-pointer hover:text-muted-foreground transition-colors"
+                onClick={() => setIsEditingName(true)}
+              >
+                {name || "Untitled Template"}
+              </h1>
+            )}
             <p className="text-xs text-muted-foreground">
               Template ID: {id?.slice(0, 8)}...
             </p>
