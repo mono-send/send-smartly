@@ -360,7 +360,7 @@ export default function EmailBuilderPage() {
           >
             {isUpdating ? (
               <span className="flex items-center gap-0.5">
-                <span>dancing</span>
+                <span>◔ ◡ ◔</span>
                 <span className="inline-flex">
                   <span className="animate-bounce [animation-delay:0ms]">.</span>
                   <span className="animate-bounce [animation-delay:150ms]">.</span>
