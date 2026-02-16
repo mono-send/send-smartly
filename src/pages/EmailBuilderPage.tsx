@@ -313,37 +313,41 @@ export default function EmailBuilderPage() {
       </div>
 
       {/* Main content area */}
-      <div className="flex flex-1 overflow-hidden">
+      <ResizablePanelGroup direction="horizontal" className="flex-1 min-h-0">
         {/* Left: Chat Panel */}
-        <div className="w-[520px] flex-shrink-0">
+        <ResizablePanel defaultSize={35} minSize={20} maxSize={60}>
           <ChatPanel
             messages={messages}
             isGenerating={isGenerating}
             onSendPrompt={handleSendPrompt}
           />
-        </div>
+        </ResizablePanel>
+
+        <ResizableHandle withHandle />
 
         {/* Right: Preview + Code */}
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <ResizablePanelGroup direction="vertical" className="h-full">
-            {/* Preview area */}
-            <ResizablePanel defaultSize={65} minSize={30}>
-              <PreviewPanel previewHtml={previewHtml} />
-            </ResizablePanel>
+        <ResizablePanel defaultSize={65} minSize={30}>
+          <div className="h-full flex flex-col overflow-hidden">
+            <ResizablePanelGroup direction="vertical" className="h-full">
+              {/* Preview area */}
+              <ResizablePanel defaultSize={65} minSize={30}>
+                <PreviewPanel previewHtml={previewHtml} />
+              </ResizablePanel>
 
-            <ResizableHandle withHandle />
+              <ResizableHandle withHandle />
 
-            {/* Code area */}
-            <ResizablePanel defaultSize={35} minSize={20}>
-              <CodePanel
-                emailHtml={emailHtml}
-                historyIndex={generationCount}
-                historyTotal={generationCount}
-              />
-            </ResizablePanel>
-          </ResizablePanelGroup>
-        </div>
-      </div>
+              {/* Code area */}
+              <ResizablePanel defaultSize={35} minSize={20}>
+                <CodePanel
+                  emailHtml={emailHtml}
+                  historyIndex={generationCount}
+                  historyTotal={generationCount}
+                />
+              </ResizablePanel>
+            </ResizablePanelGroup>
+          </div>
+        </ResizablePanel>
+      </ResizablePanelGroup>
     </div>
   );
 }
