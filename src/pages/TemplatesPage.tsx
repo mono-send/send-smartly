@@ -205,21 +205,28 @@ export default function TemplatesPage() {
   };
 
   const handleRowClick = async (template: Template) => {
-    // Check if there's an eb_template linked to this template, or create one
+    // Open an existing linked builder template when available.
+    // Otherwise, open the legacy template editor.
     try {
-      const response = await api("/email-builder/templates", {
-        method: "POST",
-        body: { name: template.name, category: "transactional" },
-      });
+      const response = await api("/email-builder/templates");
 
       if (response.ok) {
-        const ebTemplate = await response.json();
-        navigate(`/templates/${ebTemplate.id}`);
+        const data = await response.json();
+        const linkedTemplate = (data.items || []).find(
+          (ebTemplate: { id: string; template_id?: string | null }) =>
+            ebTemplate.template_id === template.id
+        );
+
+        if (linkedTemplate?.id) {
+          navigate(`/templates/${linkedTemplate.id}`);
+          return;
+        }
       }
     } catch {
-      // Fallback: just navigate with the legacy template id
-      navigate(`/templates/${template.id}`);
+      // Fall through to legacy editor.
     }
+
+    navigate(`/templates/legacy/${template.id}`);
   };
 
   return (

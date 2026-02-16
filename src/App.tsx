@@ -71,6 +71,7 @@ const App = () => (
             <Route path="/onboarding" element={<OnboardingPage />} />
           </Route>
           <Route path="/templates/:id" element={<EmailBuilderPage />} />
+          <Route path="/templates/legacy/:id" element={<TemplateDetailsPage />} />
           <Route path="/automations" element={<AutomationsPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/auth/magic" element={<MagicLinkConfirmPage />} />

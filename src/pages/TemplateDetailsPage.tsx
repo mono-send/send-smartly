@@ -209,7 +209,7 @@ function TemplateDetailsPageContent() {
         const duplicated = await response.json();
         toast.success("Template duplicated");
         if (duplicated?.id) {
-          navigate(`/templates/${duplicated.id}`);
+          navigate(`/templates/legacy/${duplicated.id}`);
         }
       } else {
         const error = await response.json();
