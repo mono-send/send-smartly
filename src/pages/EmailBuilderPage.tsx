@@ -67,6 +67,7 @@ export default function EmailBuilderPage() {
   const [showSendTestDialog, setShowSendTestDialog] = useState(false);
   const [isDuplicating, setIsDuplicating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [bottomCodePanelSize, setBottomCodePanelSize] = useState<number>(35);
   const [codePanelLayoutMode, setCodePanelLayoutMode] =
     useState<CodePanelLayoutMode>(() => {
       const saved = localStorage.getItem(CODE_PANEL_LAYOUT_STORAGE_KEY);
@@ -76,6 +77,8 @@ export default function EmailBuilderPage() {
   const effectiveLayoutMode: CodePanelLayoutMode = isMobile
     ? "bottom"
     : codePanelLayoutMode;
+  const isBottomCodeCompact =
+    effectiveLayoutMode === "bottom" && bottomCodePanelSize <= 8;
   const hasUnsavedChanges =
     !!template &&
     (subject !== (template.subject || "") ||
@@ -561,7 +564,11 @@ export default function EmailBuilderPage() {
                 <ResizableHandle withHandle />
 
                 {/* Code area */}
-                <ResizablePanel defaultSize={35} minSize={20}>
+                <ResizablePanel
+                  defaultSize={35}
+                  minSize={6}
+                  onResize={setBottomCodePanelSize}
+                >
                   <CodePanel
                     emailHtml={emailHtml}
                     onEmailHtmlChange={(value) => setEmailHtml(value)}
@@ -574,6 +581,7 @@ export default function EmailBuilderPage() {
                       )
                     }
                     isLayoutToggleDisabled={isMobile}
+                    isCompact={isBottomCodeCompact}
                   />
                 </ResizablePanel>
               </ResizablePanelGroup>
@@ -600,6 +608,7 @@ export default function EmailBuilderPage() {
                       )
                     }
                     isLayoutToggleDisabled={isMobile}
+                    isCompact={false}
                   />
                 </ResizablePanel>
               </ResizablePanelGroup>

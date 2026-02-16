@@ -11,6 +11,7 @@ interface CodePanelProps {
   layoutMode: "bottom" | "right";
   onToggleLayoutMode: () => void;
   isLayoutToggleDisabled?: boolean;
+  isCompact?: boolean;
 }
 
 function beautifyHTML(html: string): string {
@@ -111,6 +112,7 @@ export function CodePanel({
   layoutMode,
   onToggleLayoutMode,
   isLayoutToggleDisabled,
+  isCompact = false,
 }: CodePanelProps) {
   const [copied, setCopied] = useState(false);
 
@@ -193,26 +195,28 @@ export function CodePanel({
       </div>
 
       {/* Code view */}
-      <div className="flex-1 overflow-auto bg-background">
-        {emailHtml ? (
-          <div className="flex text-xs font-mono leading-5">
-            {/* Line numbers */}
-            <div className="flex-shrink-0 py-3 px-3 text-right text-muted-foreground select-none border-r border-border bg-muted/30">
-              {lines.map((_, i) => (
-                <div key={i}>{i + 1}</div>
-              ))}
+      {!isCompact && (
+        <div className="flex-1 overflow-auto bg-background">
+          {emailHtml ? (
+            <div className="flex text-xs font-mono leading-5">
+              {/* Line numbers */}
+              <div className="flex-shrink-0 py-3 px-3 text-right text-muted-foreground select-none border-r border-border bg-muted/30">
+                {lines.map((_, i) => (
+                  <div key={i}>{i + 1}</div>
+                ))}
+              </div>
+              {/* Code */}
+              <pre className="flex-1 py-3 px-4 overflow-x-auto whitespace-pre">
+                <code>{emailHtml}</code>
+              </pre>
             </div>
-            {/* Code */}
-            <pre className="flex-1 py-3 px-4 overflow-x-auto whitespace-pre">
-              <code>{emailHtml}</code>
-            </pre>
-          </div>
-        ) : (
-          <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
-            Generated HTML code will appear here
-          </div>
-        )}
-      </div>
+          ) : (
+            <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
+              Generated HTML code will appear here
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
