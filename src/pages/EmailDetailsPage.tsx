@@ -378,7 +378,7 @@ export default function EmailDetailsPage() {
 
         {/* Content Tabs */}
         <div className="rounded-2xl border border-border bg-card">
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "preview" | "plain-text" | "html" | "insights")}>
             <div className="flex items-center justify-between border-b border-border px-4">
               <TabsList className="h-12 bg-transparent">
                 <TabsTrigger value="preview" className="data-[state=active]:bg-muted">
