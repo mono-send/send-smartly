@@ -43,7 +43,6 @@ export default function EmailBuilderPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [isUpdating, setIsUpdating] = useState(false);
   const [subject, setSubject] = useState("");
   const [name, setName] = useState("");
   const [previewHtml, setPreviewHtml] = useState<string | null>(null);
@@ -183,65 +182,9 @@ export default function EmailBuilderPage() {
     [id, isGenerating, toast]
   );
 
-  // Update template metadata
+  // Keep UPDATE behavior aligned with Export to Templates.
   const handleUpdate = async () => {
-    if (!id || isUpdating) return;
-    const trimmedName = name.trim();
-    if (!trimmedName) {
-      toast.error("Name is required", {
-        description: "Please enter a template name.",
-      });
-      return;
-    }
-
-    setIsUpdating(true);
-
-    try {
-      const response = await api(`/email-builder/templates/${id}`, {
-        method: "PUT",
-        body: { subject, name: trimmedName },
-      });
-
-      if (response.ok) {
-        let updatedTemplate: EBTemplate | null = null;
-        try {
-          updatedTemplate = await response.json();
-        } catch {
-          // Some backends return an empty success response for updates.
-        }
-
-        if (updatedTemplate) {
-          setTemplate(updatedTemplate);
-          setName(updatedTemplate.name || trimmedName);
-          setSubject(updatedTemplate.subject || subject);
-        } else {
-          setTemplate((prev) =>
-            prev
-              ? {
-                  ...prev,
-                  name: trimmedName,
-                  subject,
-                }
-              : prev
-          );
-          setName(trimmedName);
-        }
-
-        toast.success("Template updated", {
-          description: "Subject and metadata saved.",
-        });
-      } else {
-        toast.error("Error", {
-          description: "Failed to update template",
-        });
-      }
-    } catch {
-      toast.error("Error", {
-        description: "Failed to update template",
-      });
-    } finally {
-      setIsUpdating(false);
-    }
+    await handleExport();
   };
 
   const handleNameKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -358,9 +301,8 @@ export default function EmailBuilderPage() {
             size="sm"
             className="h-8"
             onClick={handleUpdate}
-            disabled={isUpdating}
           >
-            {isUpdating ? "Saving..." : "UPDATE"}
+            UPDATE
           </Button>
         </div>
       </div>
