@@ -57,6 +57,11 @@ export default function EmailBuilderPage() {
   const [isSavingName, setIsSavingName] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const nameInputRef = useRef<HTMLInputElement>(null);
+  const hasUnsavedChanges =
+    !!template &&
+    (subject !== (template.subject || "") ||
+      previewHtml !== template.preview_html ||
+      emailHtml !== template.email_html);
 
   // Fetch template and conversation on mount
   useEffect(() => {
@@ -191,10 +196,20 @@ export default function EmailBuilderPage() {
 
   // Keep UPDATE behavior aligned with Export to Templates.
   const handleUpdate = async () => {
-    if (isUpdating) return;
+    if (isUpdating || !hasUnsavedChanges) return;
     setIsUpdating(true);
     try {
       await handleExport();
+      setTemplate((prev) =>
+        prev
+          ? {
+              ...prev,
+              subject,
+              preview_html: previewHtml,
+              email_html: emailHtml,
+            }
+          : prev
+      );
     } finally {
       setIsUpdating(false);
     }
@@ -356,7 +371,7 @@ export default function EmailBuilderPage() {
             size="sm"
             className="h-8"
             onClick={handleUpdate}
-            disabled={isUpdating}
+            disabled={isUpdating || !hasUnsavedChanges}
           >
             {isUpdating ? (
               <span className="flex items-center gap-0.5">
