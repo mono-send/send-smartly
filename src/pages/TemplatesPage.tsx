@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { TopBar } from "@/components/layout/TopBar";
-import { MoreVertical, Copy, Trash2, Search, Loader2 } from "lucide-react";
+import { MoreVertical, Copy, Trash2, Search, Sparkles, Loader2 } from "lucide-react";
 import { api } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -43,6 +44,7 @@ interface Template {
 
 export default function TemplatesPage() {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [templates, setTemplates] = useState<Template[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -91,6 +93,33 @@ export default function TemplatesPage() {
   const handleOpenDialog = () => {
     setFormData({ name: "", subject: "", body: "" });
     setIsDialogOpen(true);
+  };
+
+  const handleCreateWithBuilder = async () => {
+    setIsCreating(true);
+    try {
+      const response = await api("/email-builder/templates", {
+        method: "POST",
+        body: { name: "Untitled Template", category: "transactional" },
+      });
+
+      if (response.ok) {
+        const newTemplate = await response.json();
+        navigate(`/templates/${newTemplate.id}`);
+      } else {
+        toast.error({
+          title: "Error",
+          description: "Failed to create template",
+        });
+      }
+    } catch {
+      toast.error({
+        title: "Error",
+        description: "Failed to create template",
+      });
+    } finally {
+      setIsCreating(false);
+    }
   };
 
   const handleCreateTemplate = async () => {
@@ -186,6 +215,24 @@ export default function TemplatesPage() {
     }
   };
 
+  const handleRowClick = async (template: Template) => {
+    // Check if there's an eb_template linked to this template, or create one
+    try {
+      const response = await api("/email-builder/templates", {
+        method: "POST",
+        body: { name: template.name, category: "transactional" },
+      });
+
+      if (response.ok) {
+        const ebTemplate = await response.json();
+        navigate(`/templates/${ebTemplate.id}`);
+      }
+    } catch {
+      // Fallback: just navigate with the legacy template id
+      navigate(`/templates/${template.id}`);
+    }
+  };
+
   return (
     <>
       <TopBar
@@ -193,7 +240,7 @@ export default function TemplatesPage() {
         subtitle="Create and manage email templates"
         action={{
           label: "Create template",
-          onClick: handleOpenDialog,
+          onClick: handleCreateWithBuilder,
         }}
       />
 
@@ -240,10 +287,17 @@ export default function TemplatesPage() {
                 </TableRow>
               ) : (
                 templates.map((template) => (
-                  <TableRow key={template.id}>
+                  <TableRow
+                    key={template.id}
+                    className="cursor-pointer hover:bg-accent/50"
+                    onClick={() => handleRowClick(template)}
+                  >
                     <TableCell className="px-4 py-2">
                       <div className="space-y-1">
-                        <div className="font-medium">{template.name}</div>
+                        <div className="font-medium flex items-center gap-2">
+                          {template.name}
+                          <Sparkles className="h-3.5 w-3.5 text-purple-500" />
+                        </div>
                         <div className="text-sm text-muted-foreground">Subject: {template.subject}</div>
                       </div>
                     </TableCell>

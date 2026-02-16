@@ -30,6 +30,7 @@ import SettingsPage from "./pages/SettingsPage";
 import NotificationsPage from "./pages/NotificationsPage";
 import NotificationPreferencesPage from "./pages/NotificationPreferencesPage";
 import AutomationsPage from "./pages/AutomationsPage";
+import EmailBuilderPage from "./pages/EmailBuilderPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -67,6 +68,7 @@ const App = () => (
             <Route path="/notifications/preferences" element={<NotificationPreferencesPage />} />
             <Route path="/onboarding" element={<OnboardingPage />} />
           </Route>
+          <Route path="/templates/:id" element={<EmailBuilderPage />} />
           <Route path="/automations" element={<AutomationsPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/auth/magic" element={<MagicLinkConfirmPage />} />
