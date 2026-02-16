@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import Prism from "prismjs";
+import "prismjs/components/prism-markup";
 import {
   Copy,
   Check,
@@ -130,21 +132,64 @@ export function CodePanel({
   const [searchQuery, setSearchQuery] = useState("");
   const [searchMatches, setSearchMatches] = useState<{ start: number; end: number }[]>([]);
   const [currentMatchIndex, setCurrentMatchIndex] = useState(0);
+  const [hasNavigated, setHasNavigated] = useState(false);
+
   const searchInputRef = useRef<HTMLInputElement>(null);
-  const codeContainerRef = useRef<HTMLPreElement>(null);
-  const codeTextRef = useRef<HTMLElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const highlightRef = useRef<HTMLPreElement>(null);
+
+  const codeValue = emailHtml ?? "";
+  const lines = codeValue.split("\n");
+  const toggleLabel =
+    layoutMode === "bottom" ? "Move code panel to right" : "Move code panel to bottom";
 
   const handleCopy = async () => {
-    if (!emailHtml) return;
-    await navigator.clipboard.writeText(emailHtml);
+    if (!codeValue) return;
+    await navigator.clipboard.writeText(codeValue);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
   const handleFormat = () => {
-    if (!emailHtml || !onEmailHtmlChange) return;
-    onEmailHtmlChange(beautifyHTML(emailHtml));
+    if (!codeValue || !onEmailHtmlChange) return;
+    onEmailHtmlChange(beautifyHTML(codeValue));
   };
+
+  const handleScroll = useCallback(() => {
+    if (textareaRef.current && highlightRef.current) {
+      highlightRef.current.scrollTop = textareaRef.current.scrollTop;
+      highlightRef.current.scrollLeft = textareaRef.current.scrollLeft;
+    }
+  }, []);
+
+  const getHighlightedCode = useCallback((code: string) => {
+    let highlighted = Prism.highlight(code, Prism.languages.markup, "markup");
+
+    highlighted = highlighted.replace(
+      /\{\{(\w+)\}\}/g,
+      '<span class="token template-variable">{{$1}}</span>'
+    );
+
+    if (searchQuery.trim() && searchMatches.length > 0) {
+      const escapeRegex = (str: string) =>
+        str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const regex = new RegExp(`(${escapeRegex(searchQuery)})`, "gi");
+      highlighted = highlighted.replace(regex, '<span class="search-highlight">$1</span>');
+    }
+
+    return highlighted;
+  }, [searchQuery, searchMatches.length]);
+
+  const closeSearch = useCallback(() => {
+    setShowSearch(false);
+    setSearchQuery("");
+    setSearchMatches([]);
+    setCurrentMatchIndex(0);
+    setHasNavigated(false);
+    if (textareaRef.current) {
+      textareaRef.current.setSelectionRange(0, 0);
+    }
+  }, []);
 
   const toggleSearch = useCallback(() => {
     setShowSearch((prev) => {
@@ -156,14 +201,15 @@ export function CodePanel({
   }, []);
 
   useEffect(() => {
-    if (!searchQuery.trim() || !emailHtml) {
+    if (!searchQuery.trim() || !codeValue) {
       setSearchMatches([]);
       setCurrentMatchIndex(0);
+      setHasNavigated(false);
       return;
     }
 
     const matches: { start: number; end: number }[] = [];
-    const lowerValue = emailHtml.toLowerCase();
+    const lowerValue = codeValue.toLowerCase();
     const lowerQuery = searchQuery.toLowerCase();
     let startIndex = 0;
 
@@ -176,52 +222,43 @@ export function CodePanel({
 
     setSearchMatches(matches);
     setCurrentMatchIndex((prev) => (matches.length === 0 ? 0 : Math.min(prev, matches.length - 1)));
-  }, [searchQuery, emailHtml]);
+    setHasNavigated(false);
+  }, [searchQuery, codeValue]);
 
   const goToMatch = useCallback((index: number) => {
-    if (!emailHtml || searchMatches.length === 0) return;
+    if (!textareaRef.current || searchMatches.length === 0 || !codeValue) return;
     const match = searchMatches[index];
-    const codeEl = codeTextRef.current;
-    const containerEl = codeContainerRef.current;
-    if (!match || !codeEl || !containerEl || !codeEl.firstChild) return;
+    if (!match) return;
 
-    const range = document.createRange();
-    range.setStart(codeEl.firstChild, match.start);
-    range.setEnd(codeEl.firstChild, match.end);
+    textareaRef.current.setSelectionRange(match.start, match.end);
+    textareaRef.current.focus();
 
-    const selection = window.getSelection();
-    if (selection) {
-      selection.removeAllRanges();
-      selection.addRange(range);
-    }
-
-    const lines = emailHtml.slice(0, match.start).split("\n");
-    const lineIndex = lines.length - 1;
+    const linesBefore = codeValue.slice(0, match.start).split("\n");
+    const lineIndex = linesBefore.length - 1;
     const lineHeight = 20;
-    containerEl.scrollTop = Math.max(0, lineIndex * lineHeight - 80);
-  }, [emailHtml, searchMatches]);
+    textareaRef.current.scrollTop = Math.max(0, lineIndex * lineHeight - 80);
+    handleScroll();
+  }, [searchMatches, codeValue, handleScroll]);
 
   const goToNextMatch = useCallback(() => {
     if (searchMatches.length === 0) return;
-    const nextIndex = (currentMatchIndex + 1) % searchMatches.length;
+    const nextIndex = hasNavigated
+      ? (currentMatchIndex + 1) % searchMatches.length
+      : currentMatchIndex;
     setCurrentMatchIndex(nextIndex);
+    setHasNavigated(true);
     goToMatch(nextIndex);
-  }, [currentMatchIndex, searchMatches.length, goToMatch]);
+  }, [searchMatches.length, hasNavigated, currentMatchIndex, goToMatch]);
 
   const goToPrevMatch = useCallback(() => {
     if (searchMatches.length === 0) return;
-    const prevIndex = (currentMatchIndex - 1 + searchMatches.length) % searchMatches.length;
+    const prevIndex = hasNavigated
+      ? (currentMatchIndex - 1 + searchMatches.length) % searchMatches.length
+      : searchMatches.length - 1;
     setCurrentMatchIndex(prevIndex);
+    setHasNavigated(true);
     goToMatch(prevIndex);
-  }, [currentMatchIndex, searchMatches.length, goToMatch]);
-
-  const closeSearch = useCallback(() => {
-    setShowSearch(false);
-    setSearchQuery("");
-    setSearchMatches([]);
-    setCurrentMatchIndex(0);
-    window.getSelection()?.removeAllRanges();
-  }, []);
+  }, [searchMatches.length, hasNavigated, currentMatchIndex, goToMatch]);
 
   const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Escape") {
@@ -250,8 +287,11 @@ export function CodePanel({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isCompact]);
 
-  const lines = emailHtml ? emailHtml.split("\n") : [];
-  const toggleLabel = layoutMode === "bottom" ? "Move code panel to right" : "Move code panel to bottom";
+  useEffect(() => {
+    if (isCompact && showSearch) {
+      closeSearch();
+    }
+  }, [isCompact, showSearch, closeSearch]);
 
   return (
     <div
@@ -260,7 +300,6 @@ export function CodePanel({
         layoutMode === "bottom" ? "border-t border-border" : "border-l border-border"
       )}
     >
-      {/* Toolbar */}
       <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-background">
         <div className="flex items-center gap-2">
           <Button
@@ -268,7 +307,7 @@ export function CodePanel({
             size="sm"
             className="h-7 gap-1.5 text-xs"
             onClick={handleFormat}
-            disabled={!emailHtml}
+            disabled={!codeValue}
           >
             <Sparkles className="h-3 w-3" />
             Format
@@ -278,13 +317,9 @@ export function CodePanel({
             size="sm"
             className="h-7 gap-1.5 text-xs"
             onClick={handleCopy}
-            disabled={!emailHtml}
+            disabled={!codeValue}
           >
-            {copied ? (
-              <Check className="h-3 w-3" />
-            ) : (
-              <Copy className="h-3 w-3" />
-            )}
+            {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
             Copy
           </Button>
           <Button
@@ -371,24 +406,39 @@ export function CodePanel({
         </div>
       )}
 
-      {/* Code view */}
       {!isCompact && (
         <div className="flex-1 overflow-auto bg-background">
-          {emailHtml ? (
-            <div className="flex text-xs font-mono leading-5">
-              {/* Line numbers */}
-              <div className="flex-shrink-0 py-3 px-3 text-right text-muted-foreground select-none border-r border-border bg-muted/30">
+          {codeValue ? (
+            <div className="flex-1 flex overflow-hidden text-xs font-mono">
+              <div className="w-10 bg-muted/30 border-r border-border py-3 text-right pr-2 select-none overflow-hidden shrink-0">
                 {lines.map((_, i) => (
-                  <div key={i}>{i + 1}</div>
+                  <div key={i} className="text-muted-foreground leading-5">
+                    {i + 1}
+                  </div>
                 ))}
               </div>
-              {/* Code */}
-              <pre
-                ref={codeContainerRef}
-                className="flex-1 py-3 px-4 overflow-x-auto whitespace-pre"
-              >
-                <code ref={codeTextRef}>{emailHtml}</code>
-              </pre>
+
+              <div className="flex-1 relative overflow-hidden">
+                <pre
+                  ref={highlightRef}
+                  className="absolute inset-0 py-3 px-4 leading-5 pointer-events-none overflow-auto whitespace-pre m-0"
+                  aria-hidden="true"
+                >
+                  <code
+                    className="language-markup"
+                    dangerouslySetInnerHTML={{ __html: getHighlightedCode(codeValue) + "\n" }}
+                  />
+                </pre>
+
+                <textarea
+                  ref={textareaRef}
+                  value={codeValue}
+                  readOnly
+                  onScroll={handleScroll}
+                  className="absolute inset-0 py-3 px-4 bg-transparent resize-none leading-5 focus:outline-none overflow-auto text-transparent caret-foreground whitespace-pre"
+                  spellCheck={false}
+                />
+              </div>
             </div>
           ) : (
             <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
@@ -397,6 +447,25 @@ export function CodePanel({
           )}
         </div>
       )}
+
+      <style>{`
+        .token.tag { color: hsl(var(--chart-1)); }
+        .token.attr-name { color: hsl(var(--chart-2)); }
+        .token.attr-value { color: hsl(var(--chart-3)); }
+        .token.punctuation { color: hsl(var(--muted-foreground)); }
+        .token.comment { color: hsl(var(--muted-foreground)); font-style: italic; }
+        .token.template-variable {
+          color: hsl(var(--chart-4));
+          background: hsl(var(--chart-4) / 0.1);
+          border-radius: 2px;
+          padding: 0 2px;
+        }
+        .search-highlight {
+          background: hsl(var(--chart-2) / 0.4);
+          border-radius: 2px;
+          padding: 0 1px;
+        }
+      `}</style>
     </div>
   );
 }
