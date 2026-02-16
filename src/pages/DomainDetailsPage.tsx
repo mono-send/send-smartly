@@ -55,6 +55,8 @@ interface DomainData {
   dns_records: DNSRecord[];
 }
 
+const SIMPLE_EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 const regionLabels: Record<string, { label: string; flag: string }> = {
   "us-east-1": { label: "North Virginia (us-east-1)", flag: "🇺🇸" },
   "us-west-2": { label: "Oregon (us-west-2)", flag: "🇺🇸" },
@@ -186,6 +188,8 @@ export default function DomainDetailsPage() {
   const [isSendRecordsDialogOpen, setIsSendRecordsDialogOpen] = useState(false);
   const [recipientEmail, setRecipientEmail] = useState("");
   const [isSendingRecords, setIsSendingRecords] = useState(false);
+  const trimmedRecipientEmail = recipientEmail.trim();
+  const isRecipientEmailValid = SIMPLE_EMAIL_REGEX.test(trimmedRecipientEmail);
 
   const handleCopyDomain = async () => {
     if (!domain) return;
@@ -333,16 +337,19 @@ export default function DomainDetailsPage() {
 
   const handleSendRecords = async () => {
     if (!domain) return;
-    const trimmedEmail = recipientEmail.trim();
-    if (!trimmedEmail) {
-      toast.error("Please enter an email address.");
+    if (!trimmedRecipientEmail) {
+      toast.error("Please enter a valid email address.");
+      return;
+    }
+    if (!isRecipientEmailValid) {
+      toast.error("Please enter a valid email address.");
       return;
     }
     setIsSendingRecords(true);
     try {
       const response = await api(`/domains/${domain.id}/send-dns-records`, {
         method: "POST",
-        body: { recipient_email: trimmedEmail },
+        body: { recipient_email: trimmedRecipientEmail },
       });
       const data = await response.json().catch(() => null);
       if (response.ok) {
@@ -709,7 +716,11 @@ export default function DomainDetailsPage() {
             >
               Cancel
             </Button>
-            <Button onClick={handleSendRecords} disabled={isSendingRecords} className="h-9">
+            <Button
+              onClick={handleSendRecords}
+              disabled={isSendingRecords || !isRecipientEmailValid}
+              className="h-9"
+            >
               {isSendingRecords ? "Sending..." : "Send"}
             </Button>
           </DialogFooter>
