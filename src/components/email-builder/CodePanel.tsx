@@ -1,6 +1,17 @@
-import { useState } from "react";
-import { Copy, Check, Search, Sparkles, PanelRight, PanelBottom } from "lucide-react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import {
+  Copy,
+  Check,
+  Search,
+  Sparkles,
+  PanelRight,
+  PanelBottom,
+  ChevronUp,
+  ChevronDown,
+  X,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
 interface CodePanelProps {
@@ -115,6 +126,13 @@ export function CodePanel({
   isCompact = false,
 }: CodePanelProps) {
   const [copied, setCopied] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchMatches, setSearchMatches] = useState<{ start: number; end: number }[]>([]);
+  const [currentMatchIndex, setCurrentMatchIndex] = useState(0);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const codeContainerRef = useRef<HTMLPreElement>(null);
+  const codeTextRef = useRef<HTMLElement>(null);
 
   const handleCopy = async () => {
     if (!emailHtml) return;
@@ -127,6 +145,110 @@ export function CodePanel({
     if (!emailHtml || !onEmailHtmlChange) return;
     onEmailHtmlChange(beautifyHTML(emailHtml));
   };
+
+  const toggleSearch = useCallback(() => {
+    setShowSearch((prev) => {
+      if (!prev) {
+        setTimeout(() => searchInputRef.current?.focus(), 0);
+      }
+      return !prev;
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!searchQuery.trim() || !emailHtml) {
+      setSearchMatches([]);
+      setCurrentMatchIndex(0);
+      return;
+    }
+
+    const matches: { start: number; end: number }[] = [];
+    const lowerValue = emailHtml.toLowerCase();
+    const lowerQuery = searchQuery.toLowerCase();
+    let startIndex = 0;
+
+    while (true) {
+      const index = lowerValue.indexOf(lowerQuery, startIndex);
+      if (index === -1) break;
+      matches.push({ start: index, end: index + searchQuery.length });
+      startIndex = index + 1;
+    }
+
+    setSearchMatches(matches);
+    setCurrentMatchIndex((prev) => (matches.length === 0 ? 0 : Math.min(prev, matches.length - 1)));
+  }, [searchQuery, emailHtml]);
+
+  const goToMatch = useCallback((index: number) => {
+    if (!emailHtml || searchMatches.length === 0) return;
+    const match = searchMatches[index];
+    const codeEl = codeTextRef.current;
+    const containerEl = codeContainerRef.current;
+    if (!match || !codeEl || !containerEl || !codeEl.firstChild) return;
+
+    const range = document.createRange();
+    range.setStart(codeEl.firstChild, match.start);
+    range.setEnd(codeEl.firstChild, match.end);
+
+    const selection = window.getSelection();
+    if (selection) {
+      selection.removeAllRanges();
+      selection.addRange(range);
+    }
+
+    const lines = emailHtml.slice(0, match.start).split("\n");
+    const lineIndex = lines.length - 1;
+    const lineHeight = 20;
+    containerEl.scrollTop = Math.max(0, lineIndex * lineHeight - 80);
+  }, [emailHtml, searchMatches]);
+
+  const goToNextMatch = useCallback(() => {
+    if (searchMatches.length === 0) return;
+    const nextIndex = (currentMatchIndex + 1) % searchMatches.length;
+    setCurrentMatchIndex(nextIndex);
+    goToMatch(nextIndex);
+  }, [currentMatchIndex, searchMatches.length, goToMatch]);
+
+  const goToPrevMatch = useCallback(() => {
+    if (searchMatches.length === 0) return;
+    const prevIndex = (currentMatchIndex - 1 + searchMatches.length) % searchMatches.length;
+    setCurrentMatchIndex(prevIndex);
+    goToMatch(prevIndex);
+  }, [currentMatchIndex, searchMatches.length, goToMatch]);
+
+  const closeSearch = useCallback(() => {
+    setShowSearch(false);
+    setSearchQuery("");
+    setSearchMatches([]);
+    setCurrentMatchIndex(0);
+    window.getSelection()?.removeAllRanges();
+  }, []);
+
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Escape") {
+      closeSearch();
+    } else if (e.key === "Enter") {
+      if (e.shiftKey) {
+        goToPrevMatch();
+      } else {
+        goToNextMatch();
+      }
+    }
+  };
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const isMac = navigator.platform.toUpperCase().includes("MAC");
+      const modKey = isMac ? e.metaKey : e.ctrlKey;
+      if (modKey && e.key.toLowerCase() === "f" && !isCompact) {
+        e.preventDefault();
+        setShowSearch(true);
+        setTimeout(() => searchInputRef.current?.focus(), 0);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isCompact]);
 
   const lines = emailHtml ? emailHtml.split("\n") : [];
   const toggleLabel = layoutMode === "bottom" ? "Move code panel to right" : "Move code panel to bottom";
@@ -165,7 +287,12 @@ export function CodePanel({
             )}
             Copy
           </Button>
-          <Button variant="ghost" size="sm" className="h-7 gap-1.5 text-xs">
+          <Button
+            variant="ghost"
+            size="sm"
+            className={cn("h-7 gap-1.5 text-xs", showSearch && "bg-muted")}
+            onClick={toggleSearch}
+          >
             <Search className="h-3 w-3" />
             Search
           </Button>
@@ -194,6 +321,56 @@ export function CodePanel({
         </div>
       </div>
 
+      {showSearch && !isCompact && (
+        <div className="flex items-center gap-2 px-3 py-2 border-b border-border bg-muted/20">
+          <Search className="h-4 w-4 text-muted-foreground" />
+          <Input
+            ref={searchInputRef}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={handleSearchKeyDown}
+            placeholder="Search..."
+            className="h-7 w-64 text-sm"
+          />
+          {searchMatches.length > 0 && (
+            <span className="text-xs text-muted-foreground">
+              {currentMatchIndex + 1} of {searchMatches.length}
+            </span>
+          )}
+          {searchQuery && searchMatches.length === 0 && (
+            <span className="text-xs text-muted-foreground">No results</span>
+          )}
+          <div className="flex items-center gap-0.5">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              onClick={goToPrevMatch}
+              disabled={searchMatches.length === 0}
+            >
+              <ChevronUp className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              onClick={goToNextMatch}
+              disabled={searchMatches.length === 0}
+            >
+              <ChevronDown className="h-4 w-4" />
+            </Button>
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7"
+            onClick={closeSearch}
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
+
       {/* Code view */}
       {!isCompact && (
         <div className="flex-1 overflow-auto bg-background">
@@ -206,8 +383,11 @@ export function CodePanel({
                 ))}
               </div>
               {/* Code */}
-              <pre className="flex-1 py-3 px-4 overflow-x-auto whitespace-pre">
-                <code>{emailHtml}</code>
+              <pre
+                ref={codeContainerRef}
+                className="flex-1 py-3 px-4 overflow-x-auto whitespace-pre"
+              >
+                <code ref={codeTextRef}>{emailHtml}</code>
               </pre>
             </div>
           ) : (
