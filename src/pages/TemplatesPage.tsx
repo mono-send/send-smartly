@@ -106,16 +106,10 @@ export default function TemplatesPage() {
         const newTemplate = await response.json();
         navigate(`/templates/${newTemplate.id}`);
       } else {
-        toast.error({
-          title: "Error",
-          description: "Failed to create template",
-        });
+        toast.error("Failed to create template");
       }
     } catch {
-      toast.error({
-        title: "Error",
-        description: "Failed to create template",
-      });
+      toast.error("Failed to create template");
     } finally {
       setIsCreating(false);
     }
@@ -176,6 +170,15 @@ export default function TemplatesPage() {
       });
     } finally {
       setIsDuplicating(null);
+    }
+  };
+
+  const handleCopyTemplateId = async (template: Template) => {
+    try {
+      await navigator.clipboard.writeText(template.id);
+      toast.success("Template ID copied to clipboard");
+    } catch {
+      toast.error("Failed to copy template ID");
     }
   };
 

@@ -525,7 +525,6 @@ export const AIChatPanel: React.FC<AIChatPanelProps> = ({
                 key={message.id}
                 role={message.role}
                 content={message.content}
-                timestamp={message.timestamp}
                 codeGenerated={message.codeGenerated}
               />
             ))}
