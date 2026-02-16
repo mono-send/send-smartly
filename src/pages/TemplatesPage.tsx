@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { TopBar } from "@/components/layout/TopBar";
 import { MoreVertical, Copy, Trash2, Search, Sparkles, Loader2 } from "lucide-react";
 import { api } from "@/lib/api";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/components/ui/use-toast";
 import {
   Dialog,
   DialogContent,
