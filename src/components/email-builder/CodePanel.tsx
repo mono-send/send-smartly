@@ -4,11 +4,102 @@ import { Button } from "@/components/ui/button";
 
 interface CodePanelProps {
   emailHtml: string | null;
+  onEmailHtmlChange?: (value: string) => void;
   historyIndex?: number;
   historyTotal?: number;
 }
 
-export function CodePanel({ emailHtml, historyIndex, historyTotal }: CodePanelProps) {
+function beautifyHTML(html: string): string {
+  const INDENT = "  ";
+  const VOID_ELEMENTS = new Set([
+    "area", "base", "br", "col", "embed", "hr", "img", "input",
+    "link", "meta", "param", "source", "track", "wbr",
+  ]);
+  const INLINE_ELEMENTS = new Set([
+    "a", "abbr", "b", "bdo", "br", "cite", "code", "dfn", "em", "i",
+    "img", "kbd", "q", "samp", "small", "span", "strong", "sub", "sup",
+    "time", "var",
+  ]);
+  const PRESERVE_CONTENT_TAGS = new Set(["script", "style"]);
+
+  const result = html.trim();
+  const tokens: { type: "tag" | "text" | "comment"; content: string; tagName?: string; isClosing?: boolean; isSelfClosing?: boolean }[] = [];
+  const tagRegex = /(<\/?[a-zA-Z][^>]*\/?>|<!--[\s\S]*?-->)/g;
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = tagRegex.exec(result)) !== null) {
+    if (match.index > lastIndex) {
+      const text = result.slice(lastIndex, match.index);
+      if (text.trim()) {
+        tokens.push({ type: "text", content: text.trim() });
+      }
+    }
+
+    const tag = match[1];
+    if (tag.startsWith("<!--")) {
+      tokens.push({ type: "comment", content: tag });
+    } else {
+      const tagName = tag.replace(/<\/?(\w+).*/, "$1").toLowerCase();
+      const isClosing = tag.startsWith("</");
+      const isSelfClosing = tag.endsWith("/>") || VOID_ELEMENTS.has(tagName);
+      tokens.push({ type: "tag", content: tag, tagName, isClosing, isSelfClosing });
+    }
+
+    lastIndex = tagRegex.lastIndex;
+  }
+
+  if (lastIndex < result.length) {
+    const text = result.slice(lastIndex);
+    if (text.trim()) {
+      tokens.push({ type: "text", content: text.trim() });
+    }
+  }
+
+  let output = "";
+  let indentLevel = 0;
+  let preserveTagDepth = 0;
+
+  for (const token of tokens) {
+    const indent = INDENT.repeat(indentLevel);
+
+    if (token.type === "comment") {
+      output += indent + token.content + "\n";
+      continue;
+    }
+
+    if (token.type === "text") {
+      if (preserveTagDepth > 0) {
+        output += token.content + "\n";
+      } else {
+        output += indent + token.content + "\n";
+      }
+      continue;
+    }
+
+    const isInline = token.tagName ? INLINE_ELEMENTS.has(token.tagName) : false;
+    if (token.isClosing) {
+      if (token.tagName && PRESERVE_CONTENT_TAGS.has(token.tagName)) {
+        preserveTagDepth = Math.max(0, preserveTagDepth - 1);
+      }
+      indentLevel = Math.max(0, indentLevel - 1);
+      output += INDENT.repeat(indentLevel) + token.content + "\n";
+      continue;
+    }
+
+    output += indent + token.content + "\n";
+    if (!token.isSelfClosing && !isInline) {
+      indentLevel++;
+      if (token.tagName && PRESERVE_CONTENT_TAGS.has(token.tagName)) {
+        preserveTagDepth++;
+      }
+    }
+  }
+
+  return output.trim();
+}
+
+export function CodePanel({ emailHtml, onEmailHtmlChange, historyIndex, historyTotal }: CodePanelProps) {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
@@ -18,6 +109,11 @@ export function CodePanel({ emailHtml, historyIndex, historyTotal }: CodePanelPr
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const handleFormat = () => {
+    if (!emailHtml || !onEmailHtmlChange) return;
+    onEmailHtmlChange(beautifyHTML(emailHtml));
+  };
+
   const lines = emailHtml ? emailHtml.split("\n") : [];
 
   return (
@@ -25,7 +121,13 @@ export function CodePanel({ emailHtml, historyIndex, historyTotal }: CodePanelPr
       {/* Toolbar */}
       <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-background">
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" className="h-7 gap-1.5 text-xs">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 gap-1.5 text-xs"
+            onClick={handleFormat}
+            disabled={!emailHtml}
+          >
             <Sparkles className="h-3 w-3" />
             Format
           </Button>
