@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   Dialog,
   DialogContent,
@@ -36,6 +36,25 @@ export function SendTestEmailDialog({
   const [variablesJson, setVariablesJson] = useState("");
   const [isSending, setIsSending] = useState(false);
 
+  const parseEmails = (input: string): string[] =>
+    input
+      .split(/[,\n]/)
+      .map((e) => e.trim())
+      .filter((e) => e.length > 0);
+
+  const isValidEmail = (email: string): boolean =>
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
+  const safeParseJson = (
+    text: string
+  ): { ok: true; value: unknown } | { ok: false } => {
+    try {
+      return { ok: true, value: JSON.parse(text) };
+    } catch {
+      return { ok: false };
+    }
+  };
+
   // Extract variables from template body
   const extractVariables = (content: string): string[] => {
     const regex = /\{\{(\w+)\}\}/g;
@@ -49,6 +68,52 @@ export function SendTestEmailDialog({
 
   const variables = extractVariables(body + subject);
 
+  const emailList = useMemo(() => parseEmails(emails), [emails]);
+  const invalidEmails = useMemo(
+    () => emailList.filter((email) => !isValidEmail(email)),
+    [emailList]
+  );
+  const hasTooManyEmails = emailList.length > 10;
+
+  const parsedVariablesResult = useMemo(() => {
+    if (!variablesJson.trim()) {
+      return { ok: true as const, value: {} as unknown };
+    }
+    return safeParseJson(variablesJson);
+  }, [variablesJson]);
+
+  const variablesObject = useMemo(() => {
+    if (!parsedVariablesResult.ok) return null;
+    const parsed = parsedVariablesResult.value;
+    if (
+      typeof parsed === "object" &&
+      parsed !== null &&
+      !Array.isArray(parsed)
+    ) {
+      return parsed as Record<string, unknown>;
+    }
+    return null;
+  }, [parsedVariablesResult]);
+
+  const missingVariables = useMemo(() => {
+    if (variables.length === 0) return [] as string[];
+    if (!variablesObject) return variables;
+
+    return variables.filter((variable) => {
+      if (!(variable in variablesObject)) return true;
+      const value = variablesObject[variable];
+      if (value == null) return true;
+      if (typeof value === "string" && value.trim() === "") return true;
+      return false;
+    });
+  }, [variables, variablesObject]);
+
+  const isEmailValidForSend =
+    emailList.length > 0 && !hasTooManyEmails && invalidEmails.length === 0;
+  const isVariablesValidForSend =
+    parsedVariablesResult.ok && variablesObject !== null && missingVariables.length === 0;
+  const isSendDisabled = isSending || !isEmailValidForSend || !isVariablesValidForSend;
+
   useEffect(() => {
     if (open && variables.length > 0) {
       const initialVars: Record<string, string> = {};
@@ -60,11 +125,6 @@ export function SendTestEmailDialog({
   }, [open, body, subject]);
 
   const handleSendTest = async () => {
-    const emailList = emails
-      .split(",")
-      .map((e) => e.trim())
-      .filter((e) => e.length > 0);
-
     if (emailList.length === 0) {
       toast.error("Please add at least one email address");
       return;
@@ -75,22 +135,35 @@ export function SendTestEmailDialog({
       return;
     }
 
-    let parsedVariables: Record<string, string> = {};
-    if (variablesJson.trim()) {
-      try {
-        parsedVariables = JSON.parse(variablesJson);
-      } catch {
-        toast.error("Invalid JSON in variables");
-        setActiveTab("variables");
-        return;
-      }
+    if (invalidEmails.length > 0) {
+      toast.error("Please enter valid email address(es)");
+      setActiveTab("emails");
+      return;
+    }
+
+    if (!parsedVariablesResult.ok) {
+      toast.error("Invalid JSON in variables");
+      setActiveTab("variables");
+      return;
+    }
+
+    if (!variablesObject) {
+      toast.error("Variables must be a JSON object");
+      setActiveTab("variables");
+      return;
+    }
+
+    if (missingVariables.length > 0) {
+      toast.error("Please provide values for all template variables");
+      setActiveTab("variables");
+      return;
     }
 
     setIsSending(true);
     try {
       const payload = {
         emails: emailList,
-        variables: parsedVariables,
+        variables: variablesObject as Record<string, unknown>,
         ...(domainId ? { domain_id: domainId } : {}),
       };
       const response = await api(`/templates/${templateId}/test`, {
@@ -156,6 +229,16 @@ export function SendTestEmailDialog({
                 placeholder="email@example.com"
                 className="min-h-[140px] resize-none"
               />
+              {invalidEmails.length > 0 && (
+                <p className="text-sm text-destructive">
+                  {invalidEmails.length} invalid email(s). First: {invalidEmails[0]}
+                </p>
+              )}
+              {hasTooManyEmails && (
+                <p className="text-sm text-destructive">
+                  Maximum 10 email addresses allowed.
+                </p>
+              )}
               <p className="text-sm text-muted-foreground">
                 You can add up to 10 email IDs separated by comma (,).
               </p>
@@ -173,6 +256,21 @@ export function SendTestEmailDialog({
                   spellCheck={false}
                 />
               </div>
+              {!parsedVariablesResult.ok && (
+                <p className="text-sm text-destructive">
+                  Invalid JSON format.
+                </p>
+              )}
+              {parsedVariablesResult.ok && variablesObject === null && (
+                <p className="text-sm text-destructive">
+                  Variables must be a JSON object.
+                </p>
+              )}
+              {missingVariables.length > 0 && variablesObject !== null && (
+                <p className="text-sm text-destructive">
+                  Missing required variables: {missingVariables.join(", ")}
+                </p>
+              )}
               <a
                 href="#"
                 className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
@@ -186,18 +284,17 @@ export function SendTestEmailDialog({
 
         <DialogFooter className="bg-muted/30 -mx-6 -mb-6 px-6 py-4 rounded-b-lg">
           <Button
-            variant="ghost"
+            variant="outline"
+            size="sm"
             onClick={() => onOpenChange(false)}
             disabled={isSending}
-            className="uppercase"
           >
             Cancel
           </Button>
           <Button
-            variant="ghost"
+            size="sm"
             onClick={handleSendTest}
-            disabled={isSending}
-            className="uppercase text-primary hover:text-primary"
+            disabled={isSendDisabled}
           >
             {isSending ? (
               <>
