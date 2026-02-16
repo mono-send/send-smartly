@@ -54,6 +54,7 @@ export default function EmailBuilderPage() {
   const [emailHtml, setEmailHtml] = useState<string | null>(null);
   const [generationCount, setGenerationCount] = useState(0);
   const [isEditingName, setIsEditingName] = useState(false);
+  const [isSavingName, setIsSavingName] = useState(false);
   const nameInputRef = useRef<HTMLInputElement>(null);
 
   // Fetch template and conversation on mount
@@ -194,7 +195,8 @@ export default function EmailBuilderPage() {
 
   const handleNameKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
-      setIsEditingName(false);
+      e.preventDefault();
+      void handleSaveName();
       return;
     }
 
@@ -203,6 +205,45 @@ export default function EmailBuilderPage() {
       setIsEditingName(false);
     }
   };
+
+  const handleSaveName = useCallback(async () => {
+    if (!id || !template || isSavingName) {
+      setIsEditingName(false);
+      return;
+    }
+
+    const nextName = name.trim();
+    const currentName = template.name || "";
+
+    // No-op when the name hasn't changed.
+    if (nextName === currentName) {
+      setIsEditingName(false);
+      return;
+    }
+
+    setIsSavingName(true);
+    try {
+      const response = await api(`/email-builder/templates/${id}`, {
+        method: "PATCH",
+        body: { name: nextName },
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to update template name");
+      }
+
+      setTemplate((prev) => (prev ? { ...prev, name: nextName } : prev));
+      setName(nextName);
+    } catch {
+      setName(currentName);
+      toast.error("Error", {
+        description: "Failed to update template name",
+      });
+    } finally {
+      setIsSavingName(false);
+      setIsEditingName(false);
+    }
+  }, [id, template, name, isSavingName]);
 
   // Export to legacy template system
   const handleExport = async () => {
@@ -257,7 +298,9 @@ export default function EmailBuilderPage() {
                 ref={nameInputRef}
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                onBlur={() => setIsEditingName(false)}
+                onBlur={() => {
+                  void handleSaveName();
+                }}
                 onKeyDown={handleNameKeyDown}
                 className="h-7 w-64 px-1 text-sm font-semibold"
               />
