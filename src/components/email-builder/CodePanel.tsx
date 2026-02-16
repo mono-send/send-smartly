@@ -1,12 +1,16 @@
 import { useState } from "react";
-import { Copy, Check, Search, Sparkles } from "lucide-react";
+import { Copy, Check, Search, Sparkles, PanelRight, PanelBottom } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 interface CodePanelProps {
   emailHtml: string | null;
   onEmailHtmlChange?: (value: string) => void;
   historyIndex?: number;
   historyTotal?: number;
+  layoutMode: "bottom" | "right";
+  onToggleLayoutMode: () => void;
+  isLayoutToggleDisabled?: boolean;
 }
 
 function beautifyHTML(html: string): string {
@@ -99,7 +103,15 @@ function beautifyHTML(html: string): string {
   return output.trim();
 }
 
-export function CodePanel({ emailHtml, onEmailHtmlChange, historyIndex, historyTotal }: CodePanelProps) {
+export function CodePanel({
+  emailHtml,
+  onEmailHtmlChange,
+  historyIndex,
+  historyTotal,
+  layoutMode,
+  onToggleLayoutMode,
+  isLayoutToggleDisabled,
+}: CodePanelProps) {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
@@ -115,9 +127,15 @@ export function CodePanel({ emailHtml, onEmailHtmlChange, historyIndex, historyT
   };
 
   const lines = emailHtml ? emailHtml.split("\n") : [];
+  const toggleLabel = layoutMode === "bottom" ? "Move code panel to right" : "Move code panel to bottom";
 
   return (
-    <div className="flex flex-col h-full border-t border-border">
+    <div
+      className={cn(
+        "flex flex-col h-full",
+        layoutMode === "bottom" ? "border-t border-border" : "border-l border-border"
+      )}
+    >
       {/* Toolbar */}
       <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-background">
         <div className="flex items-center gap-2">
@@ -150,11 +168,28 @@ export function CodePanel({ emailHtml, onEmailHtmlChange, historyIndex, historyT
             Search
           </Button>
         </div>
-        {historyTotal != null && historyTotal > 0 && (
-          <span className="text-xs text-muted-foreground">
-            History: {historyIndex ?? historyTotal}/{historyTotal}
-          </span>
-        )}
+        <div className="flex items-center gap-2">
+          {historyTotal != null && historyTotal > 0 && (
+            <span className="text-xs text-muted-foreground">
+              History: {historyIndex ?? historyTotal}/{historyTotal}
+            </span>
+          )}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 px-2"
+            onClick={onToggleLayoutMode}
+            disabled={isLayoutToggleDisabled}
+            aria-label={toggleLabel}
+            title={toggleLabel}
+          >
+            {layoutMode === "bottom" ? (
+              <PanelRight className="h-3.5 w-3.5" />
+            ) : (
+              <PanelBottom className="h-3.5 w-3.5" />
+            )}
+          </Button>
+        </div>
       </div>
 
       {/* Code view */}

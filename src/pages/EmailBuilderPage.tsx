@@ -15,6 +15,7 @@ import { ChatPanel } from "@/components/email-builder/ChatPanel";
 import { PreviewPanel } from "@/components/email-builder/PreviewPanel";
 import { CodePanel } from "@/components/email-builder/CodePanel";
 import { SendTestEmailDialog } from "@/components/templates/SendTestEmailDialog";
+import { useIsMobile } from "@/hooks/use-mobile";
 import {
   ResizableHandle,
   ResizablePanel,
@@ -41,9 +42,13 @@ interface EBTemplate {
   updated_at: string;
 }
 
+type CodePanelLayoutMode = "bottom" | "right";
+const CODE_PANEL_LAYOUT_STORAGE_KEY = "emailBuilder.codePanelLayoutMode";
+
 export default function EmailBuilderPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
 
   const [template, setTemplate] = useState<EBTemplate | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -62,7 +67,15 @@ export default function EmailBuilderPage() {
   const [showSendTestDialog, setShowSendTestDialog] = useState(false);
   const [isDuplicating, setIsDuplicating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [codePanelLayoutMode, setCodePanelLayoutMode] =
+    useState<CodePanelLayoutMode>(() => {
+      const saved = localStorage.getItem(CODE_PANEL_LAYOUT_STORAGE_KEY);
+      return saved === "right" ? "right" : "bottom";
+    });
   const nameInputRef = useRef<HTMLInputElement>(null);
+  const effectiveLayoutMode: CodePanelLayoutMode = isMobile
+    ? "bottom"
+    : codePanelLayoutMode;
   const hasUnsavedChanges =
     !!template &&
     (subject !== (template.subject || "") ||
@@ -128,6 +141,10 @@ export default function EmailBuilderPage() {
       nameInputRef.current.select();
     }
   }, [isEditingName]);
+
+  useEffect(() => {
+    localStorage.setItem(CODE_PANEL_LAYOUT_STORAGE_KEY, codePanelLayoutMode);
+  }, [codePanelLayoutMode]);
 
   // Send prompt to AI
   const handleSendPrompt = useCallback(
@@ -534,24 +551,59 @@ export default function EmailBuilderPage() {
         {/* Right: Preview + Code */}
         <ResizablePanel defaultSize={65} minSize={30}>
           <div className="h-full flex flex-col overflow-hidden">
-            <ResizablePanelGroup direction="vertical" className="h-full">
-              {/* Preview area */}
-              <ResizablePanel defaultSize={65} minSize={30}>
-                <PreviewPanel previewHtml={previewHtml} />
-              </ResizablePanel>
+            {effectiveLayoutMode === "bottom" ? (
+              <ResizablePanelGroup direction="vertical" className="h-full">
+                {/* Preview area */}
+                <ResizablePanel defaultSize={65} minSize={30}>
+                  <PreviewPanel previewHtml={previewHtml} />
+                </ResizablePanel>
 
-              <ResizableHandle withHandle />
+                <ResizableHandle withHandle />
 
-              {/* Code area */}
-              <ResizablePanel defaultSize={35} minSize={20}>
-                <CodePanel
-                  emailHtml={emailHtml}
-                  onEmailHtmlChange={(value) => setEmailHtml(value)}
-                  historyIndex={generationCount}
-                  historyTotal={generationCount}
-                />
-              </ResizablePanel>
-            </ResizablePanelGroup>
+                {/* Code area */}
+                <ResizablePanel defaultSize={35} minSize={20}>
+                  <CodePanel
+                    emailHtml={emailHtml}
+                    onEmailHtmlChange={(value) => setEmailHtml(value)}
+                    historyIndex={generationCount}
+                    historyTotal={generationCount}
+                    layoutMode={effectiveLayoutMode}
+                    onToggleLayoutMode={() =>
+                      setCodePanelLayoutMode((prev) =>
+                        prev === "bottom" ? "right" : "bottom"
+                      )
+                    }
+                    isLayoutToggleDisabled={isMobile}
+                  />
+                </ResizablePanel>
+              </ResizablePanelGroup>
+            ) : (
+              <ResizablePanelGroup direction="horizontal" className="h-full">
+                {/* Preview area */}
+                <ResizablePanel defaultSize={65} minSize={30}>
+                  <PreviewPanel previewHtml={previewHtml} />
+                </ResizablePanel>
+
+                <ResizableHandle withHandle />
+
+                {/* Code area */}
+                <ResizablePanel defaultSize={35} minSize={25}>
+                  <CodePanel
+                    emailHtml={emailHtml}
+                    onEmailHtmlChange={(value) => setEmailHtml(value)}
+                    historyIndex={generationCount}
+                    historyTotal={generationCount}
+                    layoutMode={effectiveLayoutMode}
+                    onToggleLayoutMode={() =>
+                      setCodePanelLayoutMode((prev) =>
+                        prev === "bottom" ? "right" : "bottom"
+                      )
+                    }
+                    isLayoutToggleDisabled={isMobile}
+                  />
+                </ResizablePanel>
+              </ResizablePanelGroup>
+            )}
           </div>
         </ResizablePanel>
       </ResizablePanelGroup>
