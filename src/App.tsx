@@ -32,6 +32,7 @@ import SettingsPage from "./pages/SettingsPage";
 import NotificationsPage from "./pages/NotificationsPage";
 import NotificationPreferencesPage from "./pages/NotificationPreferencesPage";
 import AutomationsPage from "./pages/AutomationsPage";
+import EmailBuilderPage from "./pages/EmailBuilderPage";
 import SendersPage from "./pages/SendersPage";
 import NotFound from "./pages/NotFound";
 
@@ -44,39 +45,38 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Routes>
-            <Route element={<DashboardLayout />}>
-              <Route path="/" element={<Index />} />
-            </Route>
-            <Route element={<DashboardLayout />}>
-              <Route path="/emails" element={<EmailsPage />} />
-              <Route path="/emails/:id" element={<EmailDetailsPage />} />
-              <Route path="/broadcasts" element={<BroadcastsPage />} />
-              <Route path="/templates" element={<TemplatesPage />} />
-              <Route path="/audience" element={<AudiencePage />} />
-              <Route path="/audience/contacts/:id" element={<ContactDetailsPage />} />
-              <Route path="/audience/import" element={<ImportContactsPage />} />
-              <Route path="/metrics" element={<MetricsPage />} />
-              <Route path="/domains" element={<DomainsPage />} />
-              <Route path="/domains/new" element={<AddDomainPage />} />
-              <Route path="/domains/:id" element={<DomainDetailsPage />} />
-              <Route path="/senders" element={<SendersPage />} />
-              <Route path="/logs" element={<LogsPage />} />
-              <Route path="/logs/:id" element={<LogDetailsPage />} />
-              <Route path="/api-keys" element={<ApiKeysPage />} />
-              <Route path="/api-keys/:id" element={<ApiKeyDetailsPage />} />
-              <Route path="/webhooks" element={<WebhooksPage />} />
-              <Route path="/settings" element={<SettingsPage />} />
-              <Route path="/notifications" element={<NotificationsPage />} />
-              <Route path="/notifications/preferences" element={<NotificationPreferencesPage />} />
-              <Route path="/onboarding" element={<OnboardingPage />} />
-            </Route>
-            <Route path="/automations" element={<AutomationsPage />} />
-            <Route path="/templates/:id" element={<TemplateDetailsPage />} />
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/auth/magic" element={<MagicLinkConfirmPage />} />
+          <Route element={<DashboardLayout />}>
+            <Route path="/" element={<Index />} />
+          </Route>
+          <Route element={<DashboardLayout />}>
+            <Route path="/emails" element={<EmailsPage />} />
+            <Route path="/emails/:id" element={<EmailDetailsPage />} />
+            <Route path="/broadcasts" element={<BroadcastsPage />} />
+            <Route path="/templates" element={<TemplatesPage />} />
+            <Route path="/audience" element={<AudiencePage />} />
+            <Route path="/audience/contacts/:id" element={<ContactDetailsPage />} />
+            <Route path="/audience/import" element={<ImportContactsPage />} />
+            <Route path="/metrics" element={<MetricsPage />} />
+            <Route path="/domains" element={<DomainsPage />} />
+            <Route path="/domains/new" element={<AddDomainPage />} />
+            <Route path="/domains/:id" element={<DomainDetailsPage />} />
+            <Route path="/logs" element={<LogsPage />} />
+            <Route path="/logs/:id" element={<LogDetailsPage />} />
+            <Route path="/api-keys" element={<ApiKeysPage />} />
+            <Route path="/api-keys/:id" element={<ApiKeyDetailsPage />} />
+            <Route path="/webhooks" element={<WebhooksPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/notifications" element={<NotificationsPage />} />
+            <Route path="/notifications/preferences" element={<NotificationPreferencesPage />} />
+            <Route path="/onboarding" element={<OnboardingPage />} />
+          </Route>
+          <Route path="/templates/:id" element={<EmailBuilderPage />} />
+          <Route path="/automations" element={<AutomationsPage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/auth/magic" element={<MagicLinkConfirmPage />} />
             <Route path="/auth/github/callback" element={<GitHubCallback />} />
             <Route path="/auth/google/callback" element={<GoogleCallback />} />
-            <Route path="*" element={<NotFound />} />
+          <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
         <Analytics />
