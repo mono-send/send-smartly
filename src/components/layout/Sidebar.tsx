@@ -13,6 +13,7 @@ import {
   Settings,
   Send,
   Workflow,
+  UserCircle,
 } from "lucide-react";
 import logo from '/favicon-48x48.png';
 import logo2 from '/logo.png';
@@ -25,6 +26,7 @@ const navigation = [
   { name: "Audience", href: "/audience", icon: Users },
   { name: "Metrics", href: "/metrics", icon: BarChart3 },
   { name: "Domains", href: "/domains", icon: Globe },
+  { name: "Senders", href: "/senders", icon: UserCircle },
   { name: "Logs", href: "/logs", icon: ScrollText },
   { name: "API Keys", href: "/api-keys", icon: Key },
   { name: "Webhooks", href: "/webhooks", icon: Webhook },
@@ -38,7 +40,7 @@ export function Sidebar() {
     <aside className="fixed left-0 top-0 z-40 h-screen w-64 border-r border-border bg-sidebar">
       <div className="flex h-full flex-col">
         {/* Logo */}
-        <div className="flex h-16 items-center gap-2 border-b border-border px-6">
+        <div className="flex h-16 items-center gap-2 border-b border-border px-6 min-h-16">
           {/* <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
             <Send className="h-4 w-4 text-primary-foreground" />
           </div> */}

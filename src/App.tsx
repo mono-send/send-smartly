@@ -1,4 +1,3 @@
-import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Analytics } from "@vercel/analytics/react";
@@ -9,6 +8,8 @@ import Index from "./pages/Index";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import LoginPage from "./pages/LoginPage";
 import MagicLinkConfirmPage from "./pages/MagicLinkConfirmPage";
+import GitHubCallback from "./pages/auth/GitHubCallback";
+import GoogleCallback from "./pages/auth/GoogleCallback";
 import EmailsPage from "./pages/EmailsPage";
 import EmailDetailsPage from "./pages/EmailDetailsPage";
 import DomainsPage from "./pages/DomainsPage";
@@ -22,6 +23,7 @@ import MetricsPage from "./pages/MetricsPage";
 import OnboardingPage from "./pages/OnboardingPage";
 import BroadcastsPage from "./pages/BroadcastsPage";
 import TemplatesPage from "./pages/TemplatesPage";
+import TemplateDetailsPage from "./pages/TemplateDetailsPage";
 import AudiencePage from "./pages/AudiencePage";
 import ContactDetailsPage from "./pages/ContactDetailsPage";
 import ImportContactsPage from "./pages/ImportContactsPage";
@@ -31,6 +33,7 @@ import NotificationsPage from "./pages/NotificationsPage";
 import NotificationPreferencesPage from "./pages/NotificationPreferencesPage";
 import AutomationsPage from "./pages/AutomationsPage";
 import EmailBuilderPage from "./pages/EmailBuilderPage";
+import SendersPage from "./pages/SendersPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -39,7 +42,6 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
       <TooltipProvider>
-        <Toaster />
         <Sonner />
         <BrowserRouter>
           <Routes>
@@ -72,6 +74,8 @@ const App = () => (
           <Route path="/automations" element={<AutomationsPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/auth/magic" element={<MagicLinkConfirmPage />} />
+            <Route path="/auth/github/callback" element={<GitHubCallback />} />
+            <Route path="/auth/google/callback" element={<GoogleCallback />} />
           <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

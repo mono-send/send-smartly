@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { TopBar } from "@/components/layout/TopBar";
-import { MoreVertical, Copy, Trash2, Search, Sparkles, Loader2 } from "lucide-react";
+import { MoreVertical, Copy, Trash2, Search, Sparkles, Loader2, Clipboard } from "lucide-react";
 import { api } from "@/lib/api";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import {
   Dialog,
   DialogContent,
@@ -134,22 +134,18 @@ export default function TemplatesPage() {
         const newTemplate = await response.json();
         setTemplates((prev) => [newTemplate, ...prev]);
         setIsDialogOpen(false);
-        toast.success({
-          title: "Template created",
+        toast.success("Template created", {
           description: "Your template has been created successfully.",
         });
       } else if (response.status === 400) {
         const error = await response.json();
-        toast.error({
-          title: "Error",
+        toast.error("Error", {
           description: error.detail || "Failed to create template",
         });
       }
     } catch (error) {
-      toast({
-        title: "Error",
+      toast.error("Error", {
         description: "Failed to create template",
-        variant: "destructive",
       });
     } finally {
       setIsCreating(false);
@@ -171,16 +167,13 @@ export default function TemplatesPage() {
       if (response.ok) {
         const newTemplate = await response.json();
         setTemplates((prev) => [newTemplate, ...prev]);
-        toast.success({
-          title: "Template duplicated",
+        toast.success("Template duplicated", {
           description: "Your template has been duplicated successfully.",
         });
       }
     } catch (error) {
-      toast({
-        title: "Error",
+      toast.error("Error", {
         description: "Failed to duplicate template",
-        variant: "destructive",
       });
     } finally {
       setIsDuplicating(null);
@@ -198,16 +191,13 @@ export default function TemplatesPage() {
 
       if (response.ok) {
         setTemplates((prev) => prev.filter((t) => t.id !== templateToDelete.id));
-        toast.success({
-          title: "Template deleted",
+        toast.success("Template deleted", {
           description: "Your template has been deleted successfully.",
         });
       }
     } catch (error) {
-      toast({
-        title: "Error",
+      toast.error("Error", {
         description: "Failed to delete template",
-        variant: "destructive",
       });
     } finally {
       setIsDeleting(false);
@@ -248,25 +238,25 @@ export default function TemplatesPage() {
         {/* Search */}
         <div className="mb-6 flex flex-wrap items-center gap-3">
           <div className="relative flex-1 min-w-[150px] max-w-xs">
+            <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               placeholder="Search by ID, Name or Subject"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pr-9 bg-white"
+              className="pr-9 bg-white hover:border-stone-300 focus-within:border-stone-300 focus-within:shadow-input hover:shadow-input-hover focus-within:shadow-input focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0"
             />
-            <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           </div>
         </div>
 
         {/* Table */}
-        <div className="rounded-lg border border-border bg-card">
+        <div className="rounded-2xl border border-border bg-card">
           <Table>
             <TableHeader>
               <TableRow className="uppercase text-xs">
-                <TableHead className="h-10">Email template</TableHead>
+                <TableHead className="h-10 rounded-tl-2xl">Email template</TableHead>
                 <TableHead className="h-10">Created</TableHead>
                 <TableHead className="h-10">Updated</TableHead>
-                <TableHead className="w-[50px] h-10"></TableHead>
+                <TableHead className="w-[50px] h-10 rounded-tr-2xl"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -321,6 +311,10 @@ export default function TemplatesPage() {
                           >
                             <Copy className="mr-2 h-4 w-4" />
                             Duplicate
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleCopyTemplateId(template)}>
+                            <Clipboard className="mr-2 h-4 w-4" />
+                            Copy template ID
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             className="text-destructive focus:text-destructive"

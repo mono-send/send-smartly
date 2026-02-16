@@ -20,6 +20,7 @@ import {
 import { toast } from "sonner";
 import { api } from "@/lib/api";
 import { formatDistanceToNow } from "date-fns";
+import { CardContent } from "@/components/ui/card";
 
 type LogSource = "api" | "mcp";
 
@@ -212,6 +213,44 @@ export default function LogDetailsPage() {
   };
 
   const displayTitle = isMcp && log?.toolName ? log.toolName : `${log?.method ?? ""} ${log?.endpoint ?? ""}`;
+  const detailCards = useMemo(() => {
+    if (!log) return [];
+
+    const cards = [
+      {
+        label: isMcp ? "Tool Name" : "Endpoint",
+        value: isMcp && log.toolName ? log.toolName : log.endpoint,
+        valueClassName: "font-mono",
+      },
+      {
+        label: "Date",
+        value: formatCreatedTime(log.createdAt),
+      },
+      {
+        label: "Status",
+        value: <StatusCode code={log.status} />,
+      },
+      {
+        label: "Method",
+        value: log.method,
+      },
+      {
+        label: isMcp ? "Client" : "User-Agent",
+        value: log.userAgent || "-",
+        valueClassName: "font-mono text-sm",
+      },
+    ];
+
+    if (isMcp) {
+      cards.push({
+        label: "Endpoint",
+        value: log.endpoint,
+        valueClassName: "font-mono text-sm",
+      });
+    }
+
+    return cards;
+  }, [isMcp, log]);
 
   if (isLoading) {
     return (
@@ -233,11 +272,13 @@ export default function LogDetailsPage() {
             <Skeleton className="h-9 w-9 rounded-md" />
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-8 mb-8">
-            {Array.from({ length: 6 }).map((_, index) => (
-              <div key={index}>
-                <Skeleton className="h-3 w-20 mb-2" />
-                <Skeleton className="h-5 w-32" />
+          <div className="grid overflow-hidden rounded-2xl border bg-card text-card-foreground shadow-sm md:grid-cols-5 md:divide-x mb-8">
+            {Array.from({ length: 5 }).map((_, index) => (
+              <div key={index} className={index === 4 ? "" : "border-b md:border-b-0"}>
+                <CardContent className="flex flex-col gap-2 py-6">
+                  <Skeleton className="h-3 w-20" />
+                  <Skeleton className="h-5 w-24" />
+                </CardContent>
               </div>
             ))}
           </div>
@@ -335,48 +376,34 @@ export default function LogDetailsPage() {
           </div>
         )}
 
-        {/* Details Grid - First Row */}
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-8 mb-8">
-          <div>
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
-              {isMcp ? "Tool Name" : "Endpoint"}
-            </p>
-            <p className="text-foreground font-mono">{isMcp && log.toolName ? log.toolName : log.endpoint}</p>
-          </div>
-          <div>
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Date</p>
-            <p className="text-foreground">{formatCreatedTime(log.createdAt)}</p>
-          </div>
-          <div>
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Status</p>
-            <StatusCode code={log.status} />
-          </div>
-        </div>
-
-        {/* Details Grid - Second Row */}
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-8 mb-10">
-          <div>
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Method</p>
-            <p className="text-foreground">{log.method}</p>
-          </div>
-          <div>
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
-              {isMcp ? "Client" : "User-Agent"}
-            </p>
-            <p className="text-foreground font-mono text-sm">{log.userAgent || "-"}</p>
-          </div>
-          {isMcp && (
-            <div>
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Endpoint</p>
-              <p className="text-foreground font-mono text-sm">{log.endpoint}</p>
-            </div>
+        {/* Details Grid */}
+        <div
+          className={cn(
+            "grid overflow-hidden rounded-2xl border bg-card text-card-foreground shadow-sm md:divide-x mb-10",
+            detailCards.length === 6 ? "md:grid-cols-6" : "md:grid-cols-5"
           )}
+        >
+          {detailCards.map((card, index) => (
+            <div
+              key={card.label}
+              className={index === detailCards.length - 1 ? "" : "border-b md:border-b-0"}
+            >
+              <CardContent className="flex flex-col gap-2 py-6">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                  {card.label}
+                </p>
+                <div className={cn("text-foreground text-sm font-medium", card.valueClassName)}>
+                  {card.value}
+                </div>
+              </CardContent>
+            </div>
+          ))}
         </div>
 
         {/* Response Body */}
         <div className="mb-8">
           <h2 className="text-lg font-semibold text-foreground mb-4">Response</h2>
-          <div className="relative rounded-lg bg-code border border-code-border p-4 overflow-x-auto">
+          <div className="relative rounded-2xl bg-code border border-code-border p-4 overflow-x-auto">
             <div className="absolute top-2 right-2">
               <CopyButton content={responseBodyJson} />
             </div>
@@ -390,7 +417,7 @@ export default function LogDetailsPage() {
         {hasRequestBody && (
           <div>
             <h2 className="text-lg font-semibold text-foreground mb-4">Request</h2>
-            <div className="relative rounded-lg bg-code border border-code-border p-4 overflow-x-auto">
+            <div className="relative rounded-2xl bg-code border border-code-border p-4 overflow-x-auto">
               <div className="absolute top-2 right-2">
                 <CopyButton content={requestBodyJson} />
               </div>

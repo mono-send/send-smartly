@@ -1,4 +1,4 @@
-const API_BASE_URL = "https://internal-api.monosend.io/v1.0";
+export const API_BASE_URL = "https://internal-api.monosend.io/v1.0";
 
 type RequestOptions = {
   method?: string;

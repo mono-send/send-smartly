@@ -56,7 +56,7 @@ interface TeamMember {
   id: string;
   name: string;
   email: string;
-  role: "owner" | "admin" | "developer" | "viewer";
+  role: "owner" | "admin" | "developer" | "marketer";
   avatar: string;
 }
 
@@ -64,8 +64,19 @@ interface PendingInvitation {
   id: string;
   email: string;
   name: string;
-  role: "owner" | "admin" | "developer" | "viewer";
+  role: "owner" | "admin" | "developer" | "marketer";
   sentAt: Date;
+}
+
+interface UsageData {
+  transactional_limit_monthly: number | null;
+  transactional_limit_daily: number | null;
+  monthly_used: number | null;
+  daily_used: number | null;
+  marketing_contacts_limit: number | null;
+  marketing_audiences_limit: number | null;
+  contact_count: number | null;
+  segment_count: number | null;
 }
 
 // Invitation expiry duration in days
@@ -143,7 +154,7 @@ const roleLabels: Record<string, string> = {
   owner: "Owner",
   admin: "Admin",
   developer: "Developer",
-  viewer: "Viewer",
+  marketer: "Marketer",
 };
 
 export default function SettingsPage() {
@@ -163,6 +174,8 @@ export default function SettingsPage() {
   const [memberToEdit, setMemberToEdit] = useState<TeamMember | null>(null);
   const [invitationToCancel, setInvitationToCancel] = useState<PendingInvitation | null>(null);
   const [editRole, setEditRole] = useState("");
+  const [usage, setUsage] = useState<UsageData | null>(null);
+  const [isLoadingUsage, setIsLoadingUsage] = useState(false);
   const [activityVisibleCount, setActivityVisibleCount] = useState(ACTIVITY_PAGE_SIZE);
   const [activityFilter, setActivityFilter] = useState<string[]>([]);
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
@@ -198,6 +211,28 @@ export default function SettingsPage() {
     };
 
     fetchActivityLog();
+  }, []);
+
+  useEffect(() => {
+    const fetchUsage = async () => {
+      setIsLoadingUsage(true);
+      try {
+        const response = await api("/settings/usage");
+        if (response.ok) {
+          const data: UsageData = await response.json();
+          setUsage(data);
+        } else {
+          toast.error("Failed to load usage data");
+        }
+      } catch (error) {
+        console.error("Error fetching usage data:", error);
+        toast.error("Failed to load usage data");
+      } finally {
+        setIsLoadingUsage(false);
+      }
+    };
+
+    fetchUsage();
   }, []);
 
   // Fetch team members from API
@@ -290,6 +325,20 @@ export default function SettingsPage() {
   useEffect(() => {
     setActivityVisibleCount(ACTIVITY_PAGE_SIZE);
   }, [activityFilter, dateRange]);
+
+  const formatCount = (value: number | null | undefined) => {
+    if (value === null || value === undefined) {
+      return "0";
+    }
+    return value.toLocaleString();
+  };
+
+  const getUsagePercent = (used: number | null | undefined, limit: number | null | undefined) => {
+    if (!limit || limit <= 0 || used === null || used === undefined) {
+      return 0;
+    }
+    return Math.min(100, (used / limit) * 100);
+  };
 
   const handleInvite = async () => {
     if (!inviteEmail.trim()) {
@@ -450,21 +499,52 @@ export default function SettingsPage() {
                 </div>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Monthly limit</span>
-                    <span className="font-medium">6 / 3,000</span>
+                {isLoadingUsage ? (
+                  <div className="space-y-6">
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <Skeleton className="h-4 w-28" />
+                        <Skeleton className="h-4 w-20" />
+                      </div>
+                      <Skeleton className="h-2 w-full" />
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <Skeleton className="h-4 w-24" />
+                        <Skeleton className="h-4 w-16" />
+                      </div>
+                      <Skeleton className="h-2 w-full" />
+                    </div>
                   </div>
-                  <Progress value={0.2} className="h-2" />
-                </div>
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Daily limit</span>
-                    <span className="font-medium">1 / 100</span>
-                  </div>
-                  <Progress value={1} className="h-2" />
-                </div>
-                <Button variant="outline">
+                ) : (
+                  <>
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Monthly limit</span>
+                        <span className="font-medium">
+                          {formatCount(usage?.monthly_used)} / {formatCount(usage?.transactional_limit_monthly)}
+                        </span>
+                      </div>
+                      <Progress
+                        value={getUsagePercent(usage?.monthly_used, usage?.transactional_limit_monthly)}
+                        className="h-2"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Daily limit</span>
+                        <span className="font-medium">
+                          {formatCount(usage?.daily_used)} / {formatCount(usage?.transactional_limit_daily)}
+                        </span>
+                      </div>
+                      <Progress
+                        value={getUsagePercent(usage?.daily_used, usage?.transactional_limit_daily)}
+                        className="h-2"
+                      />
+                    </div>
+                  </>
+                )}
+                <Button variant="outline" className="h-9">
                   Upgrade plan
                   <ArrowUpRight className="ml-2 h-4 w-4" />
                 </Button>
@@ -485,22 +565,53 @@ export default function SettingsPage() {
                 </div>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Contacts</span>
-                    <span className="font-medium">4 / 1,000</span>
+                {isLoadingUsage ? (
+                  <div className="space-y-6">
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <Skeleton className="h-4 w-20" />
+                        <Skeleton className="h-4 w-20" />
+                      </div>
+                      <Skeleton className="h-2 w-full" />
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <Skeleton className="h-4 w-24" />
+                        <Skeleton className="h-4 w-16" />
+                      </div>
+                      <Skeleton className="h-2 w-full" />
+                    </div>
                   </div>
-                  <Progress value={0.4} className="h-2" />
-                </div>
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Audiences</span>
-                    <span className="font-medium">1 / 1</span>
-                  </div>
-                  <Progress value={100} className="h-2" />
-                </div>
+                ) : (
+                  <>
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Contacts</span>
+                        <span className="font-medium">
+                          {formatCount(usage?.contact_count)} / {formatCount(usage?.marketing_contacts_limit)}
+                        </span>
+                      </div>
+                      <Progress
+                        value={getUsagePercent(usage?.contact_count, usage?.marketing_contacts_limit)}
+                        className="h-2"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Segments</span>
+                        <span className="font-medium">
+                          {formatCount(usage?.segment_count)} / {formatCount(usage?.marketing_audiences_limit)}
+                        </span>
+                      </div>
+                      <Progress
+                        value={getUsagePercent(usage?.segment_count, usage?.marketing_audiences_limit)}
+                        className="h-2"
+                      />
+                    </div>
+                  </>
+                )}
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Broadcasts</span>
+                  <span className="text-muted-foreground">Campaigns</span>
                   <Badge variant="secondary">Unlimited</Badge>
                 </div>
               </CardContent>
@@ -532,7 +643,7 @@ export default function SettingsPage() {
                     <li>• 1,000 contacts</li>
                   </ul>
                 </div>
-                <Button>
+                <Button className="h-9">
                   Upgrade to Pro
                   <ArrowUpRight className="ml-2 h-4 w-4" />
                 </Button>
@@ -898,7 +1009,7 @@ export default function SettingsPage() {
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground">No integrations configured yet.</p>
-                <Button variant="outline" className="mt-4">
+                <Button variant="outline" className="mt-4 h-9">
                   Browse integrations
                 </Button>
               </CardContent>
@@ -936,15 +1047,18 @@ export default function SettingsPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="viewer">Viewer - Can view only</SelectItem>
-                  <SelectItem value="developer">Developer - Can edit projects</SelectItem>
-                  <SelectItem value="admin">Admin - Can manage settings</SelectItem>
+                  <SelectItem value="marketer">Marketer - Marketing emails & campaigns</SelectItem>
+                  <SelectItem value="developer">Developer - Transactional emails & API</SelectItem>
+                  <SelectItem value="admin">Admin - Full access</SelectItem>
                 </SelectContent>
               </Select>
-              <p className="text-xs text-muted-foreground">
-                {inviteRole === "viewer" && "Viewers can see all data but cannot make changes."}
-                {inviteRole === "developer" && "Developers can create and edit emails, domains, and campaigns."}
-                {inviteRole === "admin" && "Admins have full access including billing and team management."}
+              <p className="text-xs text-muted-foreground mt-2">
+                {inviteRole === "marketer" &&
+                  "Can manage marketing emails, campaigns, audiences, and view analytics. No access to domains, APIs, billing, or team settings."}
+                {inviteRole === "developer" &&
+                  "Can manage transactional emails, domains, API keys, and integrations. No access to billing or team management."}
+                {inviteRole === "admin" &&
+                  "Full access including billing, domains, API keys, and team management."}
               </p>
             </div>
           </div>
@@ -992,15 +1106,15 @@ export default function SettingsPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="viewer">Viewer - Can view only</SelectItem>
-                  <SelectItem value="developer">Developer - Can edit projects</SelectItem>
-                  <SelectItem value="admin">Admin - Can manage settings</SelectItem>
+                  <SelectItem value="marketer">Marketer - Marketing emails & campaigns</SelectItem>
+                  <SelectItem value="developer">Developer - Transactional emails & API</SelectItem>
+                  <SelectItem value="admin">Admin - Full access</SelectItem>
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground">
-                {editRole === "viewer" && "Viewers can see all data but cannot make changes."}
-                {editRole === "developer" && "Developers can create and edit emails, domains, and campaigns."}
-                {editRole === "admin" && "Admins have full access including billing and team management."}
+                {editRole === "marketer" && "Can manage marketing emails, campaigns, audiences, and view analytics. No access to domains, APIs, billing, or team settings."}
+                {editRole === "developer" && "Can manage transactional emails, domains, API keys, and integrations. No access to billing or team management."}
+                {editRole === "admin" && "Full access including billing, domains, API keys, and team management."}
               </p>
             </div>
           </div>

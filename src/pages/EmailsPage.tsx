@@ -21,7 +21,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Search, MoreVertical, Calendar, Trash2, X, RefreshCw, Loader2 } from "lucide-react";
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -95,6 +95,14 @@ export default function EmailsPage() {
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const isFetchingRef = useRef(false);
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const toEmailParam = searchParams.get("to")?.trim() ?? "";
+
+  useEffect(() => {
+    if (toEmailParam && search.length === 0) {
+      setSearch(toEmailParam);
+    }
+  }, [search.length, toEmailParam]);
 
   // Debounce search input
   useEffect(() => {
@@ -122,6 +130,10 @@ export default function EmailsPage() {
         params.append("search", debouncedSearch);
       }
       
+      if (toEmailParam) {
+        params.append("to_email", toEmailParam);
+      }
+
       if (statusFilter !== "all") {
         params.append("status_filter", statusFilter);
       }
@@ -173,7 +185,7 @@ export default function EmailsPage() {
       setIsLoading(false);
       setIsLoadingMore(false);
     }
-  }, [debouncedSearch, statusFilter, dateRange]);
+  }, [debouncedSearch, statusFilter, dateRange, toEmailParam]);
 
   useEffect(() => {
     setSelectedIds(new Set());
@@ -265,6 +277,17 @@ export default function EmailsPage() {
     }
   };
 
+  const handleClearToFilter = useCallback(() => {
+    if (!toEmailParam) {
+      return;
+    }
+
+    setSearch("");
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.delete("to");
+    setSearchParams(nextParams);
+  }, [searchParams, setSearchParams, toEmailParam]);
+
   return (
     <>
       <TopBar title="Email Activity" subtitle="View and manage your sent emails" />
@@ -273,7 +296,15 @@ export default function EmailsPage() {
         {/* Filters */}
         <div className="mb-6 flex flex-wrap items-center gap-3">
           <div className="relative flex-1 min-w-[150px] max-w-xs">
-            <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <button
+              type="button"
+              onClick={handleClearToFilter}
+              disabled={!toEmailParam}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground disabled:cursor-default"
+              aria-label={toEmailParam ? "Clear to filter" : "Search"}
+            >
+              {toEmailParam ? <X className="h-4 w-4" /> : <Search className="h-4 w-4" />}
+            </button>
             <Input
               placeholder="Search by ID, To, Subject"
               value={search}
@@ -283,7 +314,7 @@ export default function EmailsPage() {
           </div>
           
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-[160px]">
+            <SelectTrigger className="w-[160px] bg-white">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
@@ -299,7 +330,7 @@ export default function EmailsPage() {
           </Select>
 
           <Select value={dateRange} onValueChange={setDateRange}>
-            <SelectTrigger className="w-[160px]">
+            <SelectTrigger className="w-[160px] bg-white">
               <Calendar className="mr-2 h-4 w-4" />
               <SelectValue placeholder="Date range" />
             </SelectTrigger>
@@ -353,7 +384,7 @@ export default function EmailsPage() {
         )}
 
         {/* Table */}
-        <div className="rounded-lg border border-border bg-card">
+        <div className="rounded-2xl border border-border bg-card">
           <Table>
             <TableHeader>
               <TableRow className="uppercase text-xs">
@@ -366,11 +397,11 @@ export default function EmailsPage() {
                     disabled={isLoading || emails.length === 0}
                   />
                 </TableHead> */}
-                <TableHead className="h-10">To</TableHead>
+                <TableHead className="h-10 rounded-tl-2xl">To</TableHead>
                 <TableHead className="h-10">Status</TableHead>
                 <TableHead className="h-10">Subject</TableHead>
                 <TableHead className="h-10">Sent</TableHead>
-                <TableHead className="w-[50px] h-10"></TableHead>
+                <TableHead className="w-[50px] h-10 rounded-tr-2xl"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

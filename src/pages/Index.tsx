@@ -1,13 +1,15 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { TopBar } from "@/components/layout/TopBar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CodeBlock } from "@/components/ui/code-block";
-import { Key, Send, Globe, FlaskConical, Navigation } from "lucide-react";
+import { Key, Send, Globe, FlaskConical, Navigation, Check, Loader2, AlertTriangle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
+import { api } from "@/lib/api";
 
 const languages = ["Node.js", "PHP", "Python", "Ruby", "Go", "Rust", "Elixir", "Java", ".NET", "cURL"] as const;
 type Language = typeof languages[number];
@@ -118,17 +120,111 @@ await client.Emails.SendAsync(new SendEmailRequest {
   }'`
 };
 
+interface OnboardingData {
+  plan: string | null;
+  is_api_key: boolean;
+  domain: string;
+  domain_id: string | null;
+}
+
 const Index = () => {
   const navigate = useNavigate();
   const [activeLanguage, setActiveLanguage] = useState<Language>("Node.js");
+  const [onboardingData, setOnboardingData] = useState<OnboardingData | null>(null);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [isLoadingOnboarding, setIsLoadingOnboarding] = useState(true);
+  const [isCreatingApiKey, setIsCreatingApiKey] = useState(false);
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
+  const [isEmailSent, setIsEmailSent] = useState(false);
+  const isDomainVerified = onboardingData?.domain === "verified";
+  const isDomainUnverified = onboardingData?.domain === "unverified";
+
+  useEffect(() => {
+    const loadOnboardingData = async () => {
+      await fetchOnboardingData({ showSkeleton: true });
+      setIsInitialLoad(false);
+    };
+
+    if (isInitialLoad) {
+      loadOnboardingData();
+    }
+  }, [isInitialLoad]);
+
+  const fetchOnboardingData = async ({ showSkeleton = false }: { showSkeleton?: boolean } = {}) => {
+    try {
+      if (showSkeleton) {
+        setIsLoadingOnboarding(true);
+      }
+      const response = await api("/onboarding");
+      if (response.ok) {
+        const data = await response.json();
+        setOnboardingData(data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch onboarding data:", error);
+    } finally {
+      if (showSkeleton) {
+        setIsLoadingOnboarding(false);
+      }
+    }
+  };
 
   const handleCopyCode = (code: string) => {
     navigator.clipboard.writeText(code);
     toast.success("Copied to clipboard");
   };
 
-  const handleSendEmail = () => {
-    toast.success("Email sent successfully!");
+  const handleSendEmail = async () => {
+    try {
+      setIsSendingEmail(true);
+      // Simulate API call delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      setIsEmailSent(true);
+      toast.success("Email sent successfully!");
+    } catch (error) {
+      console.error("Failed to send email:", error);
+      toast.error("Failed to send email");
+    } finally {
+      setIsSendingEmail(false);
+    }
+  };
+
+  const handleAddApiKey = async () => {
+    try {
+      setIsCreatingApiKey(true);
+      const response = await api("/api_keys", {
+        method: "POST",
+        body: {
+          name: "Onboarding",
+          permission: "sending_access",
+          domain: null
+        }
+      });
+      if (response.ok) {
+        toast.success("API Key created successfully!");
+        // Refresh onboarding data to update the UI
+        await fetchOnboardingData({ showSkeleton: false });
+      } else {
+        toast.error("Failed to create API Key");
+      }
+    } catch (error) {
+      console.error("Failed to create API key:", error);
+      toast.error("Failed to create API Key");
+    } finally {
+      setIsCreatingApiKey(false);
+    }
+  };
+
+  const isSectionsDisabled = onboardingData?.is_api_key === false;
+  const handleDomainCtaClick = () => {
+    const domainId = onboardingData?.domain_id?.trim() ?? "";
+
+    if (isDomainUnverified && domainId) {
+      navigate(`/domains/${domainId}`);
+      return;
+    }
+
+    navigate("/domains/new");
   };
 
   return (
@@ -140,43 +236,133 @@ const Index = () => {
         <h1 className="text-xl font-semibold text-foreground mb-2">Hey Cooper, let's get started</h1>
         <p className="text-muted-foreground mb-8">Follow these steps to set up your project and start sending emails with the MonoSend API.</p>
 
+        {isLoadingOnboarding ? (
+          // Skeleton loaders while loading
+          <div className="space-y-8">
+            {/* Step 1 Skeleton */}
+            <div className="flex gap-4">
+              <div className="flex flex-col items-center">
+                <Skeleton className="h-6 w-6 rounded-full" />
+                <div className="flex-1 w-px bg-border mt-2" />
+              </div>
+              <div className="flex-1 pb-8">
+                <Skeleton className="h-6 w-48 mb-4" />
+                <Skeleton className="h-4 w-64 mb-4" />
+                <Skeleton className="h-9 w-32" />
+              </div>
+            </div>
+
+            {/* Step 2 Skeleton */}
+            <div className="flex gap-4">
+              <div className="flex flex-col items-center">
+                <Skeleton className="h-6 w-6 rounded-full" />
+                <div className="flex-1 w-px bg-border mt-2" />
+              </div>
+              <div className="flex-1 pb-8">
+                <Skeleton className="h-6 w-48 mb-4" />
+                <Skeleton className="h-4 w-64 mb-4" />
+                <Card className="overflow-hidden">
+                  <div className="border-b border-border bg-muted/30 px-4 pt-2 pb-0">
+                    <Skeleton className="h-8 w-full mb-2" />
+                  </div>
+                  <CardContent className="p-4">
+                    <Skeleton className="h-64 w-full" />
+                  </CardContent>
+                  <div className="border-t border-border p-4">
+                    <Skeleton className="h-10 w-32" />
+                  </div>
+                </Card>
+              </div>
+            </div>
+
+            {/* Step 3 Skeleton */}
+            <div className="flex gap-4">
+              <div className="flex flex-col items-center">
+                <Skeleton className="h-6 w-6 rounded-full" />
+              </div>
+              <div className="flex-1">
+                <Skeleton className="h-6 w-48 mb-4" />
+                <Skeleton className="h-4 w-64 mb-4" />
+                <Skeleton className="h-9 w-32" />
+              </div>
+            </div>
+          </div>
+        ) : (
+        // Actual content when loaded
+        <>
         {/* Steps */}
         <div className="space-y-8">
           {/* Step 1: Add API Key */}
           <div className="flex gap-4">
             <div className="flex flex-col items-center">
-              <div className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-foreground">
-                <div className="h-2 w-2 rounded-full bg-foreground" />
+              <div className={`flex h-6 w-6 items-center justify-center rounded-full ${
+                onboardingData?.is_api_key
+                  ? 'bg-green-500 border-2 border-green-500'
+                  : 'border-2 border-foreground'
+              }`}>
+                {onboardingData?.is_api_key ? (
+                  <Check className="h-4 w-4 text-white" />
+                ) : (
+                  <div className="h-2 w-2 rounded-full bg-foreground" />
+                )}
               </div>
               <div className="flex-1 w-px bg-border mt-2" />
             </div>
             <div className="flex-1 pb-8">
-              <h2 className="text-lg font-semibold text-foreground mb-1">Add an API Key</h2>
+              <div className="flex items-center gap-2 mb-1">
+                <h2 className="text-lg font-semibold text-foreground">Add an API Key</h2>
+                {onboardingData?.is_api_key && (
+                  <Badge variant="secondary" className="bg-green-100 text-green-700 border-green-200">Completed</Badge>
+                )}
+              </div>
               <p className="text-muted-foreground text-sm mb-4">Use the following generated key to authenticate requests</p>
-              <Button 
+              <Button
                 className="gap-2 h-9"
-                onClick={() => navigate("/api-keys")}
+                onClick={handleAddApiKey}
+                disabled={onboardingData?.is_api_key || isCreatingApiKey}
               >
-                <Key className="h-4 w-4" />
-                Add API Key
+                {isCreatingApiKey ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Creating...
+                  </>
+                ) : (
+                  <>
+                    <Key className="h-4 w-4" />
+                    Add API Key
+                  </>
+                )}
               </Button>
             </div>
           </div>
 
           {/* Step 2: Send Email */}
-          <div className="flex gap-4">
+          <div className={`flex gap-4 ${isSectionsDisabled ? 'opacity-50 pointer-events-none' : ''}`}>
             <div className="flex flex-col items-center">
-              <div className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-muted-foreground">
-                <div className="h-2 w-2 rounded-full bg-muted-foreground" />
+              <div className={`flex h-6 w-6 items-center justify-center rounded-full ${
+                isEmailSent
+                  ? 'bg-green-500 border-2 border-green-500'
+                  : 'border-2 border-foreground'
+              }`}>
+                {isEmailSent ? (
+                  <Check className="h-4 w-4 text-white" />
+                ) : (
+                  <div className="h-2 w-2 rounded-full bg-foreground" />
+                )}
               </div>
               <div className="flex-1 w-px bg-border mt-2" />
             </div>
             <div className="flex-1 pb-8">
-              <h2 className="text-lg font-semibold text-foreground mb-1">Send an email</h2>
+              <div className="flex items-center gap-2 mb-1">
+                <h2 className="text-lg font-semibold text-foreground">Send an email</h2>
+                {isEmailSent && (
+                  <Badge variant="secondary" className="bg-green-100 text-green-700 border-green-200">Completed</Badge>
+                )}
+              </div>
               <p className="text-muted-foreground text-sm mb-4">Implement or run the code below to send your first email</p>
               
               <Card className="overflow-hidden">
-                <div className="border-b border-border bg-muted/30 px-4 py-2 flex items-center justify-between">
+                <div className="border-b border-border bg-muted/30 px-4 pt-2 pb-0 flex items-center justify-between">
                   <Tabs value={activeLanguage} onValueChange={(v) => setActiveLanguage(v as Language)}>
                     <TabsList className="h-auto bg-transparent p-0 gap-0">
                       {languages.map((lang) => (
@@ -207,12 +393,22 @@ const Index = () => {
                   />
                 </CardContent>
                 <div className="border-t border-border p-4">
-                  <Button 
+                  <Button
                     className="gap-2"
                     onClick={handleSendEmail}
+                    disabled={isEmailSent || isSendingEmail}
                   >
-                    <Send className="h-4 w-4" />
-                    Send email
+                    {isSendingEmail ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Sending...
+                      </>
+                    ) : (
+                      <>
+                        <Send className="h-4 w-4" />
+                        Send email
+                      </>
+                    )}
                   </Button>
                 </div>
               </Card>
@@ -220,24 +416,43 @@ const Index = () => {
           </div>
 
           {/* Step 3: Add Domain */}
-          <div className="flex gap-4">
+          <div className={`flex gap-4 ${isSectionsDisabled ? 'opacity-50 pointer-events-none' : ''}`}>
             <div className="flex flex-col items-center">
-              <div className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-muted-foreground">
-                <div className="h-2 w-2 rounded-full bg-muted-foreground" />
+              <div className={`flex h-6 w-6 items-center justify-center rounded-full ${
+                isDomainVerified
+                  ? "border-2 bg-green-500 border-green-500"
+                  : isDomainUnverified
+                    ? ""
+                    : "border-2 border-foreground"
+              }`}>
+                {isDomainVerified ? (
+                  <Check className="h-4 w-4 text-white" />
+                ) : isDomainUnverified ? (
+                  <AlertTriangle className="h-4 w-4 text-orange-600" />
+                ) : (
+                  <div className="h-2 w-2 rounded-full bg-foreground" />
+                )}
               </div>
             </div>
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-1">
                 <h2 className="text-lg font-semibold text-foreground">Add a domain</h2>
-                <Badge variant="secondary">Recommended</Badge>
+                {isDomainVerified ? (
+                  <Badge variant="secondary" className="bg-green-100 text-green-700 border-green-200">Completed</Badge>
+                ) : isDomainUnverified ? (
+                  <Badge variant="secondary" className="bg-orange-500/10 text-orange-600 border-orange-500/20">Unverified</Badge>
+                ) : (
+                  <Badge variant="secondary">Recommended</Badge>
+                )}
               </div>
               <p className="text-muted-foreground text-sm mb-4">Improve deliverability by proving to inbox providers that you own the domain you're sending from.</p>
-              <Button 
+              <Button
                 className="gap-2 h-9"
-                onClick={() => navigate("/domains/new")}
+                onClick={handleDomainCtaClick}
+                disabled={isSectionsDisabled}
               >
                 <Globe className="h-4 w-4" />
-                Add domain
+                Configure domain DNS
               </Button>
             </div>
           </div>
@@ -284,6 +499,8 @@ const Index = () => {
             </Card>
           </div>
         </div>
+        </>
+        )}
       </div>
     </>
   );

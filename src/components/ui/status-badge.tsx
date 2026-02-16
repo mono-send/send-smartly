@@ -10,6 +10,7 @@ type StatusType =
   | "pending" 
   | "queued"
   | "verified"
+  | "unverified"
   | "subscribed"
   | "unsubscribed"
   | "suspended"
@@ -51,6 +52,10 @@ const statusConfig: Record<StatusType, { label: string; className: string }> = {
   verified: {
     label: "Verified",
     className: "bg-success/10 text-success border-success/20",
+  },
+  unverified: {
+    label: "Unverified",
+    className: "bg-orange-500/10 text-orange-600 border-orange-500/20",
   },
   subscribed: {
     label: "Subscribed",

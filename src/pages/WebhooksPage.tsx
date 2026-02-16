@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { TopBar } from "@/components/layout/TopBar";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Webhook, Check, Info, MoreHorizontal, Trash2, ExternalLink, Pencil, Play, Loader2, Clock, CheckCircle2, XCircle, History, RefreshCw, Key, Copy, Eye, EyeOff, RotateCcw, Shield, Plus, X, BarChart3 } from "lucide-react";
+import { Webhook, Check, Info, MoreHorizontal, Trash2, ExternalLink, Pencil, Play, Loader2, Clock, CheckCircle2, XCircle, History, RefreshCw, Key, Copy, Eye, EyeOff, Shield, Plus, X, BarChart3 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -11,6 +11,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Popover,
   PopoverContent,
@@ -32,6 +39,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
+import { api } from "@/lib/api";
 import { toast } from "sonner";
 import { ConfirmDeleteDialog } from "@/components/dialogs/ConfirmDeleteDialog";
 import { CodeBlock } from "@/components/ui/code-block";
@@ -48,26 +56,80 @@ interface EventGroup {
   events: WebhookEvent[];
 }
 
+interface WebhookStats {
+  total: number;
+  success: number;
+  failed: number;
+  pending?: number;
+  success_rate?: number;
+}
+
+interface ApiWebhookItem {
+  id: string;
+  endpoint_url: string;
+  status: string;
+  event_types: string[];
+  stats_7d?: WebhookStats | null;
+  created_at?: string;
+  max_retries?: number;
+  retry_interval_seconds?: number;
+  secret?: string;
+  allowed_ips?: string[];
+  timeout_seconds?: number;
+}
+
+interface ApiWebhookDetail {
+  id: string;
+  endpoint_url: string;
+  status?: string;
+  event_types?: string[];
+  retry?: {
+    max_retries?: number;
+    interval_seconds?: number;
+  };
+  ip_allowlist?: string[];
+  timeout_seconds?: number;
+  signing_secret?: string;
+  signing_secret_last4?: string;
+}
+
+interface ApiDeliveryItem {
+  delivery_id?: string;
+  status?: string;
+  attempt_count?: number;
+  max_attempts?: number;
+  event_type?: string;
+  created_at?: string;
+  delivered_at?: string;
+  failed_at?: string;
+  updated_at?: string;
+  error?: string;
+  endpoint_url?: string;
+}
+
 interface SavedWebhook {
   id: string;
-  endpointUrl: string;
-  events: string[];
+  endpoint_url: string;
+  status: string;
+  event_types: string[];
+  stats_7d?: WebhookStats | null;
   createdAt: Date;
   maxRetries: number;
   retryIntervalSeconds: number;
   secret: string;
   allowedIps: string[];
+  timeoutSeconds: number;
 }
 
 interface DeliveryLogEntry {
   id: string;
+  deliveryId: string;
   webhookId: string;
   endpointUrl: string;
   eventType: string;
   status: "success" | "failed" | "pending" | "retrying";
   statusMessage: string;
   timestamp: Date;
-  payload: object;
   attempt: number;
   maxRetries: number;
 }
@@ -138,13 +200,26 @@ export default function WebhooksPage() {
   const [testResult, setTestResult] = useState<{ success: boolean; message: string; statusCode?: number } | null>(null);
   const [deliveryLog, setDeliveryLog] = useState<DeliveryLogEntry[]>([]);
   const [showDeliveryLog, setShowDeliveryLog] = useState(false);
+  const [deliveryLogWebhook, setDeliveryLogWebhook] = useState<SavedWebhook | null>(null);
+  const [isDeliveryLogLoading, setIsDeliveryLogLoading] = useState(false);
+  const [isDeliveryLogFetchingNext, setIsDeliveryLogFetchingNext] = useState(false);
+  const [deliveryLogCursor, setDeliveryLogCursor] = useState<string | null>(null);
   const [maxRetries, setMaxRetries] = useState(3);
   const [retryInterval, setRetryInterval] = useState(5);
+  const [timeoutSeconds, setTimeoutSeconds] = useState(30);
+  const [status, setStatus] = useState("active");
   const [webhookSecret, setWebhookSecret] = useState("");
+  const [isDeleteLoading, setIsDeleteLoading] = useState(false);
   const [showSecret, setShowSecret] = useState(false);
   const [generatedSignature, setGeneratedSignature] = useState("");
   const [allowedIps, setAllowedIps] = useState<string[]>([]);
   const [newIpInput, setNewIpInput] = useState("");
+  const [signingSecretLast4, setSigningSecretLast4] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isFetchingNext, setIsFetchingNext] = useState(false);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
+  const [isDialogLoading, setIsDialogLoading] = useState(false);
 
   const generateSecret = () => {
     const array = new Uint8Array(32);
@@ -182,16 +257,47 @@ export default function WebhooksPage() {
     setAllowedIps(prev => prev.filter(i => i !== ip));
   };
 
-  const getWebhookStats = (webhookId: string) => {
-    const webhookEntries = deliveryLog.filter(entry => entry.webhookId === webhookId);
-    const total = webhookEntries.length;
-    const success = webhookEntries.filter(e => e.status === "success").length;
-    const failed = webhookEntries.filter(e => e.status === "failed").length;
-    const pending = webhookEntries.filter(e => e.status === "pending" || e.status === "retrying").length;
-    const successRate = total > 0 ? Math.round((success / total) * 100) : 0;
-    
+  const getWebhookStats = (stats?: WebhookStats | null) => {
+    if (!stats) return null;
+    const total = stats.total ?? 0;
+    if (total === 0) return null;
+    const success = stats.success ?? 0;
+    const failed = stats.failed ?? 0;
+    const pending = stats.pending ?? 0;
+    const successRate = stats.success_rate ?? (total > 0 ? Math.round((success / total) * 100) : 0);
+
     return { total, success, failed, pending, successRate };
   };
+
+  const mapWebhookItem = (item: ApiWebhookItem): SavedWebhook => ({
+    id: item.id,
+    endpoint_url: item.endpoint_url,
+    status: item.status,
+    event_types: item.event_types ?? [],
+    stats_7d: item.stats_7d ?? null,
+    createdAt: item.created_at ? new Date(item.created_at) : new Date(),
+    maxRetries: item.max_retries ?? 3,
+    retryIntervalSeconds: item.retry_interval_seconds ?? 5,
+    secret: item.secret ?? "",
+    allowedIps: item.allowed_ips ?? [],
+    timeoutSeconds: item.timeout_seconds ?? 30,
+  });
+
+  const fetchWebhooks = useCallback(async (cursor?: string) => {
+    try {
+      const queryString = cursor ? `?${new URLSearchParams({ cursor }).toString()}` : "";
+      const response = await api(`/webhooks${queryString}`);
+      if (!response.ok) {
+        throw new Error("Failed to fetch webhooks");
+      }
+      const data = await response.json();
+      const mappedItems = (data.items ?? []).map(mapWebhookItem);
+      setWebhooks(prev => (cursor ? [...prev, ...mappedItems] : mappedItems));
+      setNextCursor(data.next_cursor ?? null);
+    } catch (error) {
+      toast.error("Failed to load webhooks");
+    }
+  }, []);
 
   const openAddDialog = () => {
     setWebhookToEdit(null);
@@ -199,27 +305,71 @@ export default function WebhooksPage() {
     setSelectedEvents([]);
     setMaxRetries(3);
     setRetryInterval(5);
-    setWebhookSecret(generateSecret());
+    setTimeoutSeconds(30);
+    setStatus("active");
+    setWebhookSecret("auto");
     setShowSecret(false);
     setAllowedIps([]);
     setNewIpInput("");
+    setSigningSecretLast4(null);
+    setIsDialogLoading(false);
     setIsDialogOpen(true);
   };
 
-  const openEditDialog = (webhook: SavedWebhook) => {
+  const openEditDialog = async (webhook: SavedWebhook) => {
     setWebhookToEdit(webhook);
-    setEndpointUrl(webhook.endpointUrl);
-    setSelectedEvents([...webhook.events]);
-    setMaxRetries(webhook.maxRetries);
-    setRetryInterval(webhook.retryIntervalSeconds);
-    setWebhookSecret(webhook.secret);
+    setEndpointUrl("https://");
+    setSelectedEvents([]);
+    setMaxRetries(3);
+    setRetryInterval(5);
+    setTimeoutSeconds(30);
+    setStatus(webhook.status ?? "active");
+    setWebhookSecret("");
     setShowSecret(false);
-    setAllowedIps([...webhook.allowedIps]);
+    setAllowedIps([]);
     setNewIpInput("");
+    setSigningSecretLast4(null);
     setIsDialogOpen(true);
+    setIsDialogLoading(true);
+
+    try {
+      const response = await api(`/webhooks/${webhook.id}`);
+      if (!response.ok) {
+        throw new Error("Failed to fetch webhook details");
+      }
+      const data = await response.json();
+      const item: ApiWebhookDetail = data?.item ?? data;
+      const retry = item.retry ?? {};
+
+      setEndpointUrl(item.endpoint_url ?? webhook.endpoint_url);
+      setSelectedEvents(item.event_types ?? webhook.event_types);
+      setMaxRetries(retry.max_retries ?? webhook.maxRetries ?? 3);
+      setRetryInterval(retry.interval_seconds ?? webhook.retryIntervalSeconds ?? 5);
+      setTimeoutSeconds(item.timeout_seconds ?? webhook.timeoutSeconds ?? 30);
+      setStatus(item.status ?? webhook.status ?? "active");
+      setWebhookSecret(item.signing_secret ?? webhook.secret ?? "");
+      setAllowedIps(item.ip_allowlist ?? webhook.allowedIps ?? []);
+      setSigningSecretLast4(item.signing_secret_last4 ?? null);
+    } catch (error) {
+      toast.error("Failed to load webhook details");
+      setEndpointUrl(webhook.endpoint_url);
+      setSelectedEvents([...webhook.event_types]);
+      setMaxRetries(webhook.maxRetries);
+      setRetryInterval(webhook.retryIntervalSeconds);
+      setTimeoutSeconds(webhook.timeoutSeconds);
+      setStatus(webhook.status ?? "active");
+      setWebhookSecret(webhook.secret);
+      setAllowedIps([...webhook.allowedIps]);
+      setSigningSecretLast4(null);
+    } finally {
+      setIsDialogLoading(false);
+    }
   };
 
-  const handleSaveWebhook = () => {
+  const handleSaveWebhook = async () => {
+    if (isDialogLoading) {
+      return;
+    }
     if (!endpointUrl || endpointUrl === "https://") {
       toast.error("Please enter a valid endpoint URL");
       return;
@@ -231,44 +381,144 @@ export default function WebhooksPage() {
 
     if (webhookToEdit) {
       // Update existing webhook
-      setWebhooks(prev => prev.map(w => 
-        w.id === webhookToEdit.id 
-          ? { ...w, endpointUrl, events: selectedEvents, maxRetries, retryIntervalSeconds: retryInterval, secret: webhookSecret, allowedIps }
-          : w
-      ));
-      toast.success("Webhook updated successfully");
-    } else {
-      // Add new webhook
-      const newWebhook: SavedWebhook = {
-        id: crypto.randomUUID(),
-        endpointUrl,
-        events: selectedEvents,
-        createdAt: new Date(),
-        maxRetries,
-        retryIntervalSeconds: retryInterval,
-        secret: webhookSecret,
-        allowedIps,
+      const resolvedSecret = webhookSecret.trim() || webhookToEdit.secret;
+      const payload = {
+        status,
+        event_types: selectedEvents,
+        timeout_seconds: timeoutSeconds,
+        endpoint_url: endpointUrl,
+        signing_secret: resolvedSecret,
+        retry: {
+          max_retries: maxRetries,
+          interval_seconds: retryInterval,
+        },
+        ip_allowlist: allowedIps,
       };
-      setWebhooks(prev => [...prev, newWebhook]);
-      toast.success("Webhook added successfully");
+
+      try {
+        setIsDialogLoading(true);
+        const response = await api(`/webhooks/${webhookToEdit.id}`, {
+          method: "PATCH",
+          body: payload,
+        });
+
+        if (!response.ok) {
+          let errorMessage = "Failed to update webhook";
+          try {
+            const errorData = await response.json();
+            errorMessage = errorData?.message ?? errorData?.error ?? errorMessage;
+          } catch {
+            const errorText = await response.text();
+            if (errorText) {
+              errorMessage = errorText;
+            }
+          }
+          throw new Error(errorMessage);
+        }
+
+        const data = await response.json();
+        const item = data?.item ?? data;
+        const mappedWebhook = mapWebhookItem(item);
+        setWebhooks(prev => prev.map(w => (w.id === webhookToEdit.id ? mappedWebhook : w)));
+        toast.success("Webhook updated successfully");
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Failed to update webhook";
+        toast.error(message);
+        return;
+      } finally {
+        setIsDialogLoading(false);
+      }
+    } else {
+      const payload = {
+        status,
+        endpoint_url: endpointUrl,
+        event_types: selectedEvents,
+        signing_secret: webhookSecret.trim() || "auto",
+        retry: {
+          max_retries: maxRetries,
+          interval_seconds: retryInterval,
+        },
+        ip_allowlist: allowedIps,
+        timeout_seconds: timeoutSeconds,
+      };
+
+      try {
+        const response = await api("/webhooks", {
+          method: "POST",
+          body: payload,
+        });
+
+        if (!response.ok) {
+          let errorMessage = "Failed to create webhook";
+          try {
+            const errorData = await response.json();
+            errorMessage = errorData?.message ?? errorData?.error ?? errorMessage;
+          } catch {
+            const errorText = await response.text();
+            if (errorText) {
+              errorMessage = errorText;
+            }
+          }
+          throw new Error(errorMessage);
+        }
+
+        const data = await response.json();
+        const item = data?.item ?? data;
+        const mappedWebhook = mapWebhookItem(item);
+
+        setWebhooks(prev => [mappedWebhook, ...prev]);
+        toast.success("Webhook added successfully");
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Failed to create webhook";
+        toast.error(message);
+        return;
+      }
     }
 
     setIsDialogOpen(false);
     setWebhookToEdit(null);
     setEndpointUrl("https://");
     setSelectedEvents([]);
+    setStatus("active");
   };
 
-  const handleDeleteWebhook = () => {
-    if (webhookToDelete) {
+  const handleDeleteWebhook = async () => {
+    if (!webhookToDelete || isDeleteLoading) return;
+    setIsDeleteLoading(true);
+    try {
+      const response = await api(`/webhooks/${webhookToDelete.id}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        let errorMessage = "Failed to delete webhook";
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData?.message ?? errorData?.error ?? errorMessage;
+        } catch {
+          const errorText = await response.text();
+          if (errorText) {
+            errorMessage = errorText;
+          }
+        }
+        throw new Error(errorMessage);
+      }
+
       setWebhooks(prev => prev.filter(w => w.id !== webhookToDelete.id));
       toast.success("Webhook deleted");
       setWebhookToDelete(null);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to delete webhook";
+      if (message !== "Unauthorized") {
+        toast.error(message);
+      }
+    } finally {
+      setIsDeleteLoading(false);
     }
   };
 
   const getTestPayload = (webhook: SavedWebhook) => {
-    const eventType = webhook.events[0] || "email.delivered";
+    const eventType = webhook.event_types[0] || "email.delivered";
     return {
       type: eventType,
       created_at: new Date().toISOString(),
@@ -304,26 +554,58 @@ export default function WebhooksPage() {
     toast.success(`${label} copied to clipboard`);
   };
 
-  const sendWebhookRequest = async (
-    webhook: SavedWebhook,
-    payload: object,
-    logEntryId: string,
-    attempt: number
-  ): Promise<boolean> => {
-    try {
-      await fetch(webhook.endpointUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-        mode: "no-cors",
-      });
-      return true;
-    } catch {
-      return false;
-    }
+  const mapDeliveryStatus = (status?: string): DeliveryLogEntry["status"] => {
+    const normalized = status?.toLowerCase() ?? "";
+    if (["success", "succeeded", "delivered"].includes(normalized)) return "success";
+    if (["failed", "error"].includes(normalized)) return "failed";
+    if (["retrying", "retry", "retry_scheduled"].includes(normalized)) return "retrying";
+    return "pending";
   };
+
+  const fetchDeliveryLogs = useCallback(async (webhook: SavedWebhook, cursor?: string) => {
+    try {
+      if (cursor) {
+        setIsDeliveryLogFetchingNext(true);
+      } else {
+        setIsDeliveryLogLoading(true);
+      }
+      const queryString = cursor ? `?${new URLSearchParams({ cursor }).toString()}` : "";
+      const response = await api(`/webhooks/${webhook.id}/deliveries${queryString}`);
+      if (!response.ok) {
+        throw new Error("Failed to fetch delivery logs");
+      }
+      const data = await response.json();
+      const items: ApiDeliveryItem[] = data?.items ?? data?.deliveries ?? [];
+      const mappedEntries: DeliveryLogEntry[] = items.map((item) => {
+        const timestamp = item.delivered_at ?? item.failed_at ?? item.created_at ?? item.updated_at;
+        const status = mapDeliveryStatus(item.status);
+        const attemptCount = item.attempt_count ?? 1;
+        const maxAttempts = item.max_attempts ?? webhook.maxRetries + 1;
+        const statusMessage = item.error ?? item.status ?? "Delivery queued.";
+
+        return {
+          id: item.delivery_id ?? crypto.randomUUID(),
+          deliveryId: item.delivery_id ?? "unknown",
+          webhookId: webhook.id,
+          endpointUrl: item.endpoint_url ?? webhook.endpoint_url,
+          eventType: item.event_type ?? "unknown",
+          status,
+          statusMessage,
+          timestamp: timestamp ? new Date(timestamp) : new Date(),
+          attempt: attemptCount,
+          maxRetries: Math.max(0, maxAttempts - 1),
+        };
+      });
+
+      setDeliveryLog(prev => (cursor ? [...prev, ...mappedEntries] : mappedEntries));
+      setDeliveryLogCursor(data?.next_cursor ?? null);
+    } catch (error) {
+      toast.error("Failed to load delivery logs");
+    } finally {
+      setIsDeliveryLogLoading(false);
+      setIsDeliveryLogFetchingNext(false);
+    }
+  }, []);
 
   const handleTestWebhook = async () => {
     if (!webhookToTest) return;
@@ -332,84 +614,53 @@ export default function WebhooksPage() {
     setTestResult(null);
 
     const payload = getTestPayload(webhookToTest);
-    const logEntryId = crypto.randomUUID();
-    const logEntry: DeliveryLogEntry = {
-      id: logEntryId,
-      webhookId: webhookToTest.id,
-      endpointUrl: webhookToTest.endpointUrl,
-      eventType: payload.type,
-      status: "pending",
-      statusMessage: "Sending...",
-      timestamp: new Date(),
-      payload,
-      attempt: 1,
-      maxRetries: webhookToTest.maxRetries,
-    };
-
-    setDeliveryLog(prev => [logEntry, ...prev].slice(0, 50));
-
-    let success = false;
-    let currentAttempt = 1;
-    const maxAttempts = webhookToTest.maxRetries + 1;
-
-    while (currentAttempt <= maxAttempts && !success) {
-      if (currentAttempt > 1) {
-        // Update log to show retrying
-        setDeliveryLog(prev => prev.map(entry => 
-          entry.id === logEntryId 
-            ? { 
-                ...entry, 
-                status: "retrying" as const, 
-                statusMessage: `Retry ${currentAttempt - 1}/${webhookToTest.maxRetries}...`,
-                attempt: currentAttempt,
-              }
-            : entry
-        ));
-        
-        // Wait before retry
-        await new Promise(resolve => setTimeout(resolve, webhookToTest.retryIntervalSeconds * 1000));
-      }
-
-      success = await sendWebhookRequest(webhookToTest, payload, logEntryId, currentAttempt);
-      
-      if (!success && currentAttempt < maxAttempts) {
-        currentAttempt++;
-      } else {
-        break;
-      }
-    }
-
-    if (success) {
-      const successMessage = "Test payload sent. Due to browser security restrictions, we cannot verify the response. Check your endpoint logs to confirm receipt.";
-      
-      setDeliveryLog(prev => prev.map(entry => 
-        entry.id === logEntryId 
-          ? { ...entry, status: "success" as const, statusMessage: successMessage, attempt: currentAttempt }
-          : entry
-      ));
-      
-      setTestResult({
-        success: true,
-        message: currentAttempt > 1 
-          ? `Succeeded on attempt ${currentAttempt}. ${successMessage}`
-          : successMessage,
+    try {
+      const response = await api(`/webhooks/${webhookToTest.id}/test`, {
+        method: "POST",
+        body: { event_type: payload.type },
       });
-    } else {
-      const errorMessage = `Failed after ${currentAttempt} attempt${currentAttempt > 1 ? 's' : ''}. Check your endpoint URL.`;
-      
-      setDeliveryLog(prev => prev.map(entry => 
-        entry.id === logEntryId 
-          ? { ...entry, status: "failed" as const, statusMessage: errorMessage, attempt: currentAttempt }
-          : entry
-      ));
-      
+
+      if (!response.ok) {
+        let errorMessage = "Failed to send test webhook";
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData?.message ?? errorData?.error ?? errorMessage;
+        } catch {
+          const errorText = await response.text();
+          if (errorText) {
+            errorMessage = errorText;
+          }
+        }
+        throw new Error(errorMessage);
+      }
+
+      const data = await response.json();
+      const result = data?.item ?? data ?? {};
+      const deliveryId = result.delivery_id ?? "unknown";
+      const eventType = result.event_type ?? payload.type;
+      const success = Boolean(result.success ?? true);
+
+      setTestResult({
+        success,
+        message: success
+          ? `Delivery ${deliveryId} queued for ${eventType}.`
+          : `Delivery ${deliveryId} failed for ${eventType}.`,
+      });
+
+      setDeliveryLogWebhook(webhookToTest);
+      setDeliveryLog([]);
+      setDeliveryLogCursor(null);
+      await fetchDeliveryLogs(webhookToTest);
+      setShowDeliveryLog(true);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to send test webhook";
       setTestResult({
         success: false,
-        message: errorMessage,
+        message,
       });
+    } finally {
+      setIsTestingWebhook(false);
     }
-
-    setIsTestingWebhook(false);
   };
 
   const openTestDialog = async (webhook: SavedWebhook) => {
@@ -426,72 +677,13 @@ export default function WebhooksPage() {
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
   };
 
-  const handleRetryDelivery = async (entry: DeliveryLogEntry) => {
-    const webhook = webhooks.find(w => w.id === entry.webhookId);
-    if (!webhook) {
-      toast.error("Webhook not found");
-      return;
-    }
-
-    // Update entry to pending
-    setDeliveryLog(prev => prev.map(e => 
-      e.id === entry.id 
-        ? { ...e, status: "pending" as const, statusMessage: "Retrying...", attempt: 1 }
-        : e
-    ));
-
-    let success = false;
-    let currentAttempt = 1;
-    const maxAttempts = webhook.maxRetries + 1;
-
-    while (currentAttempt <= maxAttempts && !success) {
-      if (currentAttempt > 1) {
-        setDeliveryLog(prev => prev.map(e => 
-          e.id === entry.id 
-            ? { 
-                ...e, 
-                status: "retrying" as const, 
-                statusMessage: `Retry ${currentAttempt - 1}/${webhook.maxRetries}...`,
-                attempt: currentAttempt,
-              }
-            : e
-        ));
-        await new Promise(resolve => setTimeout(resolve, webhook.retryIntervalSeconds * 1000));
-      }
-
-      success = await sendWebhookRequest(webhook, entry.payload, entry.id, currentAttempt);
-      
-      if (!success && currentAttempt < maxAttempts) {
-        currentAttempt++;
-      } else {
-        break;
-      }
-    }
-
-    if (success) {
-      const successMessage = currentAttempt > 1 
-        ? `Succeeded on attempt ${currentAttempt}. Payload delivered.`
-        : "Payload delivered successfully.";
-      
-      setDeliveryLog(prev => prev.map(e => 
-        e.id === entry.id 
-          ? { ...e, status: "success" as const, statusMessage: successMessage, attempt: currentAttempt, timestamp: new Date() }
-          : e
-      ));
-      toast.success("Webhook retry successful");
-    } else {
-      const errorMessage = `Retry failed after ${currentAttempt} attempt${currentAttempt > 1 ? 's' : ''}.`;
-      
-      setDeliveryLog(prev => prev.map(e => 
-        e.id === entry.id 
-          ? { ...e, status: "failed" as const, statusMessage: errorMessage, attempt: currentAttempt, timestamp: new Date() }
-          : e
-      ));
-      toast.error("Webhook retry failed");
-    }
+  const handleRefreshDeliveryLog = async () => {
+    if (!deliveryLogWebhook) return;
+    await fetchDeliveryLogs(deliveryLogWebhook);
   };
 
   const toggleEvent = (eventId: string) => {
+    if (isDialogLoading) return;
     setSelectedEvents(prev =>
       prev.includes(eventId)
         ? prev.filter(e => e !== eventId)
@@ -500,6 +692,7 @@ export default function WebhooksPage() {
   };
 
   const toggleGroup = (group: EventGroup) => {
+    if (isDialogLoading) return;
     const groupEventIds = group.events.map(e => e.id);
     const allSelected = groupEventIds.every(id => selectedEvents.includes(id));
     
@@ -511,6 +704,7 @@ export default function WebhooksPage() {
   };
 
   const toggleAllEvents = () => {
+    if (isDialogLoading) return;
     if (selectedEvents.length === allEventIds.length) {
       setSelectedEvents([]);
     } else {
@@ -533,12 +727,51 @@ export default function WebhooksPage() {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (isDialogOpen && e.metaKey && e.key === "Enter") {
         e.preventDefault();
-        handleSaveWebhook();
+        if (!isDialogLoading) {
+          handleSaveWebhook();
+        }
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isDialogOpen, endpointUrl, selectedEvents, webhookToEdit]);
+  }, [isDialogOpen, endpointUrl, selectedEvents, webhookToEdit, isDialogLoading]);
+
+  useEffect(() => {
+    let isMounted = true;
+    const loadWebhooks = async () => {
+      setIsLoading(true);
+      await fetchWebhooks();
+      if (isMounted) {
+        setIsLoading(false);
+      }
+    };
+    loadWebhooks();
+    return () => {
+      isMounted = false;
+    };
+  }, [fetchWebhooks]);
+
+  useEffect(() => {
+    if (!loadMoreRef.current || !nextCursor || isLoading) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting && !isFetchingNext) {
+          setIsFetchingNext(true);
+          fetchWebhooks(nextCursor).finally(() => {
+            setIsFetchingNext(false);
+          });
+        }
+      },
+      { rootMargin: "200px" }
+    );
+
+    observer.observe(loadMoreRef.current);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [fetchWebhooks, isFetchingNext, isLoading, nextCursor]);
 
   return (
     <>
@@ -552,7 +785,35 @@ export default function WebhooksPage() {
       />
       
       <div className="p-6">
-        {webhooks.length === 0 ? (
+        {isLoading ? (
+          <div className="space-y-4">
+            {[...Array(3)].map((_, index) => (
+              <Card key={`skeleton-${index}`}>
+                <CardContent className="p-4 animate-pulse">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1 min-w-0 space-y-3">
+                      <div className="flex items-center gap-2">
+                        <div className="h-4 w-4 rounded-full bg-muted" />
+                        <div className="h-4 w-56 bg-muted rounded" />
+                      </div>
+                      <div className="flex flex-wrap gap-1.5">
+                        <div className="h-5 w-20 rounded-full bg-muted" />
+                        <div className="h-5 w-16 rounded-full bg-muted" />
+                        <div className="h-5 w-24 rounded-full bg-muted" />
+                      </div>
+                      <div className="flex items-center gap-4 pt-2 border-t border-border">
+                        <div className="h-4 w-24 bg-muted rounded" />
+                        <div className="h-3 flex-1 max-w-[120px] bg-muted rounded" />
+                        <div className="h-4 w-16 bg-muted rounded" />
+                      </div>
+                    </div>
+                    <div className="h-8 w-8 rounded bg-muted" />
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : webhooks.length === 0 ? (
           <EmptyState
             icon={Webhook}
             title="No webhooks yet"
@@ -572,37 +833,37 @@ export default function WebhooksPage() {
                       <div className="flex items-center gap-2">
                         <Webhook className="h-4 w-4 text-muted-foreground shrink-0" />
                         <a 
-                          href={webhook.endpointUrl}
+                          href={webhook.endpoint_url}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-sm font-medium text-foreground hover:underline truncate flex items-center gap-1"
                         >
-                          {webhook.endpointUrl}
+                          {webhook.endpoint_url}
                           <ExternalLink className="h-3 w-3" />
                         </a>
                       </div>
                       <div className="flex flex-wrap gap-1.5">
-                        {webhook.events.length === allEventIds.length ? (
+                        {webhook.event_types.length === allEventIds.length ? (
                           <Badge variant="secondary" className="text-xs">All Events</Badge>
                         ) : (
-                          webhook.events.slice(0, 5).map((eventId) => (
+                          webhook.event_types.slice(0, 5).map((eventId) => (
                             <Badge key={eventId} variant="outline" className="text-xs gap-1">
                               <span className={cn("w-1.5 h-1.5 rounded-full", getEventColor(eventId))} />
                               {eventId}
                             </Badge>
                           ))
                         )}
-                        {webhook.events.length > 5 && webhook.events.length !== allEventIds.length && (
+                        {webhook.event_types.length > 5 && webhook.event_types.length !== allEventIds.length && (
                           <Badge variant="outline" className="text-xs">
-                            +{webhook.events.length - 5} more
+                            +{webhook.event_types.length - 5} more
                           </Badge>
                         )}
                       </div>
                       
                       {/* Delivery Statistics */}
                       {(() => {
-                        const stats = getWebhookStats(webhook.id);
-                        if (stats.total === 0) return null;
+                        const stats = getWebhookStats(webhook.stats_7d);
+                        if (!stats) return null;
                         
                         return (
                           <div className="flex items-center gap-4 pt-2 border-t border-border">
@@ -671,15 +932,34 @@ export default function WebhooksPage() {
                 </CardContent>
               </Card>
             ))}
+            {nextCursor && (
+              <div ref={loadMoreRef} className="h-8" />
+            )}
+            {isFetchingNext && (
+              <Card>
+                <CardContent className="p-4 animate-pulse">
+                  <div className="flex items-center gap-2">
+                    <div className="h-4 w-4 rounded-full bg-muted" />
+                    <div className="h-4 w-40 bg-muted rounded" />
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
         )}
 
         {/* Delivery Log Section */}
-        {deliveryLog.length > 0 && (
+        {(deliveryLogWebhook || deliveryLog.length > 0) && (
           <Card className="mt-6">
             <CardContent className="p-4">
               <button
-                onClick={() => setShowDeliveryLog(!showDeliveryLog)}
+                onClick={() => {
+                  const nextOpen = !showDeliveryLog;
+                  setShowDeliveryLog(nextOpen);
+                  if (nextOpen && deliveryLogWebhook) {
+                    fetchDeliveryLogs(deliveryLogWebhook);
+                  }
+                }}
                 className="w-full flex items-center justify-between text-left"
               >
                 <div className="flex items-center gap-2">
@@ -706,7 +986,31 @@ export default function WebhooksPage() {
 
               {showDeliveryLog && (
                 <div className="mt-4 space-y-2">
-                  {deliveryLog.map((entry) => (
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span>
+                      {deliveryLogWebhook
+                        ? `Webhook: ${deliveryLogWebhook.endpoint_url}`
+                        : "Delivery log"}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 gap-1"
+                      onClick={handleRefreshDeliveryLog}
+                      disabled={isDeliveryLogLoading}
+                    >
+                      <RefreshCw className={cn("h-3 w-3", isDeliveryLogLoading && "animate-spin")} />
+                      Refresh
+                    </Button>
+                  </div>
+                  {isDeliveryLogLoading ? (
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                      Loading deliveries...
+                    </div>
+                  ) : deliveryLog.length === 0 ? (
+                    <div className="text-xs text-muted-foreground">No delivery logs available yet.</div>
+                  ) : deliveryLog.map((entry) => (
                     <div 
                       key={entry.id} 
                       className="flex items-start gap-3 p-3 rounded-md bg-muted/50 text-sm"
@@ -731,6 +1035,9 @@ export default function WebhooksPage() {
                             <span className={cn("w-1.5 h-1.5 rounded-full", getEventColor(entry.eventType))} />
                             {entry.eventType}
                           </Badge>
+                          <Badge variant="secondary" className="text-xs">
+                            ID {entry.deliveryId}
+                          </Badge>
                           {entry.attempt > 1 && (
                             <Badge variant="secondary" className="text-xs gap-1">
                               <RefreshCw className="h-2.5 w-2.5" />
@@ -746,25 +1053,6 @@ export default function WebhooksPage() {
                         </p>
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
-                        {entry.status === "failed" && (
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-7 w-7"
-                                  onClick={() => handleRetryDelivery(entry)}
-                                >
-                                  <RotateCcw className="h-3.5 w-3.5" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>Retry delivery</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        )}
                         <div className="flex items-center gap-1 text-xs text-muted-foreground">
                           <Clock className="h-3 w-3" />
                           {formatLogTime(entry.timestamp)}
@@ -772,6 +1060,29 @@ export default function WebhooksPage() {
                       </div>
                     </div>
                   ))}
+                  {deliveryLogCursor && (
+                    <div className="flex justify-center">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-2"
+                        onClick={() => {
+                          if (!deliveryLogWebhook || !deliveryLogCursor) return;
+                          fetchDeliveryLogs(deliveryLogWebhook, deliveryLogCursor);
+                        }}
+                        disabled={isDeliveryLogFetchingNext}
+                      >
+                        {isDeliveryLogFetchingNext ? (
+                          <>
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            Loading...
+                          </>
+                        ) : (
+                          "Load more"
+                        )}
+                      </Button>
+                    </div>
+                  )}
                 </div>
               )}
             </CardContent>
@@ -779,13 +1090,27 @@ export default function WebhooksPage() {
         )}
       </div>
 
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+      <Dialog 
+        open={isDialogOpen} 
+        onOpenChange={(open) => {
+          setIsDialogOpen(open);
+          if (!open) {
+            setIsDialogLoading(false);
+          }
+        }}
+      >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>{webhookToEdit ? "Edit Webhook" : "Add Webhook"}</DialogTitle>
           </DialogHeader>
           
           <div className="space-y-4 pt-4">
+            {isDialogLoading && (
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                Loading webhook details...
+              </div>
+            )}
             <div className="space-y-2">
               <Label htmlFor="endpoint">Endpoint URL</Label>
               <Input
@@ -793,6 +1118,7 @@ export default function WebhooksPage() {
                 value={endpointUrl}
                 onChange={(e) => setEndpointUrl(e.target.value)}
                 placeholder="https://"
+                disabled={isDialogLoading}
               />
             </div>
 
@@ -805,6 +1131,7 @@ export default function WebhooksPage() {
                     role="combobox"
                     aria-expanded={isEventsOpen}
                     className="w-full justify-between font-normal"
+                    disabled={isDialogLoading}
                   >
                     {getDisplayText()}
                     <svg
@@ -830,7 +1157,8 @@ export default function WebhooksPage() {
                     <div
                       className={cn(
                         "flex items-center justify-between px-3 py-2 cursor-pointer hover:bg-muted",
-                        selectedEvents.length === allEventIds.length && "bg-muted"
+                        selectedEvents.length === allEventIds.length && "bg-muted",
+                        isDialogLoading && "pointer-events-none opacity-60"
                       )}
                       onClick={toggleAllEvents}
                     >
@@ -847,7 +1175,8 @@ export default function WebhooksPage() {
                         <div
                           className={cn(
                             "flex items-center justify-between px-3 py-2 cursor-pointer hover:bg-muted border-t border-border",
-                            isGroupSelected(group) && "bg-muted"
+                            isGroupSelected(group) && "bg-muted",
+                            isDialogLoading && "pointer-events-none opacity-60"
                           )}
                           onClick={() => toggleGroup(group)}
                         >
@@ -865,7 +1194,8 @@ export default function WebhooksPage() {
                             key={event.id}
                             className={cn(
                               "flex items-center justify-between px-3 py-2 cursor-pointer hover:bg-muted pl-4",
-                              selectedEvents.includes(event.id) && "bg-muted"
+                              selectedEvents.includes(event.id) && "bg-muted",
+                              isDialogLoading && "pointer-events-none opacity-60"
                             )}
                             onClick={() => toggleEvent(event.id)}
                           >
@@ -915,7 +1245,8 @@ export default function WebhooksPage() {
                     value={webhookSecret}
                     onChange={(e) => setWebhookSecret(e.target.value)}
                     className="pr-20 font-mono text-xs"
-                    placeholder="whsec_..."
+                    placeholder={signingSecretLast4 ? `••••${signingSecretLast4}` : "whsec_..."}
+                    disabled={isDialogLoading}
                   />
                   <div className="absolute right-1 top-1/2 -translate-y-1/2 flex gap-1">
                     <Button
@@ -924,6 +1255,7 @@ export default function WebhooksPage() {
                       size="icon"
                       className="h-7 w-7"
                       onClick={() => setShowSecret(!showSecret)}
+                      disabled={isDialogLoading}
                     >
                       {showSecret ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
                     </Button>
@@ -933,6 +1265,7 @@ export default function WebhooksPage() {
                       size="icon"
                       className="h-7 w-7"
                       onClick={() => copyToClipboard(webhookSecret, "Secret")}
+                      disabled={isDialogLoading}
                     >
                       <Copy className="h-3.5 w-3.5" />
                     </Button>
@@ -943,6 +1276,7 @@ export default function WebhooksPage() {
                   variant="outline"
                   size="sm"
                   onClick={() => setWebhookSecret(generateSecret())}
+                  disabled={isDialogLoading}
                 >
                   Generate
                 </Button>
@@ -958,7 +1292,7 @@ export default function WebhooksPage() {
                 <RefreshCw className="h-3.5 w-3.5" />
                 Retry Configuration
               </Label>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-3 gap-3">
                 <div className="space-y-1.5">
                   <Label htmlFor="maxRetries" className="text-xs">Max Retries</Label>
                   <Input
@@ -969,6 +1303,7 @@ export default function WebhooksPage() {
                     value={maxRetries}
                     onChange={(e) => setMaxRetries(Math.max(0, Math.min(10, parseInt(e.target.value) || 0)))}
                     className="h-9"
+                    disabled={isDialogLoading}
                   />
                 </div>
                 <div className="space-y-1.5">
@@ -981,6 +1316,20 @@ export default function WebhooksPage() {
                     value={retryInterval}
                     onChange={(e) => setRetryInterval(Math.max(1, Math.min(60, parseInt(e.target.value) || 1)))}
                     className="h-9"
+                    disabled={isDialogLoading}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="timeoutSeconds" className="text-xs">Timeout (seconds)</Label>
+                  <Input
+                    id="timeoutSeconds"
+                    type="number"
+                    min={1}
+                    max={120}
+                    value={timeoutSeconds}
+                    onChange={(e) => setTimeoutSeconds(Math.max(1, Math.min(120, parseInt(e.target.value) || 1)))}
+                    className="h-9"
+                    disabled={isDialogLoading}
                   />
                 </div>
               </div>
@@ -998,6 +1347,7 @@ export default function WebhooksPage() {
                   onChange={(e) => setNewIpInput(e.target.value)}
                   placeholder="192.168.1.1 or 10.0.0.0/24"
                   className="flex-1"
+                  disabled={isDialogLoading}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
                       e.preventDefault();
@@ -1010,6 +1360,7 @@ export default function WebhooksPage() {
                   variant="outline"
                   size="icon"
                   onClick={addIpAddress}
+                  disabled={isDialogLoading}
                 >
                   <Plus className="h-4 w-4" />
                 </Button>
@@ -1025,6 +1376,7 @@ export default function WebhooksPage() {
                         size="icon"
                         className="h-4 w-4 hover:bg-destructive/20"
                         onClick={() => removeIpAddress(ip)}
+                        disabled={isDialogLoading}
                       >
                         <X className="h-3 w-3" />
                       </Button>
@@ -1040,10 +1392,10 @@ export default function WebhooksPage() {
             </div>
 
             <div className="flex gap-2 pt-2">
-              <Button onClick={handleSaveWebhook} className="gap-2">
+              <Button onClick={handleSaveWebhook} className="gap-2 h-9" disabled={isDialogLoading}>
                 {webhookToEdit ? "Save" : "Add"}
               </Button>
-              <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="gap-2">
+              <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="gap-2 h-9" disabled={isDialogLoading}>
                 Cancel
               </Button>
             </div>
@@ -1056,7 +1408,9 @@ export default function WebhooksPage() {
         onOpenChange={(open) => !open && setWebhookToDelete(null)}
         onConfirm={handleDeleteWebhook}
         title="Delete Webhook"
-        description={`Are you sure you want to delete the webhook for "${webhookToDelete?.endpointUrl}"? This action cannot be undone.`}
+        description={`Are you sure you want to delete the webhook for "${webhookToDelete?.endpoint_url}"? This action cannot be undone.`}
+        confirmLabel={isDeleteLoading ? "Deleting..." : "Delete"}
+        isLoading={isDeleteLoading}
       />
 
       <Dialog open={!!webhookToTest} onOpenChange={(open) => !open && setWebhookToTest(null)}>
@@ -1068,12 +1422,13 @@ export default function WebhooksPage() {
           <div className="space-y-4 pt-2">
             <div className="space-y-2">
               <Label className="text-muted-foreground text-sm">Endpoint</Label>
-              <p className="text-sm font-medium truncate">{webhookToTest?.endpointUrl}</p>
+              <p className="text-sm font-medium truncate">{webhookToTest?.endpoint_url}</p>
             </div>
 
             <div className="space-y-2">
               <Label className="text-muted-foreground text-sm">Sample Payload</Label>
               <CodeBlock 
+                className="rounded-2xl"
                 code={webhookToTest ? JSON.stringify(getTestPayload(webhookToTest), null, 2) : ""} 
                 language="json"
               />
@@ -1117,7 +1472,7 @@ export default function WebhooksPage() {
             )}
 
             <div className="flex gap-2 pt-2">
-              <Button onClick={handleTestWebhook} disabled={isTestingWebhook} className="gap-2">
+              <Button onClick={handleTestWebhook} disabled={isTestingWebhook} className="gap-2 h-9">
                 {isTestingWebhook ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -1130,7 +1485,7 @@ export default function WebhooksPage() {
                   </>
                 )}
               </Button>
-              <Button variant="outline" onClick={() => setWebhookToTest(null)}>
+              <Button className="h-9" variant="outline" onClick={() => setWebhookToTest(null)}>
                 Close
               </Button>
             </div>

@@ -4,20 +4,31 @@ import { TopBar } from "@/components/layout/TopBar";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
+import { TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Copy, ArrowUpRight, Circle, User } from "lucide-react";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
 
+interface ContactSegment {
+  id: string;
+  name: string;
+}
+
+interface ContactCategory {
+  id: string;
+  name: string;
+}
+
 interface Contact {
   id: string;
   email: string;
+  first_name?: string;
+  last_name?: string;
   status: "subscribed" | "unsubscribed" | "bounced" | "complained";
-  category_id: string | null;
-  category_name: string | null;
-  metadata: Record<string, unknown> | null;
+  metadata?: Record<string, string>[];
   created_at: string;
-  segment: string | null;
-  segment_name: string | null;
+  categories: ContactCategory[];
+  segments: ContactSegment[];
 }
 
 interface ActivityItem {
@@ -30,18 +41,29 @@ interface ActivityItem {
   created_at: string;
 }
 
+type EmailActivityItem = {
+  id: string;
+  status: string;
+  subject: string;
+  created_at: string;
+  [key: string]: unknown;
+};
+
 export default function ContactDetailsPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [contact, setContact] = useState<Contact | null>(null);
   const [activity, setActivity] = useState<ActivityItem[]>([]);
+  const [emailActivity, setEmailActivity] = useState<EmailActivityItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingActivity, setIsLoadingActivity] = useState(true);
+  const [isLoadingEmailActivity, setIsLoadingEmailActivity] = useState(true);
 
   useEffect(() => {
     if (id) {
       fetchContact();
       fetchActivity();
+      fetchEmailActivity();
     }
   }, [id]);
 
@@ -79,6 +101,21 @@ export default function ContactDetailsPage() {
     }
   };
 
+  const fetchEmailActivity = async () => {
+    setIsLoadingEmailActivity(true);
+    try {
+      const response = await api(`/contacts/${id}/emails`);
+      if (response.ok) {
+        const data = await response.json();
+        setEmailActivity(data.items || []);
+      }
+    } catch (error) {
+      console.error("Failed to load email activity");
+    } finally {
+      setIsLoadingEmailActivity(false);
+    }
+  };
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
@@ -95,6 +132,10 @@ export default function ContactDetailsPage() {
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
     toast.success("Copied to clipboard");
+  };
+
+  const handleBack = () => {
+    navigate(-1);
   };
 
   const getEventLabel = (eventType: string, item: ActivityItem) => {
@@ -131,7 +172,7 @@ export default function ContactDetailsPage() {
   if (isLoading) {
     return (
       <>
-        <TopBar title="Contact" />
+        <TopBar title="Contact" showBackButton onBack={handleBack} />
         <div className="p-6 space-y-6">
           <div className="flex items-center gap-4">
             <Skeleton className="h-16 w-16 rounded-full" />
@@ -149,12 +190,35 @@ export default function ContactDetailsPage() {
     return null;
   }
 
-  // Extract properties from metadata
-  const properties = contact.metadata || {};
+  // Extract properties: first_name, last_name, and metadata
+  const getProperties = () => {
+    const props: { key: string; value: string }[] = [];
+    
+    if (contact.first_name) {
+      props.push({ key: "first_name", value: contact.first_name });
+    }
+    if (contact.last_name) {
+      props.push({ key: "last_name", value: contact.last_name });
+    }
+    
+    // Handle metadata array
+    if (contact.metadata && Array.isArray(contact.metadata)) {
+      contact.metadata.forEach((item) => {
+        Object.entries(item).forEach(([key, value]) => {
+          if (value) {
+            props.push({ key, value: String(value) });
+          }
+        });
+      });
+    }
+    
+    return props;
+  };
 
+  const properties = getProperties();
   return (
     <>
-      <TopBar title="Contact" />
+      <TopBar title="Contact Details" showBackButton onBack={handleBack} />
       <div className="p-6 max-w-4xl">
         {/* Header */}
         <div className="flex items-start justify-between mb-8">
@@ -180,67 +244,87 @@ export default function ContactDetailsPage() {
           </div>
         </div>
 
-        {/* Info Grid */}
-        <div className="grid grid-cols-4 gap-8 mb-8 pb-8 border-b">
-          <div>
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Email Address</p>
-            <p className="text-sm">{contact.email}</p>
-          </div>
-          <div>
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Created</p>
-            <p className="text-sm">{formatDate(contact.created_at)}</p>
-          </div>
-          <div>
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Status</p>
-            <StatusBadge status={contact.status} />
-          </div>
-          <div>
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">ID</p>
-            <div className="flex items-center gap-2">
-              <p className="text-sm truncate max-w-[120px]">{contact.id}</p>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="h-6 w-6"
-                onClick={() => copyToClipboard(contact.id)}
-              >
-                <Copy className="h-3 w-3" />
-              </Button>
+        {/* Details Table */}
+        <div className="mb-8">
+          <div className="rounded-2xl border border-border bg-white">
+            <div className="overflow-x-auto">
+              <div className="min-w-[720px]">
+                <div className="border-b border-border px-6 py-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  <div className="grid grid-cols-3 gap-4">
+                    <div>Email Address</div>
+                    <div>Status</div>
+                    <div>ID</div>
+                  </div>
+                  <div className="mt-3 grid grid-cols-3 gap-4">
+                    <div>Segments</div>
+                    <div>Categories</div>
+                    <div>Created</div>
+                  </div>
+                </div>
+                <div className="px-6 py-4 text-sm">
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="flex items-center">{contact.email}</div>
+                    <div className="flex items-center">
+                      <StatusBadge status={contact.status} />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <p className="truncate max-w-[140px]">{contact.id}</p>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6"
+                        onClick={() => copyToClipboard(contact.id)}
+                      >
+                        <Copy className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="mt-4 grid grid-cols-3 gap-4">
+                    <div>
+                      {contact.segments && contact.segments.length > 0 ? (
+                        <div className="flex flex-wrap gap-1">
+                          {contact.segments.map((segment) => (
+                            <span key={segment.id} className="border-b border-dashed border-foreground">
+                              {segment.name}
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="italic text-muted-foreground">No segments</p>
+                      )}
+                    </div>
+                    <div>
+                      {contact.categories && contact.categories.length > 0 ? (
+                        <div className="flex flex-wrap gap-1">
+                          {contact.categories.map((category) => (
+                            <span key={category.id} className="border-b border-dashed border-foreground">
+                              {category.name}
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="italic text-muted-foreground">No categories</p>
+                      )}
+                    </div>
+                    <div className="flex items-center">{formatDate(contact.created_at)}</div>
+                  </div>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
-
-        {/* Segments & Topics */}
-        <div className="grid grid-cols-4 gap-8 mb-8 pb-8 border-b">
-          <div>
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Segments</p>
-            <p className="text-sm italic text-muted-foreground">
-              {contact.segment_name || "No segments"}
-            </p>
-          </div>
-          <div>
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Topics</p>
-            <p className="text-sm">
-              {contact.category_name ? (
-                <span className="border-b border-dashed border-foreground">{contact.category_name}</span>
-              ) : (
-                <span className="italic text-muted-foreground">No topics</span>
-              )}
-            </p>
           </div>
         </div>
 
         {/* Properties */}
         <div className="mb-8">
           <h2 className="text-lg font-semibold mb-4">Properties</h2>
-          {Object.keys(properties).length > 0 ? (
+          {properties.length > 0 ? (
             <div className="grid grid-cols-3 gap-8">
-              {Object.entries(properties).map(([key, value]) => (
-                <div key={key}>
+              {properties.map((prop, index) => (
+                <div key={index}>
                   <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">
-                    {key.replace(/_/g, " ")}
+                    {prop.key.replace(/_/g, " ")}
                   </p>
-                  <p className="text-sm">{String(value) || "-"}</p>
+                  <p className="text-sm">{prop.value || "-"}</p>
                 </div>
               ))}
             </div>
@@ -250,36 +334,120 @@ export default function ContactDetailsPage() {
         </div>
 
         {/* Activity */}
-        <div>
-          <h2 className="text-lg font-semibold mb-4">Activity</h2>
-          {isLoadingActivity ? (
-            <div className="space-y-3">
-              <Skeleton className="h-6 w-48" />
-              <Skeleton className="h-6 w-40" />
-            </div>
-          ) : activity.length > 0 ? (
-            <div className="relative">
-              <div className="absolute left-[7px] top-3 bottom-3 w-px bg-border" />
-              <div className="space-y-4">
-                {activity.map((item) => (
-                  <div key={item.id} className="flex items-start gap-3 relative">
-                    <div className="h-4 w-4 rounded-full bg-background border border-border flex items-center justify-center z-10">
-                      {getEventIcon(item.event_type)}
-                    </div>
-                    <div className="flex items-center gap-3 text-sm">
-                      <span>{getEventLabel(item.event_type, item)}</span>
-                      <span className="text-muted-foreground">{formatDate(item.created_at)}</span>
-                    </div>
-                  </div>
-                ))}
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <div>
+            <h2 className="text-lg font-semibold mb-4">Contact Activity</h2>
+            <div className="rounded-2xl border border-border bg-white">
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[360px] text-sm">
+                  <TableHeader>
+                    <TableRow className="uppercase text-xs">
+                      <TableHead className="h-10 px-6 rounded-tl-2xl">Activity</TableHead>
+                      <TableHead className="h-10 px-6 rounded-tr-2xl">Date</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <tbody>
+                    {isLoadingActivity ? (
+                      Array.from({ length: 2 }).map((_, index) => (
+                        <tr key={`activity-skeleton-${index}`} className="border-b border-border last:border-b-0">
+                          <td className="px-6 py-3">
+                            <div className="flex items-center gap-2">
+                              {/* <Skeleton className="h-4 w-4 rounded-full" /> */}
+                              <Skeleton className="h-4 w-48" />
+                            </div>
+                          </td>
+                          <td className="px-6 py-3">
+                            <Skeleton className="h-4 w-20" />
+                          </td>
+                        </tr>
+                      ))
+                    ) : activity.length > 0 ? (
+                      activity.map((item) => (
+                        <tr key={item.id} className="border-b border-border last:border-b-0">
+                          <td className="px-6 py-3">
+                            <div className="flex items-center gap-2">
+                              {/* <span className="text-muted-foreground">{getEventIcon(item.event_type)}</span> */}
+                              <span>{getEventLabel(item.event_type, item)}</span>
+                            </div>
+                          </td>
+                          <td className="px-6 py-3 text-muted-foreground">
+                            {formatDate(item.created_at)}
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td className="px-6 py-4 text-sm text-muted-foreground italic" colSpan={2}>
+                          No activity
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
               </div>
             </div>
-          ) : (
-            <p className="text-sm text-muted-foreground italic">No activity</p>
-          )}
-          <p className="text-xs text-muted-foreground mt-4">
-            Activity data may take a few seconds to update.
-          </p>
+            <p className="text-xs text-muted-foreground mt-4">
+              Activity data may take a few seconds to update.
+            </p>
+          </div>
+          <div>
+            <h2 className="text-lg font-semibold mb-4">Email Activity</h2>
+            <div className="rounded-2xl border border-border bg-white">
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[360px] text-sm">
+                  <TableHeader>
+                    <TableRow className="uppercase text-xs">
+                      <TableHead className="h-10 px-6 rounded-tl-2xl">Status</TableHead>
+                      <TableHead className="h-10 px-6">Subject</TableHead>
+                      <TableHead className="h-10 px-6 rounded-tr-2xl">Sent</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <tbody>
+                    {isLoadingEmailActivity ? (
+                      Array.from({ length: 2 }).map((_, index) => (
+                        <tr key={`email-activity-skeleton-${index}`} className="border-b border-border last:border-b-0">
+                          <td className="px-6 py-3">
+                            <Skeleton className="h-4 w-16" />
+                          </td>
+                          <td className="px-6 py-3">
+                            <Skeleton className="h-4 w-48" />
+                          </td>
+                          <td className="px-6 py-3">
+                            <Skeleton className="h-4 w-20" />
+                          </td>
+                        </tr>
+                      ))
+                    ) : emailActivity.length > 0 ? (
+                      emailActivity.map((item) => (
+                        <tr key={item.id} className="border-b border-border last:border-b-0">
+                          <td className="px-6 py-3 text-muted-foreground">{item.status}</td>
+                          <td className="px-6 py-3">{item.subject}</td>
+                          <td className="px-6 py-3 text-muted-foreground">
+                            {formatDate(item.created_at)}
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td className="px-6 py-4 text-sm text-muted-foreground italic" colSpan={3}>
+                          No email activity
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div className="mt-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate(`/emails?to=${encodeURIComponent(contact.email)}`)}
+              >
+                More
+              </Button>
+            </div>
+          </div>
         </div>
       </div>
     </>

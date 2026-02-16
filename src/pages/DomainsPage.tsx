@@ -35,7 +35,7 @@ import { api } from "@/lib/api";
 interface Domain {
   id: string;
   domain: string;
-  status: "pending" | "verified" | "suspended";
+  status: "pending" | "unverified" | "verified" | "suspended";
   region: string;
   created_at: string;
 }
@@ -110,24 +110,25 @@ export default function DomainsPage() {
               placeholder="Search domains..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pr-9 bg-white"
+              className="pr-9 bg-white hover:border-stone-300 focus-within:border-stone-300 focus-within:shadow-input hover:shadow-input-hover focus-within:shadow-input focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0"
             />
           </div>
 
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-[140px]">
+            <SelectTrigger className="w-[140px] bg-white">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All</SelectItem>
               <SelectItem value="verified">Verified</SelectItem>
+              <SelectItem value="unverified">Unverified</SelectItem>
               <SelectItem value="pending">Pending</SelectItem>
               <SelectItem value="suspended">Suspended</SelectItem>
             </SelectContent>
           </Select>
 
           <Select value={regionFilter} onValueChange={setRegionFilter}>
-            <SelectTrigger className="w-[140px]">
+            <SelectTrigger className="w-[140px] bg-white">
               <SelectValue placeholder="Region" />
             </SelectTrigger>
             <SelectContent>
@@ -140,15 +141,15 @@ export default function DomainsPage() {
         </div>
 
         {/* Table */}
-        <div className="rounded-lg border border-border bg-card">
+        <div className="rounded-2xl border border-border bg-card">
           <Table>
             <TableHeader>
               <TableRow className="uppercase text-xs">
-                <TableHead className="h-10">Domain</TableHead>
+                <TableHead className="h-10 rounded-tl-2xl">Domain</TableHead>
                 <TableHead className="h-10">Status</TableHead>
                 <TableHead className="h-10">Region</TableHead>
                 <TableHead className="h-10">Created</TableHead>
-                <TableHead className="w-[50px] h-10"></TableHead>
+                <TableHead className="w-[50px] h-10 rounded-tr-2xl"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -175,14 +176,23 @@ export default function DomainsPage() {
                     className="cursor-pointer hover:bg-muted/50"
                     onClick={() => navigate(`/domains/${domain.id}`)}
                   >
-                    <TableCell className="px-4 py-2font-medium">
+                    <TableCell className="px-4 py-2 font-medium">
                       <div className="flex items-center gap-2">
                         {domain.domain}
-                        <ExternalLink className="h-3.5 w-3.5 text-muted-foreground" />
+                        <a
+                          href={`https://${domain.domain}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          aria-label={`Open ${domain.domain} in a new tab`}
+                          className="text-muted-foreground hover:text-foreground"
+                          onClick={(event) => event.stopPropagation()}
+                        >
+                          <ExternalLink className="h-3.5 w-3.5" />
+                        </a>
                       </div>
                     </TableCell>
                     <TableCell className="px-4 py-2">
-                      <StatusBadge status={domain.status} />
+                      <StatusBadge className="uppercase" status={domain.status} />
                     </TableCell>
                     <TableCell className="px-4 py-2 font-mono text-sm text-muted-foreground">
                       {domain.region}
@@ -198,8 +208,9 @@ export default function DomainsPage() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem>View DNS records</DropdownMenuItem>
-                          <DropdownMenuItem>Configure</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => navigate(`/domains/${domain.id}`)}>
+                            View DNS records
+                          </DropdownMenuItem>
                           <DropdownMenuItem
                             className="text-destructive"
                             onClick={() => setDomainToRemove({ id: domain.id, domain: domain.domain })}

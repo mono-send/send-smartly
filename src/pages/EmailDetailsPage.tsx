@@ -2,7 +2,21 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Mail, Copy, Check, ChevronLeft, MoreVertical, Send, CheckCircle, Code, BookOpen, Loader2 } from "lucide-react";
+import { CardContent } from "@/components/ui/card";
+import {
+  Mail,
+  Copy,
+  Check,
+  ChevronLeft,
+  MoreVertical,
+  Send,
+  CheckCircle,
+  Code,
+  BookOpen,
+  Loader2,
+  Monitor,
+  Smartphone,
+} from "lucide-react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import {
@@ -17,6 +31,7 @@ import { APISection } from "@/components/APISection";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
 import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 
 interface EmailEvent {
   status: string;
@@ -29,6 +44,8 @@ interface EmailDetails {
   from_email: string;
   subject: string;
   body: string;
+  plain_text?: string;
+  text_body?: string;
   status: string;
   created_at: string;
   sent_at: string | null;
@@ -50,6 +67,10 @@ export default function EmailDetailsPage() {
   const [showApiSection, setShowApiSection] = useState(false);
   const [email, setEmail] = useState<EmailDetails | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [previewMode, setPreviewMode] = useState<"desktop" | "mobile">("desktop");
+  const [activeTab, setActiveTab] = useState<
+    "preview" | "plain-text" | "html" | "insights"
+  >("preview");
 
   useEffect(() => {
     const fetchEmailDetails = async () => {
@@ -113,6 +134,15 @@ export default function EmailDetailsPage() {
     }
   };
 
+  const derivePlainTextFromHtml = (html: string) => {
+    if (!html) return "";
+    if (typeof DOMParser === "undefined") {
+      return html;
+    }
+    const parsed = new DOMParser().parseFromString(html, "text/html");
+    return parsed.body.textContent ?? "";
+  };
+
   const getEventLabel = (status: string) => {
     const labels: Record<string, string> = {
       queued: "Queued",
@@ -153,11 +183,13 @@ export default function EmailDetailsPage() {
           </div>
         </div>
 
-        <div className="mb-8 grid grid-cols-4 gap-6">
+        <div className="mb-8 grid overflow-hidden rounded-2xl border bg-card text-card-foreground shadow-sm md:grid-cols-4 md:divide-x">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i}>
-              <Skeleton className="h-3 w-12 mb-2" />
-              <Skeleton className="h-5 w-32" />
+            <div key={i} className="border-b md:border-b-0">
+              <CardContent className="flex flex-col gap-2 py-6">
+                <Skeleton className="h-3 w-12" />
+                <Skeleton className="h-5 w-32" />
+              </CardContent>
             </div>
           ))}
         </div>
@@ -190,6 +222,11 @@ export default function EmailDetailsPage() {
       </div>
     );
   }
+
+  const plainTextContent =
+    email.plain_text ??
+    email.text_body ??
+    derivePlainTextFromHtml(email.body);
 
   return (
     <div className="p-6">
@@ -247,38 +284,46 @@ export default function EmailDetailsPage() {
         </div>
 
         {/* Metadata */}
-        <div className="mb-8 grid grid-cols-4 gap-6">
-          <div>
-            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">From</p>
-            <p className="mt-1 text-sm">{email.from_email}</p>
+        <div className="mb-8 grid overflow-hidden rounded-2xl border bg-card text-card-foreground shadow-sm md:grid-cols-4 md:divide-x">
+          <div className="border-b md:border-b-0">
+            <CardContent className="flex flex-col gap-2 py-6">
+              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">From</p>
+              <p className="text-sm font-medium">{email.from_email}</p>
+            </CardContent>
+          </div>
+          <div className="border-b md:border-b-0">
+            <CardContent className="flex flex-col gap-2 py-6">
+              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Subject</p>
+              <p className="text-sm font-medium">{email.subject}</p>
+            </CardContent>
+          </div>
+          <div className="border-b md:border-b-0">
+            <CardContent className="flex flex-col gap-2 py-6">
+              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">To</p>
+              <p className="text-sm font-medium">{email.to_email}</p>
+            </CardContent>
           </div>
           <div>
-            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Subject</p>
-            <p className="mt-1 text-sm">{email.subject}</p>
-          </div>
-          <div>
-            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">To</p>
-            <p className="mt-1 text-sm">{email.to_email}</p>
-          </div>
-          <div>
-            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">ID</p>
-            <div className="mt-1 flex items-center gap-2">
-              <code className="rounded bg-muted px-2 py-1 font-mono text-xs">
-                {truncateId(email.id)}
-              </code>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-6 w-6"
-                onClick={() => copyToClipboard(email.id, "id")}
-              >
-                {copiedId ? (
-                  <Check className="h-3 w-3 text-success" />
-                ) : (
-                  <Copy className="h-3 w-3" />
-                )}
-              </Button>
-            </div>
+            <CardContent className="flex flex-col gap-2 py-6">
+              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">ID</p>
+              <div className="flex items-center gap-2">
+                <code className="rounded bg-muted px-2 py-1 font-mono text-xs">
+                  {truncateId(email.id)}
+                </code>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6"
+                  onClick={() => copyToClipboard(email.id, "id")}
+                >
+                  {copiedId ? (
+                    <Check className="h-3 w-3 text-success" />
+                  ) : (
+                    <Copy className="h-3 w-3" />
+                  )}
+                </Button>
+              </div>
+            </CardContent>
           </div>
         </div>
 
@@ -287,7 +332,7 @@ export default function EmailDetailsPage() {
           <p className="mb-4 text-xs font-medium uppercase tracking-wider text-muted-foreground">
             Email Events
           </p>
-          <div className="rounded-lg border border-border bg-card p-6">
+          <div className="rounded-2xl border border-border bg-card p-6">
             {email.events.length === 0 ? (
               <p className="text-sm text-muted-foreground">No events recorded</p>
             ) : (
@@ -310,7 +355,7 @@ export default function EmailDetailsPage() {
                           <CheckCircle className="h-4 w-4" />
                         )}
                       </div>
-                      <p className={`mt-2 text-sm font-medium ${
+                      <p className={`text-sm font-medium ${
                         isSuccessEvent(event.status)
                           ? "text-success"
                           : event.status === "bounced" || event.status === "failed"
@@ -332,8 +377,8 @@ export default function EmailDetailsPage() {
         </div>
 
         {/* Content Tabs */}
-        <div className="rounded-lg border border-border bg-card">
-          <Tabs defaultValue="preview">
+        <div className="rounded-2xl border border-border bg-card">
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
             <div className="flex items-center justify-between border-b border-border px-4">
               <TabsList className="h-12 bg-transparent">
                 <TabsTrigger value="preview" className="data-[state=active]:bg-muted">
@@ -349,37 +394,71 @@ export default function EmailDetailsPage() {
                   Insights
                 </TabsTrigger>
               </TabsList>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8"
-                onClick={() => copyToClipboard(email.body, "content")}
-              >
-                {copiedContent ? (
-                  <Check className="h-4 w-4 text-success" />
-                ) : (
-                  <Copy className="h-4 w-4" />
+              <div className="flex items-center gap-2">
+                {activeTab === "preview" && (
+                  <>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className={cn("h-8 w-8", previewMode === "desktop" && "bg-muted")}
+                      onClick={() => setPreviewMode("desktop")}
+                    >
+                      <Monitor className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className={cn("h-8 w-8", previewMode === "mobile" && "bg-muted")}
+                      onClick={() => setPreviewMode("mobile")}
+                    >
+                      <Smartphone className="h-4 w-4" />
+                    </Button>
+                  </>
                 )}
-              </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() =>
+                    copyToClipboard(
+                      activeTab === "plain-text" ? plainTextContent : email.body,
+                      "content"
+                    )
+                  }
+                >
+                  {copiedContent ? (
+                    <Check className="h-4 w-4 text-success" />
+                  ) : (
+                    <Copy className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
             </div>
 
-            <TabsContent value="preview" className="p-6">
-              <div className="whitespace-pre-wrap text-sm">{email.body}</div>
+            <TabsContent value="preview" className="px-6 py-4">
+              <div
+                className={cn(
+                  "mx-auto min-h-[320px] overflow-hidden rounded-lg bg-white shadow-sm",
+                  previewMode === "desktop" ? "max-w-full" : "max-w-[375px]"
+                )}
+              >
+                <div dangerouslySetInnerHTML={{ __html: email.body }} />
+              </div>
             </TabsContent>
 
-            <TabsContent value="plain-text" className="p-6">
+            <TabsContent value="plain-text" className="px-6 py-4">
               <pre className="whitespace-pre-wrap font-mono text-sm text-muted-foreground">
-                {email.body}
+                {plainTextContent}
               </pre>
             </TabsContent>
 
-            <TabsContent value="html" className="p-6">
+            <TabsContent value="html" className="px-6 py-4">
               <pre className="overflow-x-auto rounded-lg bg-muted p-4 font-mono text-xs text-muted-foreground">
                 {email.body}
               </pre>
             </TabsContent>
 
-            <TabsContent value="insights" className="p-6">
+            <TabsContent value="insights" className="px-6 py-4">
               <div className="space-y-4">
                 <div className="flex items-center justify-between rounded-lg bg-muted/50 p-4">
                   <div className="flex items-center gap-3">

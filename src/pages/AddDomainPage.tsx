@@ -21,6 +21,36 @@ export default function AddDomainPage() {
   const [selectedRegion, setSelectedRegion] = useState("us-east-1");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const getErrorMessage = async (response: Response) => {
+    try {
+      const data = await response.json();
+
+      if (typeof data?.detail === "string") {
+        return data.detail;
+      }
+
+      if (Array.isArray(data?.detail)) {
+        const detailMessage = data.detail.find((item: { msg?: string; message?: string }) =>
+          item?.msg || item?.message,
+        );
+        if (detailMessage?.msg) {
+          return detailMessage.msg;
+        }
+        if (detailMessage?.message) {
+          return detailMessage.message;
+        }
+      }
+
+      if (typeof data?.message === "string") {
+        return data.message;
+      }
+    } catch (error) {
+      console.error("Failed to parse error response:", error);
+    }
+
+    return "Failed to add domain";
+  };
+
   const handleAddDomain = async () => {
     if (!newDomain.trim()) {
       toast.error("Please enter a domain name");
@@ -38,8 +68,8 @@ export default function AddDomainPage() {
         toast.success("Domain added successfully");
         navigate("/domains");
       } else {
-        const data = await response.json();
-        toast.error(data.detail || "Failed to add domain");
+        const message = await getErrorMessage(response);
+        toast.error(message);
       }
     } catch (error: any) {
       if (error.message !== "Unauthorized") {
@@ -92,10 +122,10 @@ export default function AddDomainPage() {
             </div>
 
             <div className="flex gap-3 pt-4">
-              <Button variant="outline" onClick={() => navigate("/domains")} disabled={isSubmitting}>
+              <Button variant="outline" onClick={() => navigate("/domains")} disabled={isSubmitting} className="h-9">
                 Cancel
               </Button>
-              <Button onClick={handleAddDomain} disabled={isSubmitting}>
+              <Button onClick={handleAddDomain} disabled={isSubmitting} className="h-9">
                 {isSubmitting ? "Adding..." : "Add domain"}
               </Button>
             </div>
