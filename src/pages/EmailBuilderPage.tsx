@@ -55,6 +55,8 @@ export default function EmailBuilderPage() {
   const [generationCount, setGenerationCount] = useState(0);
   const [isEditingName, setIsEditingName] = useState(false);
   const [isSavingName, setIsSavingName] = useState(false);
+  const [isSavingSubject, setIsSavingSubject] = useState(false);
+  const [isUploadAvailable, setIsUploadAvailable] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const nameInputRef = useRef<HTMLInputElement>(null);
   const hasUnsavedChanges =
@@ -256,6 +258,7 @@ export default function EmailBuilderPage() {
 
       setTemplate((prev) => (prev ? { ...prev, name: nextName } : prev));
       setName(nextName);
+      setIsUploadAvailable(true);
     } catch {
       setName(currentName);
       toast.error("Error", {
@@ -266,6 +269,44 @@ export default function EmailBuilderPage() {
       setIsEditingName(false);
     }
   }, [id, template, name, isSavingName]);
+
+  const handleSaveSubject = useCallback(async () => {
+    if (!id || !template || isSavingSubject) {
+      return;
+    }
+
+    const nextSubject = subject.trim();
+    const currentSubject = template.subject || "";
+
+    // No-op when the subject hasn't changed.
+    if (nextSubject === currentSubject) {
+      setSubject(currentSubject);
+      return;
+    }
+
+    setIsSavingSubject(true);
+    try {
+      const response = await api(`/email-builder/templates/${id}`, {
+        method: "PATCH",
+        body: { subject: nextSubject },
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to update template subject");
+      }
+
+      setTemplate((prev) => (prev ? { ...prev, subject: nextSubject } : prev));
+      setSubject(nextSubject);
+      setIsUploadAvailable(true);
+    } catch {
+      setSubject(currentSubject);
+      toast.error("Error", {
+        description: "Failed to update template subject",
+      });
+    } finally {
+      setIsSavingSubject(false);
+    }
+  }, [id, template, subject, isSavingSubject]);
 
   // Export to legacy template system
   const handleExport = async () => {
@@ -349,10 +390,23 @@ export default function EmailBuilderPage() {
             <Input
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
+              onBlur={() => {
+                void handleSaveSubject();
+              }}
               placeholder="Email subject line"
               className="w-64 h-8 text-sm"
             />
           </div>
+
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-8"
+            onClick={handleExport}
+            disabled={!isUploadAvailable}
+          >
+            Upload
+          </Button>
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
