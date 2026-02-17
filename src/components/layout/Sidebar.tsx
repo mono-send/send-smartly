@@ -110,12 +110,15 @@ export function Sidebar() {
                 <Settings className="h-4 w-4" />
                 Settings
               </button>
-              <button
+              <a
+                href="https://docs.monosend.io/"
+                target="_blank"
+                rel="noreferrer noopener"
                 className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm text-foreground hover:bg-accent transition-colors"
               >
                 <HelpCircle className="h-4 w-4" />
                 Get help
-              </button>
+              </a>
               <Separator className="my-1" />
               <button
                 className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm text-foreground hover:bg-accent transition-colors"
