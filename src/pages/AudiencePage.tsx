@@ -19,7 +19,7 @@ import {
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CardContent } from "@/components/ui/card";
-import { Search, Plus, Users, UserCheck, UserMinus, Download, Upload, UserPlus, ChevronDown, Code, BookOpen, MoreVertical, Pencil, Trash2, Loader2, AlertTriangle, Ban } from "lucide-react";
+import { Search, Plus, Users, UserCheck, UserMinus, Download, Upload, UserPlus, ChevronDown, Code, BookOpen, MoreVertical, Pencil, Trash2, Loader2, AlertTriangle, Ban, Copy } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
@@ -478,6 +478,15 @@ export default function AudiencePage() {
   const openDeleteCategoryDialog = (category: Category) => {
     setSelectedCategory(category);
     setIsDeleteCategoryOpen(true);
+  };
+
+  const handleCopyCategoryId = async (categoryId: string) => {
+    try {
+      await navigator.clipboard.writeText(categoryId);
+      toast.success("Unsubscribe group ID copied to clipboard");
+    } catch (error) {
+      toast.error("Failed to copy unsubscribe group ID");
+    }
   };
 
   const resetCategoryForm = () => {
@@ -1001,6 +1010,10 @@ export default function AudiencePage() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => handleCopyCategoryId(category.id)}>
+                                <Copy className="h-4 w-4 mr-2" />
+                                Copy ID
+                              </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => openEditCategoryDialog(category)}>
                                 <Pencil className="h-4 w-4 mr-2" />
                                 Edit
