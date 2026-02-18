@@ -30,7 +30,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ConfirmDeleteDialog } from "@/components/dialogs/ConfirmDeleteDialog";
 import { toast } from "sonner";
-import { api } from "@/lib/api";
+import { api, API_BASE_URL_V1_1 } from "@/lib/api";
 
 interface Domain {
   id: string;
@@ -243,7 +243,7 @@ export default function DomainsPage() {
           try {
             const response = await api(`/domains/${domainToRemove.id}`, {
               method: "DELETE",
-            });
+            }, API_BASE_URL_V1_1);
             if (response.ok) {
               const data = await response.json();
               toast.success(data.message || "Domain removed successfully");

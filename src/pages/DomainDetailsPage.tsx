@@ -321,7 +321,7 @@ export default function DomainDetailsPage() {
     try {
       const response = await api(`/domains/${domain.id}`, {
         method: "DELETE",
-      });
+      }, API_BASE_URL_V1_1);
       if (response.ok) {
         const data = await response.json();
         toast.success(data.message || "Domain removed successfully");
