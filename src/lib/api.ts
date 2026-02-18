@@ -1,4 +1,5 @@
 export const API_BASE_URL = "https://internal-api.monosend.io/v1.0";
+export const API_BASE_URL_V1_1 = "https://internal-api.monosend.io/v1.1";
 
 type RequestOptions = {
   method?: string;
@@ -6,7 +7,7 @@ type RequestOptions = {
   headers?: Record<string, string>;
 };
 
-export const api = async (endpoint: string, options: RequestOptions = {}) => {
+export const api = async (endpoint: string, options: RequestOptions = {}, baseUrl = API_BASE_URL) => {
   const token = localStorage.getItem("access_token");
   
   const headers: Record<string, string> = {
@@ -18,7 +19,7 @@ export const api = async (endpoint: string, options: RequestOptions = {}) => {
     headers["Authorization"] = `Bearer ${token}`;
   }
 
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+  const response = await fetch(`${baseUrl}${endpoint}`, {
     method: options.method || "GET",
     headers,
     body: options.body ? JSON.stringify(options.body) : undefined,
