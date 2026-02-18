@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/table";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Search, MoreVertical, ExternalLink } from "lucide-react";
+import { Search, MoreVertical, ExternalLink, Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -28,6 +28,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { ConfirmDeleteDialog } from "@/components/dialogs/ConfirmDeleteDialog";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
 
@@ -44,8 +45,10 @@ export default function DomainsPage() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [regionFilter, setRegionFilter] = useState("all");
+  const [domainToRemove, setDomainToRemove] = useState<{ id: string; domain: string } | null>(null);
   const [domains, setDomains] = useState<Domain[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const fetchDomains = async () => {
     setIsLoading(true);
@@ -209,6 +212,12 @@ export default function DomainsPage() {
                           <DropdownMenuItem onClick={() => navigate(`/domains/${domain.id}`)}>
                             View DNS records
                           </DropdownMenuItem>
+                          <DropdownMenuItem
+                            className="text-destructive"
+                            onClick={() => setDomainToRemove({ id: domain.id, domain: domain.domain })}
+                          >
+                            Remove
+                          </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>
@@ -220,6 +229,39 @@ export default function DomainsPage() {
         </div>
       </div>
 
+
+      {/* Remove Domain Confirmation Dialog */}
+      <ConfirmDeleteDialog
+        open={!!domainToRemove}
+        onOpenChange={(open) => !open && setDomainToRemove(null)}
+        title="Remove domain"
+        description={`Are you sure you want to remove "${domainToRemove?.domain}"? This action cannot be undone and will stop all email sending and receiving for this domain.`}
+        confirmLabel={isDeleting ? "Removing..." : "Remove domain"}
+        onConfirm={async () => {
+          if (!domainToRemove) return;
+          setIsDeleting(true);
+          try {
+            const response = await api(`/domains/${domainToRemove.id}`, {
+              method: "DELETE",
+            });
+            if (response.ok) {
+              const data = await response.json();
+              toast.success(data.message || "Domain removed successfully");
+              setDomainToRemove(null);
+              fetchDomains();
+            } else {
+              const data = await response.json();
+              toast.error(data.detail || "Failed to remove domain");
+            }
+          } catch (error: any) {
+            if (error.message !== "Unauthorized") {
+              toast.error("An error occurred. Please try again.");
+            }
+          } finally {
+            setIsDeleting(false);
+          }
+        }}
+      />
     </>
   );
 }
