@@ -35,7 +35,7 @@ import { api } from "@/lib/api";
 interface Domain {
   id: string;
   domain: string;
-  status: "pending" | "unverified" | "verified" | "suspended";
+  status: "pending" | "pending_dns" | "unverified" | "verified" | "suspended";
   region: string;
   created_at: string;
 }
@@ -123,6 +123,7 @@ export default function DomainsPage() {
               <SelectItem value="verified">Verified</SelectItem>
               <SelectItem value="unverified">Unverified</SelectItem>
               <SelectItem value="pending">Pending</SelectItem>
+              <SelectItem value="pending_dns">Pending DNS</SelectItem>
               <SelectItem value="suspended">Suspended</SelectItem>
             </SelectContent>
           </Select>

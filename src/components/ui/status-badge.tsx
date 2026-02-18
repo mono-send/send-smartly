@@ -14,7 +14,8 @@ type StatusType =
   | "subscribed"
   | "unsubscribed"
   | "suspended"
-  | "complained";
+  | "complained"
+  | "pending_dns";
 
 const statusConfig: Record<StatusType, { label: string; className: string }> = {
   delivered: {
@@ -73,25 +74,34 @@ const statusConfig: Record<StatusType, { label: string; className: string }> = {
     label: "Complained",
     className: "bg-destructive/10 text-destructive border-destructive/20",
   },
+  pending_dns: {
+    label: "Pending DNS",
+    className: "bg-warning/10 text-warning border-warning/20",
+  },
 };
 
 interface StatusBadgeProps {
-  status: StatusType;
+  status: StatusType | string;
   className?: string;
 }
 
 export function StatusBadge({ status, className }: StatusBadgeProps) {
-  const config = statusConfig[status];
+  const config = statusConfig[status as StatusType];
+  const fallbackLabel = status
+    .split("_")
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
   
   return (
     <span
       className={cn(
         "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium",
-        config.className,
+        config?.className ?? "bg-muted text-muted-foreground border-border",
         className
       )}
     >
-      {config.label}
+      {config?.label ?? (fallbackLabel || "Unknown")}
     </span>
   );
 }
