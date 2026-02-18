@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { api } from "@/lib/api";
+import { api, API_BASE_URL_V1_1 } from "@/lib/api";
 
 export default function AddDomainPage() {
   const navigate = useNavigate();
@@ -59,10 +59,14 @@ export default function AddDomainPage() {
 
     setIsSubmitting(true);
     try {
-      const response = await api("/domains", {
-        method: "POST",
-        body: { domain: newDomain, region: selectedRegion },
-      });
+      const response = await api(
+        "/domains",
+        {
+          method: "POST",
+          body: { domain: newDomain, region: selectedRegion },
+        },
+        API_BASE_URL_V1_1,
+      );
 
       if (response.ok) {
         toast.success("Domain added successfully");

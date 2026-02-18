@@ -25,7 +25,7 @@ import {
 import { cn } from "@/lib/utils";
 import { ConfirmDeleteDialog } from "@/components/dialogs/ConfirmDeleteDialog";
 import { toast } from "sonner";
-import { api } from "@/lib/api";
+import { api, API_BASE_URL_V1_1 } from "@/lib/api";
 import { formatDistanceToNow } from "date-fns";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -254,9 +254,13 @@ export default function DomainDetailsPage() {
     setIsRefreshing(true);
     try {
       // First, POST to verify endpoint
-      const verifyResponse = await api(`/domains/${domain.id}/verify`, {
-        method: "POST",
-      });
+      const verifyResponse = await api(
+        `/domains/${domain.id}/verify`,
+        {
+          method: "POST",
+        },
+        API_BASE_URL_V1_1,
+      );
       if (verifyResponse.ok) {
         // If verify is successful, fetch the domain data
         const getResponse = await api(`/domains/${domain.id}`);
