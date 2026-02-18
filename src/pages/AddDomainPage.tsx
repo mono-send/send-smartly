@@ -15,6 +15,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { toast } from "sonner";
 import { api, API_BASE_URL_V1_1 } from "@/lib/api";
 
+type CreatedDomainResponse = {
+  id?: string;
+};
+
 export default function AddDomainPage() {
   const navigate = useNavigate();
   const [newDomain, setNewDomain] = useState("");
@@ -69,14 +73,19 @@ export default function AddDomainPage() {
       );
 
       if (response.ok) {
+        const createdDomain = (await response.json()) as CreatedDomainResponse;
         toast.success("Domain added successfully");
-        navigate("/domains");
+        if (createdDomain?.id) {
+          navigate(`/domains/${createdDomain.id}`);
+        } else {
+          navigate("/domains");
+        }
       } else {
         const message = await getErrorMessage(response);
         toast.error(message);
       }
-    } catch (error: any) {
-      if (error.message !== "Unauthorized") {
+    } catch (error: unknown) {
+      if (!(error instanceof Error) || error.message !== "Unauthorized") {
         toast.error("An error occurred. Please try again.");
       }
     } finally {
