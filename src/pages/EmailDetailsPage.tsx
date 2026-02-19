@@ -32,6 +32,7 @@ import { toast } from "sonner";
 import { api } from "@/lib/api";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface EmailEvent {
   status: string;
@@ -397,41 +398,62 @@ export default function EmailDetailsPage() {
               <div className="flex items-center gap-2">
                 {activeTab === "preview" && (
                   <>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className={cn("h-8 w-8", previewMode === "desktop" && "bg-muted")}
-                      onClick={() => setPreviewMode("desktop")}
-                    >
-                      <Monitor className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className={cn("h-8 w-8", previewMode === "mobile" && "bg-muted")}
-                      onClick={() => setPreviewMode("mobile")}
-                    >
-                      <Smartphone className="h-4 w-4" />
-                    </Button>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className={cn("h-8 w-8", previewMode === "desktop" && "bg-muted")}
+                          onClick={() => setPreviewMode("desktop")}
+                        >
+                          <Monitor className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Desktop view</p>
+                      </TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className={cn("h-8 w-8", previewMode === "mobile" && "bg-muted")}
+                          onClick={() => setPreviewMode("mobile")}
+                        >
+                          <Smartphone className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Mobile view</p>
+                      </TooltipContent>
+                    </Tooltip>
                   </>
                 )}
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() =>
-                    copyToClipboard(
-                      activeTab === "plain-text" ? plainTextContent : email.body,
-                      "content"
-                    )
-                  }
-                >
-                  {copiedContent ? (
-                    <Check className="h-4 w-4 text-success" />
-                  ) : (
-                    <Copy className="h-4 w-4" />
-                  )}
-                </Button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={() =>
+                        copyToClipboard(
+                          activeTab === "plain-text" ? plainTextContent : email.body,
+                          "content"
+                        )
+                      }
+                    >
+                      {copiedContent ? (
+                        <Check className="h-4 w-4 text-success" />
+                      ) : (
+                        <Copy className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Copy</p>
+                  </TooltipContent>
+                </Tooltip>
               </div>
             </div>
 
