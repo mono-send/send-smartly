@@ -30,6 +30,7 @@ interface LogResponse {
   source: LogSource;
   status_code: number;
   method: string;
+  email_id?: string | null;
   user_agent?: string;
   tool_name?: string;
   tool_description?: string;
@@ -45,6 +46,7 @@ interface Log {
   method: string;
   source: LogSource;
   createdAt: string;
+  emailId?: string | null;
   userAgent?: string;
   toolName?: string;
   toolDescription?: string;
@@ -157,6 +159,7 @@ export default function LogDetailsPage() {
           method: data.method,
           source: data.source,
           createdAt: data.created_at,
+          emailId: data.email_id ?? null,
           userAgent: data.user_agent,
           toolName: data.tool_name,
           toolDescription: data.tool_description,
@@ -363,7 +366,11 @@ export default function LogDetailsPage() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem>Copy log ID</DropdownMenuItem>
-              {!isMcp && <DropdownMenuItem>View related email</DropdownMenuItem>}
+              {log.emailId && (
+                <DropdownMenuItem onClick={() => navigate(`/emails/${log.emailId}`)}>
+                  View related email
+                </DropdownMenuItem>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
