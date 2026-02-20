@@ -18,7 +18,9 @@ import {
   Smartphone,
 } from "lucide-react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+import Prism from "prismjs";
+import "prismjs/components/prism-markup";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -58,6 +60,22 @@ interface EmailDetails {
   events: EmailEvent[];
 }
 
+const escapeHtml = (value: string) =>
+  value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+
+const highlightHtml = (code: string) => {
+  try {
+    return Prism.highlight(code, Prism.languages.markup, "markup");
+  } catch {
+    return escapeHtml(code);
+  }
+};
+
 export default function EmailDetailsPage() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -72,6 +90,12 @@ export default function EmailDetailsPage() {
   const [activeTab, setActiveTab] = useState<
     "preview" | "plain-text" | "html" | "insights"
   >("preview");
+  const htmlBody = email?.body ?? "";
+  const highlightedHtml = useMemo(() => highlightHtml(htmlBody), [htmlBody]);
+  const highlightedLines = useMemo(
+    () => highlightedHtml.split("\n"),
+    [highlightedHtml]
+  );
 
   useEffect(() => {
     const fetchEmailDetails = async () => {
@@ -475,9 +499,22 @@ export default function EmailDetailsPage() {
             </TabsContent>
 
             <TabsContent value="html" className="px-6 py-4">
-              <pre className="overflow-x-auto rounded-lg bg-muted p-4 font-mono text-xs text-muted-foreground">
-                {email.body}
-              </pre>
+              <div className="email-html-highlight overflow-x-auto rounded-lg bg-muted">
+                <div className="min-w-max font-mono text-xs leading-5">
+                  {highlightedLines.map((line, index) => (
+                    <div key={index} className="flex">
+                      <span className="w-12 shrink-0 select-none border-r border-border/40 px-2 py-0.5 text-right text-muted-foreground/70">
+                        {index + 1}
+                      </span>
+                      <span className="block min-w-0 flex-1 px-3 py-0.5 whitespace-pre text-foreground">
+                        <span
+                          dangerouslySetInnerHTML={{ __html: line || "&nbsp;" }}
+                        />
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </TabsContent>
 
             <TabsContent value="insights" className="px-6 py-4">
@@ -539,6 +576,18 @@ export default function EmailDetailsPage() {
       />
 
       <APISection isOpen={showApiSection} onClose={() => setShowApiSection(false)} />
+
+      <style>{`
+        .email-html-highlight .token.tag { color: hsl(var(--chart-1)); }
+        .email-html-highlight .token.attr-name { color: hsl(var(--chart-2)); }
+        .email-html-highlight .token.attr-value { color: hsl(var(--chart-3)); }
+        .email-html-highlight .token.punctuation { color: hsl(var(--muted-foreground)); }
+        .email-html-highlight .token.comment {
+          color: hsl(var(--muted-foreground));
+          font-style: italic;
+        }
+        .email-html-highlight .token.doctype { color: hsl(var(--chart-4)); }
+      `}</style>
     </div>
   );
 }
