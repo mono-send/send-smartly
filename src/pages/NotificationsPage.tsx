@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { api } from "@/lib/api";
 import { formatDistanceToNow } from "date-fns";
+import { toast } from "sonner";
 import {
   Dialog,
   DialogContent,
@@ -156,6 +157,7 @@ export default function NotificationsPage() {
   };
 
   const [isLoadingDetails, setIsLoadingDetails] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const openNotification = async (notification: Notification) => {
     setSelectedNotification(notification);
@@ -180,9 +182,25 @@ export default function NotificationsPage() {
     }
   };
 
-  const deleteNotification = (id: string) => {
-    setNotifications(notifications.filter(n => n.id !== id));
-    setSelectedNotification(null);
+  const deleteNotification = async (id: string) => {
+    setIsDeleting(true);
+    try {
+      const response = await api(`/team_members/${id}`, { method: "DELETE" });
+      if (response.ok) {
+        setNotifications(prev => prev.filter(n => n.id !== id));
+        setSelectedNotification(null);
+        toast.success("Deleted successfully");
+      } else {
+        const data = await response.json().catch(() => ({}));
+        toast.error(data.detail || "Failed to delete");
+      }
+    } catch (error: any) {
+      if (error.message !== "Unauthorized") {
+        toast.error("Failed to delete");
+      }
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   return (
@@ -324,10 +342,11 @@ export default function NotificationsPage() {
                   variant="ghost"
                   size="sm"
                   className="text-destructive hover:text-destructive"
+                  disabled={isDeleting}
                   onClick={() => deleteNotification(selectedNotification.id)}
                 >
                   <Trash2 className="mr-2 h-4 w-4" />
-                  Delete
+                  {isDeleting ? "Deleting..." : "Delete"}
                 </Button>
                 <div className="flex-1" />
                 {selectedNotification.actionUrl && (
