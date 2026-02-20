@@ -520,7 +520,13 @@ export default function EmailDetailsPage() {
         onOpenChange={setShowResendDialog}
         onConfirm={handleResend}
         title="Resend Email"
-        description={`Are you sure you want to resend this email to "${email.to_email}"? A new copy of this email will be sent.`}
+        description={
+          <>
+            Are you sure you want to resend this email to{" "}
+            <strong className="font-semibold text-foreground">"{email.to_email}"</strong>? A new copy of this
+            email will be sent.
+          </>
+        }
         confirmLabel="Resend"
       />
 
