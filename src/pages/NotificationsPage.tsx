@@ -150,24 +150,25 @@ export default function NotificationsPage() {
     }
   };
 
-  const markAsRead = (id: string) => {
-    setNotifications(notifications.map(n => 
-      n.id === id ? { ...n, read: true } : n
-    ));
-  };
-
   const [isLoadingDetails, setIsLoadingDetails] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
   const openNotification = async (notification: Notification) => {
     setSelectedNotification(notification);
-    markAsRead(notification.id);
     setIsLoadingDetails(true);
     try {
       const response = await api(`/notifications/${notification.id}`);
       if (response.ok) {
         const data: ApiNotification = await response.json();
-        const updatedNotification = mapApiNotificationToUi(data);
+        let updatedNotification = mapApiNotificationToUi(data);
+
+        if (!notification.read) {
+          const markAsReadResponse = await api(`/notifications/${notification.id}/read`, { method: "POST" });
+          if (markAsReadResponse.ok) {
+            updatedNotification = { ...updatedNotification, read: true };
+          }
+        }
+
         setSelectedNotification(updatedNotification);
         setNotifications(prev => prev.map(n => 
           n.id === notification.id ? updatedNotification : n
