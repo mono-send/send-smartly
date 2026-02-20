@@ -91,11 +91,18 @@ export default function EmailDetailsPage() {
     "preview" | "plain-text" | "html" | "insights"
   >("preview");
   const htmlBody = email?.body ?? "";
+  const showPlainTextTab = email?.template_id === null;
   const highlightedHtml = useMemo(() => highlightHtml(htmlBody), [htmlBody]);
   const highlightedLines = useMemo(
     () => highlightedHtml.split("\n"),
     [highlightedHtml]
   );
+
+  useEffect(() => {
+    if (!showPlainTextTab && activeTab === "plain-text") {
+      setActiveTab("preview");
+    }
+  }, [showPlainTextTab, activeTab]);
 
   useEffect(() => {
     const fetchEmailDetails = async () => {
@@ -409,9 +416,11 @@ export default function EmailDetailsPage() {
                 <TabsTrigger value="preview" className="data-[state=active]:bg-muted">
                   Preview
                 </TabsTrigger>
-                <TabsTrigger value="plain-text" className="data-[state=active]:bg-muted">
-                  Plain Text
-                </TabsTrigger>
+                {showPlainTextTab && (
+                  <TabsTrigger value="plain-text" className="data-[state=active]:bg-muted">
+                    Plain Text
+                  </TabsTrigger>
+                )}
                 <TabsTrigger value="html" className="data-[state=active]:bg-muted">
                   HTML
                 </TabsTrigger>
@@ -492,11 +501,13 @@ export default function EmailDetailsPage() {
               </div>
             </TabsContent>
 
-            <TabsContent value="plain-text" className="px-6 py-4">
-              <pre className="whitespace-pre-wrap font-mono text-sm text-muted-foreground">
-                {plainTextContent}
-              </pre>
-            </TabsContent>
+            {showPlainTextTab && (
+              <TabsContent value="plain-text" className="px-6 py-4">
+                <pre className="whitespace-pre-wrap font-mono text-sm text-muted-foreground">
+                  {plainTextContent}
+                </pre>
+              </TabsContent>
+            )}
 
             <TabsContent value="html" className="px-6 py-4">
               <div className="email-html-highlight overflow-x-auto rounded-lg bg-muted">
