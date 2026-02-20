@@ -185,7 +185,7 @@ export default function NotificationsPage() {
   const deleteNotification = async (id: string) => {
     setIsDeleting(true);
     try {
-      const response = await api(`/team_members/${id}`, { method: "DELETE" });
+      const response = await api(`/notifications/${id}`, { method: "DELETE" });
       if (response.ok) {
         setNotifications(prev => prev.filter(n => n.id !== id));
         setSelectedNotification(null);
