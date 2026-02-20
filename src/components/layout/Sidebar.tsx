@@ -38,7 +38,7 @@ const navigation = [
   { name: "Logs", href: "/logs", icon: ScrollText },
   { name: "API Keys", href: "/api-keys", icon: Key },
   { name: "Webhooks", href: "/webhooks", icon: Webhook },
-  { name: "Settings", href: "/settings", icon: Settings },
+  // { name: "Settings", href: "/settings", icon: Settings },
 ];
 
 export function Sidebar() {
