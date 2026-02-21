@@ -96,6 +96,7 @@ export default function AudiencePage() {
   // Contacts state
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [isLoadingContacts, setIsLoadingContacts] = useState(false);
+  const [isExportingCsv, setIsExportingCsv] = useState(false);
   const [contactStats, setContactStats] = useState<ContactStats | null>(null);
   const [isLoadingStats, setIsLoadingStats] = useState(false);
 
@@ -634,6 +635,75 @@ export default function AudiencePage() {
     return `${Math.floor(diffDays / 30)} months ago`;
   };
 
+  const extractFilenameFromDisposition = (contentDisposition: string | null) => {
+    if (!contentDisposition) return "contacts-export.csv";
+
+    const utf8FilenameMatch = contentDisposition.match(/filename\*=UTF-8''([^;]+)/i);
+    if (utf8FilenameMatch?.[1]) {
+      try {
+        return decodeURIComponent(utf8FilenameMatch[1]);
+      } catch {
+        return utf8FilenameMatch[1];
+      }
+    }
+
+    const filenameMatch = contentDisposition.match(/filename="?([^"]+)"?/i);
+    return filenameMatch?.[1] || "contacts-export.csv";
+  };
+
+  const handleExportCsv = async () => {
+    if (isExportingCsv) return;
+
+    setIsExportingCsv(true);
+    try {
+      const params = new URLSearchParams();
+      if (statusFilter !== "all") params.append("status", statusFilter);
+      if (segmentFilter !== "all") params.append("segment_id", segmentFilter);
+      if (search.trim()) params.append("search", search.trim());
+
+      const queryString = params.toString();
+      const endpoint = queryString
+        ? `/contacts/export.csv?${queryString}`
+        : "/contacts/export.csv";
+
+      const response = await api(endpoint, {
+        method: "GET",
+        headers: { Accept: "text/csv" },
+      });
+
+      if (!response.ok) {
+        let errorMessage = "Failed to export contacts";
+        try {
+          const error = await response.json();
+          if (error?.detail) {
+            errorMessage = error.detail;
+          }
+        } catch {
+          // Keep fallback message for non-JSON responses
+        }
+        toast.error(errorMessage);
+        return;
+      }
+
+      const blob = await response.blob();
+      const filename = extractFilenameFromDisposition(
+        response.headers.get("content-disposition")
+      );
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename || "contacts-export.csv";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch {
+      toast.error("Failed to export contacts");
+    } finally {
+      setIsExportingCsv(false);
+    }
+  };
+
   return (
     <>
       <TopBar
@@ -797,9 +867,23 @@ export default function AudiencePage() {
                 </SelectContent>
               </Select>
 
-              <Button variant="outline" className="bg-white rounded-xl">
-                <Download className="mr-2 h-4 w-4" />
-                Export CSV
+              <Button
+                variant="outline"
+                className="bg-white rounded-xl"
+                onClick={handleExportCsv}
+                disabled={isExportingCsv}
+              >
+                {isExportingCsv ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Loading...
+                  </>
+                ) : (
+                  <>
+                    <Download className="mr-2 h-4 w-4" />
+                    Export CSV
+                  </>
+                )}
               </Button>
             </div>
 
