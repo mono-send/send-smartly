@@ -300,11 +300,23 @@ export function SendTestEmailDialog({
             value={activeTab}
             onValueChange={(v) => setActiveTab(v as "emails" | "variables")}
           >
-            <TabsList className="grid w-fit grid-cols-2 mb-4">
-              <TabsTrigger value="emails" className="uppercase text-xs px-4">
+            <TabsList className="relative grid w-fit grid-cols-2 mb-4">
+              <span
+                aria-hidden="true"
+                className={`pointer-events-none absolute inset-y-1 left-1 w-[calc(50%-0.25rem)] rounded-sm bg-background shadow-sm transition-transform duration-300 ease-in-out motion-reduce:transition-none ${
+                  activeTab === "variables" ? "translate-x-full" : "translate-x-0"
+                }`}
+              />
+              <TabsTrigger
+                value="emails"
+                className="relative z-10 uppercase text-xs px-4 data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+              >
                 Add Emails
               </TabsTrigger>
-              <TabsTrigger value="variables" className="uppercase text-xs px-4 gap-2">
+              <TabsTrigger
+                value="variables"
+                className="relative z-10 uppercase text-xs px-4 gap-2 data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+              >
                 Variables
                 {variables.length > 0 && (
                   <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">

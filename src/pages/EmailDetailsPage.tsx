@@ -129,11 +129,26 @@ export default function EmailDetailsPage() {
     fetchEmailDetails();
   }, [id]);
 
-  const handleResend = () => {
-    if (email) {
-      toast.success(`Email to "${email.to_email}" queued for resend`);
+  const handleResend = async () => {
+    if (!email) {
+      setShowResendDialog(false);
+      return;
     }
-    setShowResendDialog(false);
+
+    try {
+      const response = await api(`/emails/${email.id}/resend`, { method: "POST" });
+      if (response.ok) {
+        toast.success(`Email to "${email.to_email}" queued for resend`);
+      } else {
+        const error = await response.json().catch(() => ({}));
+        toast.error(error.detail || error.message || "Failed to resend email");
+      }
+    } catch (error) {
+      console.error("Error resending email:", error);
+      toast.error("Failed to resend email");
+    } finally {
+      setShowResendDialog(false);
+    }
   };
 
   const handleDelete = () => {

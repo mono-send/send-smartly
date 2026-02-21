@@ -233,17 +233,57 @@ export default function EmailsPage() {
     setShowBulkDeleteDialog(false);
   };
 
-  const handleResendEmail = () => {
-    if (emailToResend) {
-      toast.success(`Email to "${emailToResend.to_email}" queued for resend`);
+  const handleResendEmail = async () => {
+    if (!emailToResend) return;
+
+    try {
+      const response = await api(`/emails/${emailToResend.id}/resend`, { method: "POST" });
+      if (response.ok) {
+        toast.success(`Email to "${emailToResend.to_email}" queued for resend`);
+      } else {
+        const error = await response.json().catch(() => ({}));
+        toast.error(error.detail || error.message || "Failed to resend email");
+      }
+    } catch (error) {
+      console.error("Error resending email:", error);
+      toast.error("Failed to resend email");
+    } finally {
       setEmailToResend(null);
     }
   };
 
-  const handleBulkResend = () => {
-    toast.success(`${selectedIds.size} email${selectedIds.size > 1 ? 's' : ''} queued for resend`);
-    setSelectedIds(new Set());
-    setShowBulkResendDialog(false);
+  const handleBulkResend = async () => {
+    const ids = Array.from(selectedIds);
+    if (ids.length === 0) {
+      setShowBulkResendDialog(false);
+      return;
+    }
+
+    try {
+      const results = await Promise.allSettled(
+        ids.map(async (emailId) => {
+          const response = await api(`/emails/${emailId}/resend`, { method: "POST" });
+          return response.ok;
+        })
+      );
+
+      const succeeded = results.filter((r) => r.status === "fulfilled" && r.value).length;
+      const failed = ids.length - succeeded;
+
+      if (failed === 0) {
+        toast.success(`${succeeded} email${succeeded !== 1 ? "s" : ""} queued for resend`);
+      } else {
+        toast.error(
+          `Failed to resend ${failed} email${failed !== 1 ? "s" : ""} (${succeeded} queued)`
+        );
+      }
+    } catch (error) {
+      console.error("Error resending emails:", error);
+      toast.error("Failed to resend emails");
+    } finally {
+      setSelectedIds(new Set());
+      setShowBulkResendDialog(false);
+    }
   };
 
   const toggleSelectAll = () => {
