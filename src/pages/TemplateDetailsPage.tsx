@@ -42,12 +42,6 @@ interface Template {
   updated_at: string;
 }
 
-interface Domain {
-  id: string;
-  domain: string;
-  name?: string;
-}
-
 function TemplateDetailsPageContent() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
@@ -64,7 +58,6 @@ function TemplateDetailsPageContent() {
   const [previewMode, setPreviewMode] = useState<"desktop" | "mobile">("desktop");
   const [showSendTestDialog, setShowSendTestDialog] = useState(false);
   const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
-  const [defaultDomainId, setDefaultDomainId] = useState<string | null>(null);
   const previewContainerRef = useRef<HTMLDivElement>(null);
 
   // Track if there are unsaved changes
@@ -79,10 +72,6 @@ function TemplateDetailsPageContent() {
       fetchTemplate();
     }
   }, [id]);
-
-  useEffect(() => {
-    fetchDomains();
-  }, []);
 
   useEffect(() => {
     if (isEditingName && nameInputRef.current) {
@@ -150,26 +139,6 @@ function TemplateDetailsPageContent() {
       toast.error("Failed to load template");
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const fetchDomains = async () => {
-    try {
-      const response = await api("/domains");
-      if (response.ok) {
-        const data = await response.json();
-        const domainItems = Array.isArray(data) ? data : data.items || [];
-        const normalizedDomains = domainItems
-          .map((domain: Domain) => ({
-            id: domain.id,
-            domain: domain.domain || domain.name || "",
-            name: domain.name,
-          }))
-          .filter((domain: Domain) => domain.domain);
-        setDefaultDomainId(normalizedDomains.length === 1 ? normalizedDomains[0].id : null);
-      }
-    } catch (error) {
-      console.error("Failed to fetch domains:", error);
     }
   };
 
@@ -462,7 +431,6 @@ function TemplateDetailsPageContent() {
           open={showSendTestDialog}
           onOpenChange={setShowSendTestDialog}
           templateId={template.id}
-          domainId={defaultDomainId}
           subject={subject}
           body={body}
         />

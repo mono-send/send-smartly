@@ -9,16 +9,29 @@ import {
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
 import { Loader2, ExternalLink } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
+interface Domain {
+  id: string;
+  domain: string;
+  name?: string;
+  status?: "pending" | "pending_dns" | "unverified" | "verified" | "suspended";
+}
+
 interface SendTestEmailDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   templateId: string;
-  domainId?: string | null;
   subject: string;
   body: string;
 }
@@ -27,7 +40,6 @@ export function SendTestEmailDialog({
   open,
   onOpenChange,
   templateId,
-  domainId,
   subject,
   body,
 }: SendTestEmailDialogProps) {
@@ -35,6 +47,9 @@ export function SendTestEmailDialog({
   const [emails, setEmails] = useState("");
   const [variablesJson, setVariablesJson] = useState("");
   const [isSending, setIsSending] = useState(false);
+  const [domains, setDomains] = useState<Domain[]>([]);
+  const [isLoadingDomains, setIsLoadingDomains] = useState(false);
+  const [selectedDomainId, setSelectedDomainId] = useState("");
 
   const parseEmails = (input: string): string[] =>
     input
@@ -74,6 +89,14 @@ export function SendTestEmailDialog({
     [emailList]
   );
   const hasTooManyEmails = emailList.length > 10;
+  const verifiedDomains = useMemo(
+    () => domains.filter((domain) => domain.status === "verified"),
+    [domains]
+  );
+  const domainOptions = useMemo(
+    () => (verifiedDomains.length > 0 ? verifiedDomains : domains),
+    [verifiedDomains, domains]
+  );
 
   const parsedVariablesResult = useMemo(() => {
     if (!variablesJson.trim()) {
@@ -124,6 +147,50 @@ export function SendTestEmailDialog({
     }
   }, [open, body, subject]);
 
+  useEffect(() => {
+    if (!open) return;
+
+    const fetchDomains = async () => {
+      try {
+        setIsLoadingDomains(true);
+        const response = await api("/domains");
+        if (response.ok) {
+          const data = await response.json();
+          const domainItems = Array.isArray(data) ? data : data.items || [];
+          const normalizedDomains = domainItems
+            .map((domain: Domain) => ({
+              id: domain.id,
+              domain: domain.domain || domain.name || "",
+              name: domain.name,
+              status: domain.status,
+            }))
+            .filter((domain: Domain) => domain.domain);
+          setDomains(normalizedDomains);
+        } else {
+          setDomains([]);
+        }
+      } catch (error) {
+        console.error("Failed to fetch domains:", error);
+        setDomains([]);
+      } finally {
+        setIsLoadingDomains(false);
+      }
+    };
+
+    fetchDomains();
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    if (domainOptions.length > 0) {
+      setSelectedDomainId(domainOptions[0].id);
+      return;
+    }
+
+    setSelectedDomainId("");
+  }, [open, domainOptions]);
+
   const handleSendTest = async () => {
     if (emailList.length === 0) {
       toast.error("Please add at least one email address");
@@ -164,7 +231,7 @@ export function SendTestEmailDialog({
       const payload = {
         emails: emailList,
         variables: variablesObject as Record<string, unknown>,
-        ...(domainId ? { domain_id: domainId } : {}),
+        ...(selectedDomainId ? { domain_id: selectedDomainId } : {}),
       };
       const response = await api(`/templates/${templateId}/test`, {
         method: "POST",
@@ -204,6 +271,31 @@ export function SendTestEmailDialog({
         </DialogHeader>
 
         <div className="py-4">
+          <div className="space-y-2 mb-4">
+            <p className="text-sm font-medium">Domain</p>
+            {isLoadingDomains ? (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Loading domains...
+              </div>
+            ) : domainOptions.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-2">No domains available</p>
+            ) : (
+              <Select value={selectedDomainId} onValueChange={setSelectedDomainId}>
+                <SelectTrigger className="w-full bg-white">
+                  <SelectValue placeholder="Select a domain" />
+                </SelectTrigger>
+                <SelectContent>
+                  {domainOptions.map((domain) => (
+                    <SelectItem key={domain.id} value={domain.id}>
+                      {domain.domain || domain.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          </div>
+
           <Tabs
             value={activeTab}
             onValueChange={(v) => setActiveTab(v as "emails" | "variables")}
