@@ -109,7 +109,7 @@ await client.Emails.SendAsync(new SendEmailRequest {
   Subject = "Hello World",
   Html = "<p>Congrats on sending your <strong>first email</strong>!</p>"
 });`,
-  "cURL": `curl -X POST 'https://api.monosend.com/emails' \\
+  "cURL": `curl -X POST 'https://api.monosend.io/emails' \\
   -H 'Authorization: Bearer mono_xxxxxxxxx' \\
   -H 'Content-Type: application/json' \\
   -d '{
