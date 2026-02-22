@@ -157,7 +157,12 @@ const roleLabels: Record<string, string> = {
   marketer: "Marketer",
 };
 
+type SettingsTab = "usage" | "billing" | "team" | "smtp" | "integrations";
+
+const settingsTabOrder: SettingsTab[] = ["usage", "billing", "team", "smtp", "integrations"];
+
 export default function SettingsPage() {
+  const [activeSettingsTab, setActiveSettingsTab] = useState<SettingsTab>("usage");
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState("developer");
@@ -181,6 +186,7 @@ export default function SettingsPage() {
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
   const [activityLog, setActivityLog] = useState<ActivityLogEntry[]>([]);
   const [isLoadingActivity, setIsLoadingActivity] = useState(false);
+  const activeSettingsTabIndex = Math.max(0, settingsTabOrder.indexOf(activeSettingsTab));
 
   // Fetch activity log from API
   useEffect(() => {
@@ -475,13 +481,47 @@ export default function SettingsPage() {
       <TopBar title="Settings" subtitle="Manage your account and preferences" />
 
       <div className="p-6">
-        <Tabs defaultValue="usage" className="space-y-6">
-          <TabsList>
-            <TabsTrigger value="usage">Usage</TabsTrigger>
-            <TabsTrigger value="billing">Billing</TabsTrigger>
-            <TabsTrigger value="team">Team</TabsTrigger>
-            <TabsTrigger value="smtp">SMTP</TabsTrigger>
-            <TabsTrigger value="integrations">Integrations</TabsTrigger>
+        <Tabs
+          value={activeSettingsTab}
+          onValueChange={(value) => setActiveSettingsTab(value as SettingsTab)}
+          className="space-y-6"
+        >
+          <TabsList className="relative grid h-12 w-fit grid-cols-5 rounded-xl p-1">
+            <span
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-y-1 left-1 w-[calc((100%-0.5rem)/5)] rounded-xl bg-background shadow-sm transition-transform duration-300 ease-in-out motion-reduce:transition-none"
+              style={{ transform: `translateX(calc(${activeSettingsTabIndex} * 100%))` }}
+            />
+            <TabsTrigger
+              value="usage"
+              className="relative z-10 rounded-xl data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+            >
+              Usage
+            </TabsTrigger>
+            <TabsTrigger
+              value="billing"
+              className="relative z-10 rounded-xl data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+            >
+              Billing
+            </TabsTrigger>
+            <TabsTrigger
+              value="team"
+              className="relative z-10 rounded-xl data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+            >
+              Team
+            </TabsTrigger>
+            <TabsTrigger
+              value="smtp"
+              className="relative z-10 rounded-xl data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+            >
+              SMTP
+            </TabsTrigger>
+            <TabsTrigger
+              value="integrations"
+              className="relative z-10 rounded-xl data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+            >
+              Integrations
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="usage" className="space-y-6">

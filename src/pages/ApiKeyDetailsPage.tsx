@@ -67,6 +67,8 @@ const timeRangeDays: Record<TimeRange, number> = {
   "30d": 30,
 };
 
+const timeRangeOrder: TimeRange[] = ["1d", "7d", "14d", "30d"];
+
 const chartConfig = {
   requests: {
     label: "Requests",
@@ -91,6 +93,7 @@ export default function ApiKeyDetailsPage() {
   const [usageData, setUsageData] = useState<Array<{ date: string; requests: number }>>([]);
   const [isUsageLoading, setIsUsageLoading] = useState(false);
   const [usageError, setUsageError] = useState<string | null>(null);
+  const activeRangeIndex = Math.max(0, timeRangeOrder.indexOf(timeRange));
 
   useEffect(() => {
     if (id) {
@@ -456,33 +459,38 @@ export default function ApiKeyDetailsPage() {
                 type="single" 
                 value={timeRange} 
                 onValueChange={(value) => value && setTimeRange(value as TimeRange)}
-                className="bg-muted rounded-lg p-1 h-9"
+                className="relative h-9 rounded-xl bg-muted p-1"
               >
+                <span
+                  aria-hidden="true"
+                  className="pointer-events-none absolute inset-y-1 left-1 w-[calc(25%-0.375rem)] rounded-xl bg-background shadow-sm transition-transform duration-300 ease-in-out motion-reduce:transition-none"
+                  style={{ transform: `translateX(calc(${activeRangeIndex} * 100%))` }}
+                />
                 <ToggleGroupItem
                   value="1d"
                   size="sm"
-                  className="px-3 text-xs data-[state=on]:bg-primary data-[state=on]:text-primary-foreground h-7"
+                  className="relative z-10 h-7 px-3 text-xs data-[state=on]:bg-transparent data-[state=on]:text-foreground"
                 >
                   1D
                 </ToggleGroupItem>
                 <ToggleGroupItem
                   value="7d"
                   size="sm"
-                  className="px-3 text-xs data-[state=on]:bg-primary data-[state=on]:text-primary-foreground h-7"
+                  className="relative z-10 h-7 px-3 text-xs data-[state=on]:bg-transparent data-[state=on]:text-foreground"
                 >
                   7D
                 </ToggleGroupItem>
                 <ToggleGroupItem
                   value="14d"
                   size="sm"
-                  className="px-3 text-xs data-[state=on]:bg-primary data-[state=on]:text-primary-foreground h-7"
+                  className="relative z-10 h-7 px-3 text-xs data-[state=on]:bg-transparent data-[state=on]:text-foreground"
                 >
                   14D
                 </ToggleGroupItem>
                 <ToggleGroupItem
                   value="30d"
                   size="sm"
-                  className="px-3 text-xs data-[state=on]:bg-primary data-[state=on]:text-primary-foreground h-7"
+                  className="relative z-10 h-7 px-3 text-xs data-[state=on]:bg-transparent data-[state=on]:text-foreground"
                 >
                   30D
                 </ToggleGroupItem>
