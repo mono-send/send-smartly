@@ -81,7 +81,7 @@ export function SendTestEmailDialog({
     return Array.from(matches);
   };
 
-  const variables = extractVariables(body + subject);
+  const variables = useMemo(() => extractVariables(body + subject), [body, subject]);
 
   const emailList = useMemo(() => parseEmails(emails), [emails]);
   const invalidEmails = useMemo(
@@ -145,7 +145,7 @@ export function SendTestEmailDialog({
       });
       setVariablesJson(JSON.stringify(initialVars, null, 2));
     }
-  }, [open, body, subject]);
+  }, [open, variables]);
 
   useEffect(() => {
     if (!open) return;
@@ -300,10 +300,10 @@ export function SendTestEmailDialog({
             value={activeTab}
             onValueChange={(v) => setActiveTab(v as "emails" | "variables")}
           >
-            <TabsList className="relative grid w-fit grid-cols-2 mb-4">
+            <TabsList className="relative grid w-fit grid-cols-2 mb-4 rounded-xl">
               <span
                 aria-hidden="true"
-                className={`pointer-events-none absolute inset-y-1 left-1 w-[calc(50%-0.25rem)] rounded-sm bg-background shadow-sm transition-transform duration-300 ease-in-out motion-reduce:transition-none ${
+                className={`pointer-events-none absolute inset-y-1 left-1 w-[calc(50%-0.25rem)] rounded-xl bg-background shadow-sm transition-transform duration-300 ease-in-out motion-reduce:transition-none ${
                   activeTab === "variables" ? "translate-x-full" : "translate-x-0"
                 }`}
               />
@@ -331,7 +331,7 @@ export function SendTestEmailDialog({
                 value={emails}
                 onChange={(e) => setEmails(e.target.value)}
                 placeholder="email@example.com"
-                className="min-h-[140px] resize-none"
+                className="min-h-[140px] resize-none rounded-xl"
               />
               {invalidEmails.length > 0 && (
                 <p className="text-sm text-destructive">
@@ -352,11 +352,11 @@ export function SendTestEmailDialog({
               <p className="text-sm text-muted-foreground mb-2">
                 Values added here will replace the variables in your test email.
               </p>
-              <div className="rounded-lg border border-border bg-muted/30 p-4 font-mono text-sm">
+              <div className="rounded-xl border border-border bg-muted/30 p-4 font-mono text-sm">
                 <Textarea
                   value={variablesJson}
                   onChange={(e) => setVariablesJson(e.target.value)}
-                  className="min-h-[120px] resize-none bg-transparent border-none p-0 focus-visible:ring-0 font-mono"
+                  className="min-h-[120px] resize-none bg-transparent border-none p-0 focus-visible:ring-0 font-mono rounded-xl"
                   spellCheck={false}
                 />
               </div>
